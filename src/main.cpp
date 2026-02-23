@@ -1,12 +1,18 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_ttf.h>
 
 
+#include <cstddef>
+#include <cstdio>
 #include <iostream>
 #include <algorithm>
 #include <filesystem>
 #include <vector>
+#include <string>
+#include <iostream>
+#define DEBUG true
 
 const int THUMB_WIDTH = 100;
 const int THUMB_HEIGHT = 75;
@@ -15,6 +21,37 @@ const int INIT_THUMB_Y = 10;
 const int THUMB_PADDING = 10;
 
 namespace fs = std::filesystem;
+
+
+
+
+
+
+
+
+void calculate_offsets(float zoom , int winH,int winW,int imgH,int imgW,float &offsetY, float &offsetX){
+
+                    if((imgH)*zoom+offsetY>winH){
+
+                        int H_comp=imgH*zoom+offsetY-winH;
+                        offsetY-=H_comp;
+                    }
+                    if(imgW*zoom+offsetX<winW){
+                        //if(DEBUG)std::cout<<"dest.w+dest.y "<<dest.w+dest.x<<"winH"<<winW<<std::endl;
+                        int W_comp=(winW-(imgW*zoom+offsetX))/2;
+                        offsetX=W_comp;
+
+                    }
+                    if(DEBUG)std::cout<<"OFFSET Y: "<<offsetY<<std::endl;
+                    if(DEBUG)std::cout<<"OFFSET X: "<<offsetX<<std::endl;
+                    if(DEBUG)std::cout<<"zoom: "<<zoom<<std::endl;
+                    if(DEBUG)std::cout<<"imgW: "<<imgW<<std::endl;
+                    if(DEBUG)std::cout<<"imgH: "<<imgH<<std::endl;
+
+
+
+}
+
 
 
  SDL_Texture* loadImage(const std::string& path, SDL_Renderer* renderer, int& w, int& h) {
@@ -63,6 +100,12 @@ int main(int argc, char* argv[]) {
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
         if (std::find(exts.begin(), exts.end(), ext) != exts.end()) {
             printf("Loaded image ");
+
+            if(DEBUG)std::cout<<"Loaded image "<<entry.path().string()<<std::endl;
+
+
+
+            //debug_menu.print_dbg("\nLoaded image ");
             imageFiles.push_back(entry.path().string());
         }
     }
@@ -72,6 +115,8 @@ int main(int argc, char* argv[]) {
 
 
     int currentIndex = 0;
+
+    int thumbcurrentIndex=0;
     for (size_t i = 0; i < imageFiles.size(); i++) {
     if (imageFiles[i] == firstImagePath.string()) {
         currentIndex = i;
@@ -148,6 +193,7 @@ int main(int argc, char* argv[]) {
     int imgW = 100;
     int imgH= 100;
    
+    int thumbScroll=0;
     SDL_Texture* texture = loadImage(imageFiles[currentIndex], renderer, imgW, imgH);
     bool running = true;
     bool fullscreen = false;
@@ -181,11 +227,36 @@ int main(int argc, char* argv[]) {
 
     //main loop
     while (running) {
+        //int image_x=0;
+       // int image_y=0;
+          // ---- Get window size
+        SDL_GetWindowSize(window, &winW, &winH);
 
         while (SDL_PollEvent(&event)) {
 
             if (event.type == SDL_QUIT)
                 running = false;
+
+            
+            if (event.window.event == SDL_WINDOWEVENT_RESIZED)
+                {
+                    int newWidth = event.window.data1;
+                    int newHeight = event.window.data2;
+
+                    std::cout << "Window resized to: "
+                              << newWidth << " x "
+                              << newHeight << std::endl;
+                    zoom = std::min((float)winW / imgW, (float)winH / imgH);
+                    offsetX = 0;
+                    offsetY = THUMB_HEIGHT+INIT_THUMB_Y*2;
+                    calculate_offsets(zoom,winH,winW,imgH,imgW,offsetY,offsetX);
+                }
+            if (event.window.event == SDL_WINDOWEVENT_MAXIMIZED || event.window.event == SDL_WINDOWEVENT_RESTORED)
+                {
+                    
+                    std::cout << "Window was maximized!" << std::endl;
+                   
+                }
 
             if (event.type == SDL_KEYDOWN) {
                 if (event.key.keysym.sym == SDLK_ESCAPE)
@@ -205,7 +276,10 @@ int main(int argc, char* argv[]) {
                     // reset zoom & offsets if desired
                     zoom = std::min((float)winW / imgW, (float)winH / imgH);
                     offsetX = 0;
-                    offsetY = 0;
+                    offsetY = THUMB_HEIGHT+INIT_THUMB_Y*2;
+                    calculate_offsets(zoom,winH,winW,imgH,imgW,offsetY,offsetX);
+                    
+
                 }
                 if (event.key.keysym.sym == SDLK_LEFT) {
                     currentIndex = (currentIndex - 1 + imageFiles.size()) % imageFiles.size();
@@ -213,7 +287,17 @@ int main(int argc, char* argv[]) {
                     texture = loadImage(imageFiles[currentIndex], renderer, imgW, imgH);
                     zoom = std::min((float)winW / imgW, (float)winH / imgH);
                     offsetX = 0;
-                    offsetY = 0;
+                    offsetY = THUMB_HEIGHT+INIT_THUMB_Y*2;
+                    calculate_offsets(zoom,winH,winW,imgH,imgW,offsetY,offsetX);
+                }
+                if (event.key.keysym.sym == SDLK_UP) {
+                   thumbScroll+=1;
+                   //currentIndex+=1;
+                    //std::cout << "tmb" << std::endl;
+                }
+                if (event.key.keysym.sym == SDLK_DOWN) {
+                   thumbScroll-=1;
+                   // std::cout << "tmb" << std::endl;
                 }
             }
 
@@ -239,6 +323,15 @@ int main(int argc, char* argv[]) {
                 offsetX = mouseX - scaleChange * (mouseX - offsetX);
                 offsetY = mouseY - scaleChange * (mouseY - offsetY);
             }
+           /* if (event.type == SDL_MULTIGESTURE)
+            {
+                float zoomDelta = event.mgesture.dDist;
+
+                if (zoomDelta > 0)
+                    std::cout << "Zooming in\n";
+                else if (zoomDelta < 0)
+                    std::cout << "Zooming out\n";
+            }*/
 
             // ---- Start dragging
             if (event.type == SDL_MOUSEBUTTONDOWN &&
@@ -268,9 +361,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        // ---- Get window size
-        SDL_GetWindowSize(window, &winW, &winH);
-
+      
         // ---- Clear screen
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // optional background color
         SDL_RenderClear(renderer);
@@ -279,12 +370,28 @@ int main(int argc, char* argv[]) {
         SDL_Rect dest;
         dest.w = imgW * zoom;
         dest.h = imgH * zoom;
+        //dest.x = offsetX;
+        //dest.y = offsetY;
         dest.x = offsetX;
         dest.y = offsetY;
+
+       /* //h align
+        if(dest.h+dest.y>winH){
+
+        int H_comp=dest.h+dest.y-winH;
+        dest.y-=H_comp;
+        //if(DEBUG)std::cout<<"over: "<<W_comp<<std::endl;
+    
+        }*/
+
+        //dest.x=winW-dest.w;
+        
+
+       // if(DEBUG)std::cout<<"dest.h: "<<dest.h+dest.y<<"winH"<<winH<<std::endl;
         SDL_RenderCopy(renderer, texture, NULL, &dest);
 
         // ---- Render thumbnails at top
-        int thumbX = INIT_THUMB_X; // start padding
+        int thumbX = INIT_THUMB_X-thumbScroll*(THUMB_PADDING+THUMB_WIDTH); // start padding
         int thumbY = INIT_THUMB_Y;
         
         //thumbbg
@@ -300,11 +407,22 @@ int main(int argc, char* argv[]) {
 
 
         //thumsel
+         thumbcurrentIndex=currentIndex-thumbScroll;
         SDL_Rect bgThumSel;
-        bgThumSel.x = (thumbX+THUMB_WIDTH)*(currentIndex)+INIT_THUMB_X/2; // sel start
+        bgThumSel.x = (THUMB_PADDING+THUMB_WIDTH)*(thumbcurrentIndex)+INIT_THUMB_X/2; // sel start
         bgThumSel.y = 0;
         bgThumSel.w = THUMB_WIDTH+INIT_THUMB_X;
         bgThumSel.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbY;
+
+        if(bgThumSel.x+bgThumSel.w>winW){
+
+
+            if(DEBUG)std::cout<<"thumb over"<<std::endl;
+       //     thumbcurrentIndex=1;
+        }else{
+
+//            thumbcurrentIndex=currentIndex;
+        }
 
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 150); // black with 150/255 alpha
@@ -361,11 +479,33 @@ int main(int argc, char* argv[]) {
         // ---- Render text on top
         SDL_RenderCopy(renderer, textTexture, NULL, &textRect);
 
-        SDL_FreeSurface(textSurface);
-        SDL_DestroyTexture(textTexture);
+
+        //debug render
+
+        std::string infot ="Beta version";
+
+        SDL_Color textColorDbg = {255, 255, 255, 255};
+        SDL_Surface* textSurfaceDbg = TTF_RenderText_Blended(font, infot.c_str(), textColorDbg);
+        SDL_Texture* textTextureDbg = SDL_CreateTextureFromSurface(renderer, textSurfaceDbg);
+
+        SDL_Rect textRectDbg;
+        textRectDbg.x = 200;
+        textRectDbg.y = 200;
+        textRectDbg.w = textSurfaceDbg->w;
+        textRectDbg.h = textSurfaceDbg->h;
+        //textRectDbg.w = 300;
+        //textRectDbg.h = 300;
+
+        SDL_FreeSurface(textSurfaceDbg);
+       
+        SDL_RenderCopy(renderer, textTextureDbg, NULL,&textRectDbg);
+
 
         // ---- Present everything
         SDL_RenderPresent(renderer);
+
+        SDL_DestroyTexture(textTextureDbg);
+        SDL_DestroyTexture(textTexture);
     }
 
 
