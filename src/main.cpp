@@ -9,6 +9,8 @@
 #include <iostream>
 #include <algorithm>
 #include <filesystem>
+#include <iterator>
+#include <ostream>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -22,6 +24,7 @@ const int THUMB_PADDING = 10;
 
 namespace fs = std::filesystem;
 
+bool free_mode=false;
 
 
 
@@ -229,9 +232,174 @@ int main(int argc, char* argv[]) {
     while (running) {
         //int image_x=0;
        // int image_y=0;
+
+       int thumb_showing=0;
           // ---- Get window size
         SDL_GetWindowSize(window, &winW, &winH);
 
+
+      
+        // ---- Clear screen
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // optional background color
+        SDL_RenderClear(renderer);
+
+        // ---- Render image
+        SDL_Rect dest;
+        dest.w = imgW * zoom;
+        dest.h = imgH * zoom;
+        //dest.x = offsetX;
+        //dest.y = offsetY;
+        dest.x = offsetX;
+        dest.y = offsetY;
+
+       /* //h align
+        if(dest.h+dest.y>winH){
+
+        int H_comp=dest.h+dest.y-winH;
+        dest.y-=H_comp;
+        //if(DEBUG)std::cout<<"over: "<<W_comp<<std::endl;
+    
+        }*/
+
+        //dest.x=winW-dest.w;
+        
+
+       // if(DEBUG)std::cout<<"dest.h: "<<dest.h+dest.y<<"winH"<<winH<<std::endl;
+        SDL_RenderCopy(renderer, texture, NULL, &dest);
+
+        // ---- Render thumbnails at top
+        int thumbX = INIT_THUMB_X-thumbScroll*(THUMB_PADDING+THUMB_WIDTH); // start padding
+        int thumbY = INIT_THUMB_Y;
+        
+        //thumbbg
+        SDL_Rect bgThumBox;
+        bgThumBox.x = thumbX-INIT_THUMB_X/2; // small padding
+        bgThumBox.y = 0;
+        bgThumBox.w = ((thumbnails.size()*(THUMB_WIDTH+INIT_THUMB_X))-INIT_THUMB_X)+(INIT_THUMB_X/2)*2;
+        bgThumBox.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbY;
+
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150); // black with 150/255 alpha
+        SDL_RenderFillRect(renderer, &bgThumBox);
+
+
+        //thumsel
+         thumbcurrentIndex=currentIndex-thumbScroll;
+        SDL_Rect bgThumSel;
+        bgThumSel.x = (THUMB_PADDING+THUMB_WIDTH)*(thumbcurrentIndex)+INIT_THUMB_X/2; // sel start
+        bgThumSel.y = 0;
+        bgThumSel.w = THUMB_WIDTH+INIT_THUMB_X;
+        bgThumSel.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbY;
+
+        if(bgThumSel.x+bgThumSel.w>winW){
+
+
+            //if(DEBUG)std::cout<<"thumb over"<<std::endl;
+       //     thumbcurrentIndex=1;
+        }else{
+
+//            thumbcurrentIndex=currentIndex;
+        }
+
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 150); // black with 150/255 alpha
+        SDL_RenderFillRect(renderer, &bgThumSel);
+
+
+
+        for (size_t i = 0; i < thumbnails.size(); i++) {
+            SDL_Rect rect = {thumbX, thumbY, THUMB_WIDTH, THUMB_HEIGHT};
+
+            // highlight current image
+            if (i == currentIndex) {
+                SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // yellow border
+                SDL_RenderDrawRect(renderer, &rect);
+            }
+
+            SDL_RenderCopy(renderer, thumbnails[i], NULL, &rect);
+
+            thumbX += THUMB_WIDTH + THUMB_PADDING; // spacing
+
+            if((thumbX<=winW) && (thumbX>=-THUMB_WIDTH/2)){
+
+                thumb_showing+=1;
+                
+            }
+        }
+
+        
+
+        
+
+
+
+        // ---- Render info text (with black background)
+        std::string info = "File: " + std::string(imageFiles[currentIndex]) +
+                        "  Size: " + std::to_string(imgW) + "x" + std::to_string(imgH) +
+                        "  Zoom: " + std::to_string((int)(zoom*100)) + "%";
+
+        SDL_Color textColor = {255, 255, 255, 255};
+        SDL_Surface* textSurface = TTF_RenderText_Blended(font, info.c_str(), textColor);
+        SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+
+        SDL_Rect textRect;
+        textRect.x = 10;
+        textRect.y = winH - textSurface->h - 10;
+        textRect.w = textSurface->w;
+        textRect.h = textSurface->h;
+
+        // ---- Draw black semi-transparent rectangle behind text
+        SDL_Rect bgRect = textRect;
+        bgRect.x -= 5; // small padding
+        bgRect.y -= 5;
+        bgRect.w += 10;
+        bgRect.h += 10;
+
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150); // black with 150/255 alpha
+        SDL_RenderFillRect(renderer, &bgRect);
+
+        // ---- Render text on top
+        SDL_RenderCopy(renderer, textTexture, NULL, &textRect);
+
+
+        //debug render
+
+        std::string infot ="Free mode";
+
+        SDL_Color textColorDbg = {255, 255, 255, 255};
+        SDL_Surface* textSurfaceDbg = TTF_RenderText_Blended(font, infot.c_str(), textColorDbg);
+        SDL_Texture* textTextureDbg = SDL_CreateTextureFromSurface(renderer, textSurfaceDbg);
+
+        SDL_Rect textRectDbg;
+        textRectDbg.x = 0;
+        textRectDbg.y = THUMB_WIDTH;
+        textRectDbg.w = textSurfaceDbg->w;
+        textRectDbg.h = textSurfaceDbg->h;
+        //textRectDbg.w = 300;
+        //textRectDbg.h = 300;
+
+        SDL_FreeSurface(textSurfaceDbg);
+       
+       
+
+        SDL_Rect bgRectDbg = textRectDbg;
+        bgRectDbg.x -= 5; // small padding
+        bgRectDbg.y -= 5;
+        bgRectDbg.w += 10;
+        bgRectDbg.h += 10;
+
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150); // black with 150/255 alpha
+        if(free_mode) SDL_RenderFillRect(renderer, &bgRectDbg);
+        if(free_mode)SDL_RenderCopy(renderer, textTextureDbg, NULL,&textRectDbg);
+
+
+        // ---- Present everything
+        SDL_RenderPresent(renderer);
+
+        SDL_DestroyTexture(textTextureDbg);
+        SDL_DestroyTexture(textTexture);
         while (SDL_PollEvent(&event)) {
 
             if (event.type == SDL_QUIT)
@@ -269,6 +437,12 @@ int main(int argc, char* argv[]) {
                         fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0
                     );
                 }
+                  if (event.key.keysym.sym == SDLK_SPACE) {
+                    free_mode=!free_mode;
+                     std::cout<<"free: "<<free_mode<<std::endl;
+
+
+                  }
                   if (event.key.keysym.sym == SDLK_RIGHT) {
                     currentIndex = (currentIndex + 1) % imageFiles.size();
                     SDL_DestroyTexture(texture);
@@ -278,6 +452,21 @@ int main(int argc, char* argv[]) {
                     offsetX = 0;
                     offsetY = THUMB_HEIGHT+INIT_THUMB_Y*2;
                     calculate_offsets(zoom,winH,winW,imgH,imgW,offsetY,offsetX);
+                if (!free_mode){
+                    if(currentIndex-thumbScroll>thumb_showing-3){
+                            std::cout<<"next "<<std::endl;
+                            thumbScroll+=1;
+
+                    }
+                    if((currentIndex-thumbScroll<1) &&(currentIndex>2)){
+                            std::cout<<"back "<<std::endl;
+                            thumbScroll-=2;
+                          
+
+                    }else if (currentIndex<2) {
+                        thumbScroll=0;
+                    }
+                }
                     
 
                 }
@@ -289,16 +478,46 @@ int main(int argc, char* argv[]) {
                     offsetX = 0;
                     offsetY = THUMB_HEIGHT+INIT_THUMB_Y*2;
                     calculate_offsets(zoom,winH,winW,imgH,imgW,offsetY,offsetX);
+                if (!free_mode){
+                    if(currentIndex-thumbScroll>thumb_showing-3){
+                            std::cout<<"next "<<std::endl;
+                            thumbScroll+=1;
+
+                    }
+                    if((currentIndex-thumbScroll<1) &&((currentIndex>2))){
+                            std::cout<<"back "<<std::endl;
+                            thumbScroll-=2;
+                            
+
+                    }else if (currentIndex<2) {
+                        thumbScroll=0;
+                    }
+                }
                 }
                 if (event.key.keysym.sym == SDLK_UP) {
-                   thumbScroll+=1;
+                    if((thumbScroll>=0) &&(thumbScroll<=imageFiles.size())) thumbScroll+=1;
+                    if(thumbScroll<0) thumbScroll=0; 
+                    if(thumbScroll>=imageFiles.size()) thumbScroll=imageFiles.size()-1; 
                    //currentIndex+=1;
-                    //std::cout << "tmb" << std::endl;
+                    //std::cout << "tmb " <<thumbScroll-currentIndex <<" scroll:"<<thumbScroll<<" ind:"<<currentIndex<<std::endl;
+                    //std::cout<<"winW over "<<thumb_showing<<std::endl;
                 }
                 if (event.key.keysym.sym == SDLK_DOWN) {
-                   thumbScroll-=1;
-                   // std::cout << "tmb" << std::endl;
+                   if((thumbScroll>=0) &&(thumbScroll<=imageFiles.size())) thumbScroll-=1;
+                    if(thumbScroll<0) thumbScroll=0;
+                    if(thumbScroll>=imageFiles.size()) thumbScroll=imageFiles.size()-1; 
+                     
+                    //std::cout << "tmb " <<thumbScroll-currentIndex <<" scroll:"<<thumbScroll<<" ind:"<<currentIndex<<std::endl;
+                    //std::cout<<"winW over "<<thumb_showing<<std::endl;
+
+
+                    // std::cout << "tmb" << std::endl;
                 }
+                    std::cout << "tmb " <<currentIndex-thumbScroll <<" scroll:"<<thumbScroll<<" ind:"<<currentIndex<<std::endl;
+                    std::cout<<"winW over "<<thumb_showing<<std::endl;
+
+                    
+                    
             }
 
 
@@ -361,151 +580,6 @@ int main(int argc, char* argv[]) {
             }
         }
 
-      
-        // ---- Clear screen
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // optional background color
-        SDL_RenderClear(renderer);
-
-        // ---- Render image
-        SDL_Rect dest;
-        dest.w = imgW * zoom;
-        dest.h = imgH * zoom;
-        //dest.x = offsetX;
-        //dest.y = offsetY;
-        dest.x = offsetX;
-        dest.y = offsetY;
-
-       /* //h align
-        if(dest.h+dest.y>winH){
-
-        int H_comp=dest.h+dest.y-winH;
-        dest.y-=H_comp;
-        //if(DEBUG)std::cout<<"over: "<<W_comp<<std::endl;
-    
-        }*/
-
-        //dest.x=winW-dest.w;
-        
-
-       // if(DEBUG)std::cout<<"dest.h: "<<dest.h+dest.y<<"winH"<<winH<<std::endl;
-        SDL_RenderCopy(renderer, texture, NULL, &dest);
-
-        // ---- Render thumbnails at top
-        int thumbX = INIT_THUMB_X-thumbScroll*(THUMB_PADDING+THUMB_WIDTH); // start padding
-        int thumbY = INIT_THUMB_Y;
-        
-        //thumbbg
-        SDL_Rect bgThumBox;
-        bgThumBox.x = thumbX-INIT_THUMB_X/2; // small padding
-        bgThumBox.y = 0;
-        bgThumBox.w = ((thumbnails.size()*(THUMB_WIDTH+INIT_THUMB_X))-INIT_THUMB_X)+(INIT_THUMB_X/2)*2;
-        bgThumBox.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbY;
-
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150); // black with 150/255 alpha
-        SDL_RenderFillRect(renderer, &bgThumBox);
-
-
-        //thumsel
-         thumbcurrentIndex=currentIndex-thumbScroll;
-        SDL_Rect bgThumSel;
-        bgThumSel.x = (THUMB_PADDING+THUMB_WIDTH)*(thumbcurrentIndex)+INIT_THUMB_X/2; // sel start
-        bgThumSel.y = 0;
-        bgThumSel.w = THUMB_WIDTH+INIT_THUMB_X;
-        bgThumSel.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbY;
-
-        if(bgThumSel.x+bgThumSel.w>winW){
-
-
-            if(DEBUG)std::cout<<"thumb over"<<std::endl;
-       //     thumbcurrentIndex=1;
-        }else{
-
-//            thumbcurrentIndex=currentIndex;
-        }
-
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 150); // black with 150/255 alpha
-        SDL_RenderFillRect(renderer, &bgThumSel);
-
-
-
-        for (size_t i = 0; i < thumbnails.size(); i++) {
-            SDL_Rect rect = {thumbX, thumbY, THUMB_WIDTH, THUMB_HEIGHT};
-
-            // highlight current image
-            if (i == currentIndex) {
-                SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // yellow border
-                SDL_RenderDrawRect(renderer, &rect);
-            }
-
-            SDL_RenderCopy(renderer, thumbnails[i], NULL, &rect);
-
-            thumbX += THUMB_WIDTH + THUMB_PADDING; // spacing
-        }
-
-
-
-        
-
-
-
-        // ---- Render info text (with black background)
-        std::string info = "File: " + std::string(imageFiles[currentIndex]) +
-                        "  Size: " + std::to_string(imgW) + "x" + std::to_string(imgH) +
-                        "  Zoom: " + std::to_string((int)(zoom*100)) + "%";
-
-        SDL_Color textColor = {255, 255, 255, 255};
-        SDL_Surface* textSurface = TTF_RenderText_Blended(font, info.c_str(), textColor);
-        SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-
-        SDL_Rect textRect;
-        textRect.x = 10;
-        textRect.y = winH - textSurface->h - 10;
-        textRect.w = textSurface->w;
-        textRect.h = textSurface->h;
-
-        // ---- Draw black semi-transparent rectangle behind text
-        SDL_Rect bgRect = textRect;
-        bgRect.x -= 5; // small padding
-        bgRect.y -= 5;
-        bgRect.w += 10;
-        bgRect.h += 10;
-
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150); // black with 150/255 alpha
-        SDL_RenderFillRect(renderer, &bgRect);
-
-        // ---- Render text on top
-        SDL_RenderCopy(renderer, textTexture, NULL, &textRect);
-
-
-        //debug render
-
-        std::string infot ="Beta version";
-
-        SDL_Color textColorDbg = {255, 255, 255, 255};
-        SDL_Surface* textSurfaceDbg = TTF_RenderText_Blended(font, infot.c_str(), textColorDbg);
-        SDL_Texture* textTextureDbg = SDL_CreateTextureFromSurface(renderer, textSurfaceDbg);
-
-        SDL_Rect textRectDbg;
-        textRectDbg.x = 200;
-        textRectDbg.y = 200;
-        textRectDbg.w = textSurfaceDbg->w;
-        textRectDbg.h = textSurfaceDbg->h;
-        //textRectDbg.w = 300;
-        //textRectDbg.h = 300;
-
-        SDL_FreeSurface(textSurfaceDbg);
-       
-        SDL_RenderCopy(renderer, textTextureDbg, NULL,&textRectDbg);
-
-
-        // ---- Present everything
-        SDL_RenderPresent(renderer);
-
-        SDL_DestroyTexture(textTextureDbg);
-        SDL_DestroyTexture(textTexture);
     }
 
 
