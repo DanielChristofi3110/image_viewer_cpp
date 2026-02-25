@@ -3,7 +3,7 @@
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_ttf.h>
 
-
+#include <cmath>
 #include <cstddef>
 #include <cstdio>
 #include <iostream>
@@ -14,7 +14,11 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <chrono>
+
+
 #define DEBUG true
+#define FULL_PRELOAD false
 
 const int THUMB_WIDTH = 100;
 const int THUMB_HEIGHT = 75;
@@ -25,13 +29,15 @@ const int THUMB_PADDING = 10;
 namespace fs = std::filesystem;
 
 bool free_mode=false;
+bool debug_mode=false;
+bool Loadthumbnails=true;
+int fps=0;
 
 
 
 
 
-
-
+//ofset calculation
 void calculate_offsets(float zoom , int winH,int winW,int imgH,int imgW,float &offsetY, float &offsetX){
 
                     if((imgH)*zoom+offsetY>winH){
@@ -56,7 +62,7 @@ void calculate_offsets(float zoom , int winH,int winW,int imgH,int imgW,float &o
 }
 
 
-
+//image loading
  SDL_Texture* loadImage(const std::string& path, SDL_Renderer* renderer, int& w, int& h) {
     SDL_Surface* surf = IMG_Load(path.c_str());
     if (!surf) {
@@ -70,10 +76,179 @@ void calculate_offsets(float zoom , int winH,int winW,int imgH,int imgW,float &o
     return tex;
     }
 
+ SDL_Texture* CreateYellowBox(SDL_Renderer* renderer, int w, int h){
+    // Create empty texture (render target)
+    SDL_Texture* texture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_TARGET,
+        w,
+        h
+    );
 
+    if (!texture) return nullptr;
+
+    // Enable rendering to texture
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+
+    SDL_SetRenderTarget(renderer, texture);
+
+    // Fill with yellow
+    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow
+    SDL_RenderClear(renderer);
+
+    // Reset render target back to screen
+    SDL_SetRenderTarget(renderer, NULL);
+
+    return texture;
+}
+
+int countLoadedThumbnails(std::vector<bool>& Loadedthumbnails){
+
+    int count=0;
+    for(bool lt :Loadedthumbnails){
+        if(lt)
+        count++;
+
+    }
+
+    return count;
+
+}
+//text renderer
+void RenderText(SDL_Renderer* renderer,
+                     TTF_Font* font,
+                     const std::string& text,
+                     int x,
+                     int y,
+                     SDL_Color textColor,
+                     bool drawBackground,bool absoluteCordinates,int &Nexty)
+{
+  
+    SDL_Surface* textSurface = TTF_RenderText_Blended(font, text.c_str(), textColor);
+    if (!textSurface) return;
+
+
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    if (!textTexture)
+    {
+        SDL_FreeSurface(textSurface);
+        return;
+    }
+
+    SDL_Rect textRect;
+    textRect.x = x;
+    textRect.y =absoluteCordinates?y:y-textSurface->h; // abs cord
+    textRect.w = textSurface->w;
+    textRect.h = textSurface->h;
+
+    Nexty=textRect.y+textRect.h+10;
+    SDL_FreeSurface(textSurface);
+
+    
+    if (drawBackground)
+    {
+        SDL_Rect bgRect = textRect;
+        bgRect.x -= 5;
+        bgRect.y -= 5;
+        bgRect.w += 10;
+        bgRect.h += 10;
+
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150);
+        SDL_RenderFillRect(renderer, &bgRect);
+    }
+
+   
+    SDL_RenderCopy(renderer, textTexture, NULL, &textRect);
+
+    
+    SDL_DestroyTexture(textTexture);
+}    
+
+
+
+void ReplaceThumbnailWithImage(
+    size_t index,
+    const std::string& imgPath,
+    SDL_Renderer* renderer,
+    std::vector<SDL_Texture*>& thumbnails,
+    std::vector<bool>& Loadedthumbnails
+) {
+    if (index >= thumbnails.size() || Loadedthumbnails[index]){
+        std::cout<<"Skiped: "<<index<<std::endl;
+        return;
+    }
+
+    int w, h;
+    SDL_Texture* original = loadImage(imgPath, renderer, w, h);
+    if (!original)
+        return;
+
+    
+    SDL_Texture* scaledThumb = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_TARGET,
+        THUMB_WIDTH,
+        THUMB_HEIGHT
+    );
+
+    if (!scaledThumb) {
+        SDL_DestroyTexture(original);
+        return;
+    }
+
+   
+    SDL_Texture* oldTarget = SDL_GetRenderTarget(renderer);
+
+    
+    SDL_SetRenderTarget(renderer, scaledThumb);
+
+  
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+    SDL_RenderClear(renderer);
+
+    
+    SDL_Rect dest{0, 0, THUMB_WIDTH, THUMB_HEIGHT};
+    SDL_RenderCopy(renderer, original, NULL, &dest);
+
+    
+    SDL_SetRenderTarget(renderer, oldTarget);
+
+    SDL_DestroyTexture(original);
+
+
+    SDL_DestroyTexture(thumbnails[index]);
+
+    
+    thumbnails[index] = scaledThumb;
+    Loadedthumbnails[index]=true;
+}
+
+
+void ReplaceThumbnailsAround(
+    int around_size,
+    int index,
+    const std::vector<std::string> imageFiles,
+    SDL_Renderer* renderer,
+    std::vector<SDL_Texture*>& thumbnails,
+    std::vector<bool>& Loadedthumbnails
+) {
+     std::cout << "Trying Replace Around "<<index-around_size <<"\n";
+    for(int i=(index-around_size>0)?index-around_size:0; i<index+around_size;i++){
+        std::cout << "Trying Replace "<<i<<"\n";
+        if(i<0 || i>thumbnails.size()-1) continue;
+        ReplaceThumbnailWithImage(i,imageFiles[i],renderer,thumbnails,Loadedthumbnails);
+
+    }
+
+}
 int main(int argc, char* argv[]) {
     std::vector<std::string> imageFiles;
     std::vector<SDL_Texture*> thumbnails;
+    std::vector<bool> Loadedthumbnails;
+
 
     if (argc < 2) {
         std::cout << "Usage: viewer <image_path>\n";
@@ -113,9 +288,9 @@ int main(int argc, char* argv[]) {
         }
     }
 
-
+    std::cout<<"------------------Images Loaded-----------------------"<<std::endl; 
     std::sort(imageFiles.begin(), imageFiles.end());
-
+     std::cout<<"------------------Images Sorted-----------------------"<<std::endl; 
 
     int currentIndex = 0;
 
@@ -127,14 +302,21 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    //AA
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
     SDL_Window* window = SDL_CreateWindow(
         "Image Viewer",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         1000, 700,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL
     );
+    std::cout<<"------------------Created window-----------------------"<<std::endl; 
+
+    
+
+
 
     SDL_Renderer* renderer = SDL_CreateRenderer(
         window, -1,
@@ -144,38 +326,72 @@ int main(int argc, char* argv[]) {
 
 
 
+    std::cout<<"------------------Created  render-----------------------"<<std::endl; 
 
-    ////prew
+
+      //font
+
+    TTF_Font* font = TTF_OpenFont("./fonts/SFUIDisplay-Light.ttf", 18);
+    if (!font) {
+        std::cout << "Failed to load font: " << TTF_GetError() << "\n";
+        return 1;
+    }
+
+    std::cout<<"------------------Loaded font-----------------------"<<std::endl; 
+    int thumb_proc_ind = 0;
+    const int imageFiles_size = imageFiles.size();
+
     for (const auto& imgPath : imageFiles) {
-        int w, h;
-        SDL_Texture* thumbTex = loadImage(imgPath, renderer, w, h);
 
-        if (!thumbTex) continue;
+        std::cout << "processing Thumbnail: "
+                << thumb_proc_ind << "/"
+                << imageFiles_size << std::endl;
 
-        // create a scaled texture by copying to a render target texture
-        SDL_Texture* scaledThumb = SDL_CreateTexture(renderer,
+        // Create empty texture for thumbnail
+        SDL_Texture* scaledThumb = SDL_CreateTexture(
+            renderer,
             SDL_PIXELFORMAT_RGBA8888,
             SDL_TEXTUREACCESS_TARGET,
             THUMB_WIDTH,
             THUMB_HEIGHT
         );
 
-        // save current render target
+        if (!scaledThumb) {
+            std::cout << "Failed to create thumbnail texture\n";
+            continue;
+        }
+
+        // Save current render target
         SDL_Texture* oldTarget = SDL_GetRenderTarget(renderer);
 
-        // set new target and scale draw
+        // Set new target
         SDL_SetRenderTarget(renderer, scaledThumb);
+
+        // Set draw color to yellow
+        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+
+        // Clear texture with yellow
         SDL_RenderClear(renderer);
 
-        SDL_Rect dest{0,0,THUMB_WIDTH,THUMB_HEIGHT};
-        SDL_RenderCopy(renderer, thumbTex, NULL, &dest);
-
-        // restore old render target
+        // Restore previous render target
         SDL_SetRenderTarget(renderer, oldTarget);
 
-        SDL_DestroyTexture(thumbTex); // destroy original texture
         thumbnails.push_back(scaledThumb);
+        Loadedthumbnails.push_back(false);
+
+        thumb_proc_ind++;
+
+        std::cout << "processed Thumbnail: "
+                << thumb_proc_ind << "/"
+                << imageFiles_size << " "
+                << (float)thumb_proc_ind / imageFiles_size * 100
+                << "%" << std::endl;
     }
+
+    //ReplaceThumbnailWithImage(currentIndex,imageFiles[currentIndex], renderer, thumbnails,Loadedthumbnails);
+    if(FULL_PRELOAD)ReplaceThumbnailsAround(imageFiles_size, currentIndex, imageFiles, renderer, thumbnails, Loadedthumbnails);
+    else ReplaceThumbnailsAround(3, currentIndex, imageFiles, renderer, thumbnails, Loadedthumbnails);
+    std::cout<<"------------------Loaded Thumbnails-----------------------"<<std::endl; 
 
 
 
@@ -219,17 +435,12 @@ int main(int argc, char* argv[]) {
 
     SDL_Event event;
 
-    //font
-
-    TTF_Font* font = TTF_OpenFont("./fonts/SFUIDisplay-Light.ttf", 18);
-    if (!font) {
-        std::cout << "Failed to load font: " << TTF_GetError() << "\n";
-        return 1;
-    }
+  
 
 
     //main loop
     while (running) {
+        auto start = std::chrono::high_resolution_clock::now();
         //int image_x=0;
        // int image_y=0;
 
@@ -243,7 +454,11 @@ int main(int argc, char* argv[]) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // optional background color
         SDL_RenderClear(renderer);
 
+
         // ---- Render image
+
+        //ReplaceThumbnailWithImage(currentIndex,imageFiles[currentIndex], renderer, thumbnails,Loadedthumbnails);
+       
         SDL_Rect dest;
         dest.w = imgW * zoom;
         dest.h = imgH * zoom;
@@ -325,6 +540,7 @@ int main(int argc, char* argv[]) {
                 thumb_showing+=1;
                 
             }
+           
         }
 
         
@@ -338,68 +554,76 @@ int main(int argc, char* argv[]) {
                         "  Size: " + std::to_string(imgW) + "x" + std::to_string(imgH) +
                         "  Zoom: " + std::to_string((int)(zoom*100)) + "%";
 
-        SDL_Color textColor = {255, 255, 255, 255};
-        SDL_Surface* textSurface = TTF_RenderText_Blended(font, info.c_str(), textColor);
-        SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-
-        SDL_Rect textRect;
-        textRect.x = 10;
-        textRect.y = winH - textSurface->h - 10;
-        textRect.w = textSurface->w;
-        textRect.h = textSurface->h;
-
-        // ---- Draw black semi-transparent rectangle behind text
-        SDL_Rect bgRect = textRect;
-        bgRect.x -= 5; // small padding
-        bgRect.y -= 5;
-        bgRect.w += 10;
-        bgRect.h += 10;
-
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150); // black with 150/255 alpha
-        SDL_RenderFillRect(renderer, &bgRect);
-
-        // ---- Render text on top
-        SDL_RenderCopy(renderer, textTexture, NULL, &textRect);
-
-
-        //debug render
-
-        std::string infot ="Free mode";
-
-        SDL_Color textColorDbg = {255, 255, 255, 255};
-        SDL_Surface* textSurfaceDbg = TTF_RenderText_Blended(font, infot.c_str(), textColorDbg);
-        SDL_Texture* textTextureDbg = SDL_CreateTextureFromSurface(renderer, textSurfaceDbg);
-
-        SDL_Rect textRectDbg;
-        textRectDbg.x = 0;
-        textRectDbg.y = THUMB_WIDTH;
-        textRectDbg.w = textSurfaceDbg->w;
-        textRectDbg.h = textSurfaceDbg->h;
-        //textRectDbg.w = 300;
-        //textRectDbg.h = 300;
-
-        SDL_FreeSurface(textSurfaceDbg);
+        //SDL_Color info_color = {255, 255, 255, 255};
+        
+        {
+            int tempytext;
+            RenderText(renderer,
+                            font,
+                            info,
+                            0,
+                            winH,
+                            {255, 255, 255, 255},
+                            true,
+                        false,
+                    tempytext);
+            }
+      
+       // std::string debugText = "Free mode"+std::to_string(winH);
+       //std::string debugText = "Free mode";
        
-       
+        if (free_mode)
+        {
+            int tempytext;
+            RenderText(renderer,
+                            font,
+                            "Free mode",
+                            THUMB_PADDING,
+                            THUMB_WIDTH,
+                            {255, 255, 255, 255},
+                            true,
+                        true,
+                        tempytext);
+        }
+        if(debug_mode){ 
+            int tempytext;
+             
+            
+            RenderText(renderer,
+                            font,
+                            "Fps:"+std::to_string(fps),
+                            winW-100,
+                            THUMB_WIDTH,
+                            {255, 0, 0, 255},
+                            true,
+                        true,
+                    tempytext);
 
-        SDL_Rect bgRectDbg = textRectDbg;
-        bgRectDbg.x -= 5; // small padding
-        bgRectDbg.y -= 5;
-        bgRectDbg.w += 10;
-        bgRectDbg.h += 10;
-
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150); // black with 150/255 alpha
-        if(free_mode) SDL_RenderFillRect(renderer, &bgRectDbg);
-        if(free_mode)SDL_RenderCopy(renderer, textTextureDbg, NULL,&textRectDbg);
-
+            int lthu=countLoadedThumbnails(Loadedthumbnails);
+            RenderText(renderer,
+                            font,
+                            "Preloaded thumbnails:"+std::to_string(lthu)+" "+std::to_string((lthu * 100) / imageFiles_size) + "%",
+                            winW-250,
+                            tempytext,
+                            {255, 0, 0, 255},
+                            true,
+                        true,
+                    tempytext);
+                    
+                    
+                    
+                    
+                    }
 
         // ---- Present everything
         SDL_RenderPresent(renderer);
 
-        SDL_DestroyTexture(textTextureDbg);
-        SDL_DestroyTexture(textTexture);
+        //dest
+        //SDL_DestroyTexture(textTextureDbg);
+        //SDL_DestroyTexture(textTexture);
+        //SDL_FreeSurface(textSurface);  //mem leak
+        
+
         while (SDL_PollEvent(&event)) {
 
             if (event.type == SDL_QUIT)
@@ -444,6 +668,7 @@ int main(int argc, char* argv[]) {
 
                   }
                   if (event.key.keysym.sym == SDLK_RIGHT) {
+                     Loadthumbnails=true;
                     currentIndex = (currentIndex + 1) % imageFiles.size();
                     SDL_DestroyTexture(texture);
                     texture = loadImage(imageFiles[currentIndex], renderer, imgW, imgH);
@@ -465,12 +690,15 @@ int main(int argc, char* argv[]) {
 
                     }else if (currentIndex<2) {
                         thumbScroll=0;
+                    }else if (currentIndex>imageFiles.size()-2) {
+                         thumbScroll=imageFiles.size()-2;
                     }
                 }
                     
 
                 }
                 if (event.key.keysym.sym == SDLK_LEFT) {
+                    Loadthumbnails=true;
                     currentIndex = (currentIndex - 1 + imageFiles.size()) % imageFiles.size();
                     SDL_DestroyTexture(texture);
                     texture = loadImage(imageFiles[currentIndex], renderer, imgW, imgH);
@@ -491,27 +719,32 @@ int main(int argc, char* argv[]) {
 
                     }else if (currentIndex<2) {
                         thumbScroll=0;
+                    }else if (currentIndex>imageFiles.size()-2) {
+                         thumbScroll=imageFiles.size()-2;
                     }
                 }
                 }
                 if (event.key.keysym.sym == SDLK_UP) {
+                     ReplaceThumbnailsAround(thumb_showing*2, thumbScroll, imageFiles, renderer, thumbnails, Loadedthumbnails);
                     if((thumbScroll>=0) &&(thumbScroll<=imageFiles.size())) thumbScroll+=1;
                     if(thumbScroll<0) thumbScroll=0; 
                     if(thumbScroll>=imageFiles.size()) thumbScroll=imageFiles.size()-1; 
-                   //currentIndex+=1;
-                    //std::cout << "tmb " <<thumbScroll-currentIndex <<" scroll:"<<thumbScroll<<" ind:"<<currentIndex<<std::endl;
-                    //std::cout<<"winW over "<<thumb_showing<<std::endl;
+                   
                 }
                 if (event.key.keysym.sym == SDLK_DOWN) {
+                    ReplaceThumbnailsAround(thumb_showing*2, thumbScroll, imageFiles, renderer, thumbnails, Loadedthumbnails);
                    if((thumbScroll>=0) &&(thumbScroll<=imageFiles.size())) thumbScroll-=1;
                     if(thumbScroll<0) thumbScroll=0;
                     if(thumbScroll>=imageFiles.size()) thumbScroll=imageFiles.size()-1; 
                      
-                    //std::cout << "tmb " <<thumbScroll-currentIndex <<" scroll:"<<thumbScroll<<" ind:"<<currentIndex<<std::endl;
-                    //std::cout<<"winW over "<<thumb_showing<<std::endl;
+                    
+                }
 
-
-                    // std::cout << "tmb" << std::endl;
+                 if (event.key.keysym.sym == SDLK_d) {
+                  
+                    if(DEBUG) debug_mode=!debug_mode;
+                     
+                    
                 }
                     std::cout << "tmb " <<currentIndex-thumbScroll <<" scroll:"<<thumbScroll<<" ind:"<<currentIndex<<std::endl;
                     std::cout<<"winW over "<<thumb_showing<<std::endl;
@@ -519,7 +752,10 @@ int main(int argc, char* argv[]) {
                     
                     
             }
-
+            if(Loadthumbnails){
+            ReplaceThumbnailsAround(thumb_showing*2, currentIndex, imageFiles, renderer, thumbnails, Loadedthumbnails);
+                Loadthumbnails=false;
+            }
 
             // ---- Mouse wheel zoom centered to cursor
             if (event.type == SDL_MOUSEWHEEL) {
@@ -579,6 +815,13 @@ int main(int argc, char* argv[]) {
                 lastMouseY = event.motion.y;
             }
         }
+        auto end = std::chrono::high_resolution_clock::now();
+
+        // Calculate duration
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+        fps=round((float)1000/(duration.count()/1000));
+        //std::cout << "Execution time: " <<(float)1000/(duration.count()/1000) << " microseconds\n";
 
     }
 
