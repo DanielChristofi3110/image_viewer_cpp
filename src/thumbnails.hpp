@@ -8,6 +8,7 @@ private:
     SDL_Texture * tex_thumb;
     bool loaded=false ;
     int ind;
+    SDL_Color tavgcolor;
     Cordinates cords;
 
 public:
@@ -68,7 +69,7 @@ public:
             }
              
             int w, h;
-            SDL_Texture* original = loadImage(imgPath, renderer, w, h);
+            SDL_Texture* original = loadImage(imgPath, renderer, w, h,tavgcolor,true);
             if (!original)
                 return;
 
@@ -156,6 +157,10 @@ public:
         cords.y=y;
 
 
+    }
+    SDL_Color getTavgcolor(){
+
+        return tavgcolor;
     }
 
 };

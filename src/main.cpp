@@ -1,7 +1,9 @@
 
 #include "globals.hpp"
 #include "thumbnails.hpp"
+#include <SDL2/SDL_render.h>
 #include <iostream>
+
 
 
 
@@ -33,6 +35,7 @@ void calculate_offsets(float zoom , int winH,int winW,int imgH,int imgW,float &o
 
 }
 
+//background
 
 
 
@@ -182,7 +185,7 @@ int main(int argc, char* argv[]) {
         std::string ext = entry.path().extension().string();
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
         if (std::find(exts.begin(), exts.end(), ext) != exts.end()) {
-            printf("Loaded image ");
+            //printf("Loaded image ");
 
             if(DEBUG)std::cout<<"Loaded image "<<entry.path().string()<<std::endl;
 
@@ -270,7 +273,7 @@ int main(int argc, char* argv[]) {
     int imgH= 100;
    
     int thumbScroll=0;
-    SDL_Texture* texture = loadImage(imageFiles[currentIndex], renderer, imgW, imgH);
+    SDL_Texture* texture = loadImage(imageFiles[currentIndex], renderer, imgW, imgH,gAvgColor,false);
     bool running = true;
     bool fullscreen = false;
     bool dragging = false;
@@ -293,7 +296,7 @@ int main(int argc, char* argv[]) {
     SDL_Event event;
 
   
-
+    SDL_Texture* backgroundTexture = CreateRadialGradientTexture(renderer, winW, winH,gAvgColor);
 
     //main loop
     while (running) {
@@ -308,8 +311,19 @@ int main(int argc, char* argv[]) {
 
       
         // ---- Clear screen
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // optional background color
+        //gAvgColor.g=250;
+        //std::cout<<"-------------------AVG: "<< int(thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().b)<<"current index: "<<currentIndex<<std::endl;
+        if(true){
+        SDL_SetRenderDrawColor(renderer, int(thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().r), int(thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().g), int(thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().b), 255); // optional background color
         SDL_RenderClear(renderer);
+        
+        
+        }else {
+            SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr);
+        }
+        // renderBacground(renderer,winW,winH);
+         //SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr);
+       
 
 
         // ---- Render image
@@ -452,6 +466,8 @@ int main(int argc, char* argv[]) {
                     calculate_offsets(zoom,winH,winW,imgH,imgW,offsetY,offsetX);
                     thumbgroup.setThumbShowing(thumb_showing);
                     thumbgroup.ReplaceThumbnailsAround(imageFiles);
+                   // SDL_DestroyTexture(backgroundTexture);
+                    //backgroundTexture = CreateRadialGradientTexture(renderer, newWidth, newHeight,thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor());
                 }
             if (event.window.event == SDL_WINDOWEVENT_MAXIMIZED || event.window.event == SDL_WINDOWEVENT_RESTORED)
                 {
@@ -481,7 +497,7 @@ int main(int argc, char* argv[]) {
                      Loadthumbnails=true;
                     currentIndex = (currentIndex + 1) % imageFiles.size();
                     SDL_DestroyTexture(texture);
-                    texture = loadImage(imageFiles[currentIndex], renderer, imgW, imgH);
+                    texture = loadImage(imageFiles[currentIndex], renderer, imgW, imgH,gAvgColor,false);
                     // reset zoom & offsets if desired
                     zoom = std::min((float)winW / imgW, (float)winH / imgH);
                     offsetX = 0;
@@ -511,7 +527,7 @@ int main(int argc, char* argv[]) {
                     Loadthumbnails=true;
                     currentIndex = (currentIndex - 1 + imageFiles.size()) % imageFiles.size();
                     SDL_DestroyTexture(texture);
-                    texture = loadImage(imageFiles[currentIndex], renderer, imgW, imgH);
+                    texture = loadImage(imageFiles[currentIndex], renderer, imgW, imgH,gAvgColor,false);
                     zoom = std::min((float)winW / imgW, (float)winH / imgH);
                     offsetX = 0;
                     offsetY = THUMB_HEIGHT+INIT_THUMB_Y*2;
@@ -572,6 +588,8 @@ int main(int argc, char* argv[]) {
             if(Loadthumbnails){
                //ReplaceThumbnailsAround(thumb_showing*2, currentIndex, imageFiles, renderer,thumbgroup);
                thumbgroup.ReplaceThumbnailsAround(imageFiles); 
+               //SDL_DestroyTexture(backgroundTexture);
+              // backgroundTexture=CreateRadialGradientTexture(renderer, winW, winH,thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor());
                Loadthumbnails=false;
             }
 
@@ -645,6 +663,7 @@ int main(int argc, char* argv[]) {
 
 
     //clean
+    SDL_DestroyTexture(backgroundTexture);
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
