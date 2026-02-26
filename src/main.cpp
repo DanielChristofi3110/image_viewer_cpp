@@ -1,37 +1,9 @@
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
-#include <SDL2/SDL_keycode.h>
-#include <SDL2/SDL_ttf.h>
 
-#include <cmath>
-#include <cstddef>
-#include <cstdio>
+#include "globals.hpp"
+#include "thumbnails.hpp"
 #include <iostream>
-#include <algorithm>
-#include <filesystem>
-#include <iterator>
-#include <ostream>
-#include <vector>
-#include <string>
-#include <iostream>
-#include <chrono>
 
 
-#define DEBUG true
-#define FULL_PRELOAD false
-
-const int THUMB_WIDTH = 100;
-const int THUMB_HEIGHT = 75;
-const int INIT_THUMB_X = 10;
-const int INIT_THUMB_Y = 10;
-const int THUMB_PADDING = 10;
-
-namespace fs = std::filesystem;
-
-bool free_mode=false;
-bool debug_mode=false;
-bool Loadthumbnails=true;
-int fps=0;
 
 
 
@@ -62,19 +34,7 @@ void calculate_offsets(float zoom , int winH,int winW,int imgH,int imgW,float &o
 }
 
 
-//image loading
- SDL_Texture* loadImage(const std::string& path, SDL_Renderer* renderer, int& w, int& h) {
-    SDL_Surface* surf = IMG_Load(path.c_str());
-    if (!surf) {
-        std::cout << "Failed to load: " << path << "\n";
-        return nullptr;
-    }
-    w = surf->w;
-    h = surf->h;
-    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
-    SDL_FreeSurface(surf);
-    return tex;
-    }
+
 
  SDL_Texture* CreateYellowBox(SDL_Renderer* renderer, int w, int h){
     // Create empty texture (render target)
@@ -103,11 +63,11 @@ void calculate_offsets(float zoom , int winH,int winW,int imgH,int imgW,float &o
     return texture;
 }
 
-int countLoadedThumbnails(std::vector<bool>& Loadedthumbnails){
+int countLoadedThumbnails(std::vector<CThumbnail> cthu){
 
     int count=0;
-    for(bool lt :Loadedthumbnails){
-        if(lt)
+    for(CThumbnail lt :cthu){
+        if(lt.isLoaded())
         count++;
 
     }
@@ -168,82 +128,27 @@ void RenderText(SDL_Renderer* renderer,
 
 
 
-void ReplaceThumbnailWithImage(
-    size_t index,
-    const std::string& imgPath,
-    SDL_Renderer* renderer,
-    std::vector<SDL_Texture*>& thumbnails,
-    std::vector<bool>& Loadedthumbnails
-) {
-    if (index >= thumbnails.size() || Loadedthumbnails[index]){
-        std::cout<<"Skiped: "<<index<<std::endl;
-        return;
-    }
-
-    int w, h;
-    SDL_Texture* original = loadImage(imgPath, renderer, w, h);
-    if (!original)
-        return;
-
-    
-    SDL_Texture* scaledThumb = SDL_CreateTexture(
-        renderer,
-        SDL_PIXELFORMAT_RGBA8888,
-        SDL_TEXTUREACCESS_TARGET,
-        THUMB_WIDTH,
-        THUMB_HEIGHT
-    );
-
-    if (!scaledThumb) {
-        SDL_DestroyTexture(original);
-        return;
-    }
-
-   
-    SDL_Texture* oldTarget = SDL_GetRenderTarget(renderer);
-
-    
-    SDL_SetRenderTarget(renderer, scaledThumb);
-
-  
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-    SDL_RenderClear(renderer);
-
-    
-    SDL_Rect dest{0, 0, THUMB_WIDTH, THUMB_HEIGHT};
-    SDL_RenderCopy(renderer, original, NULL, &dest);
-
-    
-    SDL_SetRenderTarget(renderer, oldTarget);
-
-    SDL_DestroyTexture(original);
-
-
-    SDL_DestroyTexture(thumbnails[index]);
-
-    
-    thumbnails[index] = scaledThumb;
-    Loadedthumbnails[index]=true;
-}
-
-
 void ReplaceThumbnailsAround(
     int around_size,
     int index,
     const std::vector<std::string> imageFiles,
     SDL_Renderer* renderer,
-    std::vector<SDL_Texture*>& thumbnails,
-    std::vector<bool>& Loadedthumbnails
+    CThumbnailGroup & thumbnails
 ) {
      std::cout << "Trying Replace Around "<<index-around_size <<"\n";
     for(int i=(index-around_size>0)?index-around_size:0; i<index+around_size;i++){
         std::cout << "Trying Replace "<<i<<"\n";
-        if(i<0 || i>thumbnails.size()-1) continue;
-        ReplaceThumbnailWithImage(i,imageFiles[i],renderer,thumbnails,Loadedthumbnails);
+        if(i<0 || i>thumbnails.getSize()-1) continue;
+
+        thumbnails.getThumbnailByInd(i).LoadThumbnailImage(imageFiles[i],renderer);
+        //ReplaceThumbnailWithImage(i,imageFiles[i],renderer,thumbnails,Loadedthumbnails);
+
 
     }
 
 }
+
+
 int main(int argc, char* argv[]) {
     std::vector<std::string> imageFiles;
     std::vector<SDL_Texture*> thumbnails;
@@ -341,58 +246,10 @@ int main(int argc, char* argv[]) {
     int thumb_proc_ind = 0;
     const int imageFiles_size = imageFiles.size();
 
-    for (const auto& imgPath : imageFiles) {
-
-        std::cout << "processing Thumbnail: "
-                << thumb_proc_ind << "/"
-                << imageFiles_size << std::endl;
-
-        // Create empty texture for thumbnail
-        SDL_Texture* scaledThumb = SDL_CreateTexture(
-            renderer,
-            SDL_PIXELFORMAT_RGBA8888,
-            SDL_TEXTUREACCESS_TARGET,
-            THUMB_WIDTH,
-            THUMB_HEIGHT
-        );
-
-        if (!scaledThumb) {
-            std::cout << "Failed to create thumbnail texture\n";
-            continue;
-        }
-
-        // Save current render target
-        SDL_Texture* oldTarget = SDL_GetRenderTarget(renderer);
-
-        // Set new target
-        SDL_SetRenderTarget(renderer, scaledThumb);
-
-        // Set draw color to yellow
-        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
-
-        // Clear texture with yellow
-        SDL_RenderClear(renderer);
-
-        // Restore previous render target
-        SDL_SetRenderTarget(renderer, oldTarget);
-
-        thumbnails.push_back(scaledThumb);
-        Loadedthumbnails.push_back(false);
-
-        thumb_proc_ind++;
-
-        std::cout << "processed Thumbnail: "
-                << thumb_proc_ind << "/"
-                << imageFiles_size << " "
-                << (float)thumb_proc_ind / imageFiles_size * 100
-                << "%" << std::endl;
-    }
-
-    //ReplaceThumbnailWithImage(currentIndex,imageFiles[currentIndex], renderer, thumbnails,Loadedthumbnails);
-    if(FULL_PRELOAD)ReplaceThumbnailsAround(imageFiles_size, currentIndex, imageFiles, renderer, thumbnails, Loadedthumbnails);
-    else ReplaceThumbnailsAround(3, currentIndex, imageFiles, renderer, thumbnails, Loadedthumbnails);
+     CThumbnailGroup thumbgroup(imageFiles.size(),renderer);
     std::cout<<"------------------Loaded Thumbnails-----------------------"<<std::endl; 
-
+    
+  
 
 
 
@@ -483,67 +340,17 @@ int main(int argc, char* argv[]) {
         SDL_RenderCopy(renderer, texture, NULL, &dest);
 
         // ---- Render thumbnails at top
-        int thumbX = INIT_THUMB_X-thumbScroll*(THUMB_PADDING+THUMB_WIDTH); // start padding
-        int thumbY = INIT_THUMB_Y;
+        //int thumbX = INIT_THUMB_X-thumbScroll*(THUMB_PADDING+THUMB_WIDTH); // start padding
+        //int thumbY = INIT_THUMB_Y;
         
-        //thumbbg
-        SDL_Rect bgThumBox;
-        bgThumBox.x = thumbX-INIT_THUMB_X/2; // small padding
-        bgThumBox.y = 0;
-        bgThumBox.w = ((thumbnails.size()*(THUMB_WIDTH+INIT_THUMB_X))-INIT_THUMB_X)+(INIT_THUMB_X/2)*2;
-        bgThumBox.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbY;
-
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150); // black with 150/255 alpha
-        SDL_RenderFillRect(renderer, &bgThumBox);
+        thumbgroup.setCurrentIndex(currentIndex);
+        thumbgroup.setScrollOffset(thumbScroll);
+        thumbgroup.setThumbShowing(thumb_showing);
+        thumbgroup.Render(winH, winW);
+        thumb_showing=thumbgroup.getThumbShowing();
 
 
-        //thumsel
-         thumbcurrentIndex=currentIndex-thumbScroll;
-        SDL_Rect bgThumSel;
-        bgThumSel.x = (THUMB_PADDING+THUMB_WIDTH)*(thumbcurrentIndex)+INIT_THUMB_X/2; // sel start
-        bgThumSel.y = 0;
-        bgThumSel.w = THUMB_WIDTH+INIT_THUMB_X;
-        bgThumSel.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbY;
-
-        if(bgThumSel.x+bgThumSel.w>winW){
-
-
-            //if(DEBUG)std::cout<<"thumb over"<<std::endl;
-       //     thumbcurrentIndex=1;
-        }else{
-
-//            thumbcurrentIndex=currentIndex;
-        }
-
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 150); // black with 150/255 alpha
-        SDL_RenderFillRect(renderer, &bgThumSel);
-
-
-
-        for (size_t i = 0; i < thumbnails.size(); i++) {
-            SDL_Rect rect = {thumbX, thumbY, THUMB_WIDTH, THUMB_HEIGHT};
-
-            // highlight current image
-            if (i == currentIndex) {
-                SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // yellow border
-                SDL_RenderDrawRect(renderer, &rect);
-            }
-
-            SDL_RenderCopy(renderer, thumbnails[i], NULL, &rect);
-
-            thumbX += THUMB_WIDTH + THUMB_PADDING; // spacing
-
-            if((thumbX<=winW) && (thumbX>=-THUMB_WIDTH/2)){
-
-                thumb_showing+=1;
-                
-            }
-           
-        }
-
-        
+       
 
         
 
@@ -599,7 +406,7 @@ int main(int argc, char* argv[]) {
                         true,
                     tempytext);
 
-            int lthu=countLoadedThumbnails(Loadedthumbnails);
+            int lthu=countLoadedThumbnails(thumbgroup.getThumbnails());
             RenderText(renderer,
                             font,
                             "Preloaded thumbnails:"+std::to_string(lthu)+" "+std::to_string((lthu * 100) / imageFiles_size) + "%",
@@ -641,7 +448,10 @@ int main(int argc, char* argv[]) {
                     zoom = std::min((float)winW / imgW, (float)winH / imgH);
                     offsetX = 0;
                     offsetY = THUMB_HEIGHT+INIT_THUMB_Y*2;
+                    std::cout<<"thumb showing "<<thumb_showing<<std::endl;
                     calculate_offsets(zoom,winH,winW,imgH,imgW,offsetY,offsetX);
+                    thumbgroup.setThumbShowing(thumb_showing);
+                    thumbgroup.ReplaceThumbnailsAround(imageFiles);
                 }
             if (event.window.event == SDL_WINDOWEVENT_MAXIMIZED || event.window.event == SDL_WINDOWEVENT_RESTORED)
                 {
@@ -725,14 +535,21 @@ int main(int argc, char* argv[]) {
                 }
                 }
                 if (event.key.keysym.sym == SDLK_UP) {
-                     ReplaceThumbnailsAround(thumb_showing*2, thumbScroll, imageFiles, renderer, thumbnails, Loadedthumbnails);
+                     //ReplaceThumbnailsAround(thumb_showing*2, thumbScroll, imageFiles, renderer, thumbnails, Loadedthumbnails);
+                    thumbgroup.setCurrentIndex(thumbScroll);
+                      thumbgroup.setThumbShowing(thumb_showing);
+                     thumbgroup.ReplaceThumbnailsAround(imageFiles);
+
                     if((thumbScroll>=0) &&(thumbScroll<=imageFiles.size())) thumbScroll+=1;
                     if(thumbScroll<0) thumbScroll=0; 
                     if(thumbScroll>=imageFiles.size()) thumbScroll=imageFiles.size()-1; 
                    
                 }
                 if (event.key.keysym.sym == SDLK_DOWN) {
-                    ReplaceThumbnailsAround(thumb_showing*2, thumbScroll, imageFiles, renderer, thumbnails, Loadedthumbnails);
+                   // ReplaceThumbnailsAround(thumb_showing*2, thumbScroll, imageFiles, renderer, thumbnails, Loadedthumbnails);
+                     thumbgroup.setCurrentIndex(thumbScroll);
+                     thumbgroup.setThumbShowing(thumb_showing);
+                   thumbgroup.ReplaceThumbnailsAround(imageFiles);
                    if((thumbScroll>=0) &&(thumbScroll<=imageFiles.size())) thumbScroll-=1;
                     if(thumbScroll<0) thumbScroll=0;
                     if(thumbScroll>=imageFiles.size()) thumbScroll=imageFiles.size()-1; 
@@ -753,8 +570,9 @@ int main(int argc, char* argv[]) {
                     
             }
             if(Loadthumbnails){
-            ReplaceThumbnailsAround(thumb_showing*2, currentIndex, imageFiles, renderer, thumbnails, Loadedthumbnails);
-                Loadthumbnails=false;
+               //ReplaceThumbnailsAround(thumb_showing*2, currentIndex, imageFiles, renderer,thumbgroup);
+               thumbgroup.ReplaceThumbnailsAround(imageFiles); 
+               Loadthumbnails=false;
             }
 
             // ---- Mouse wheel zoom centered to cursor
