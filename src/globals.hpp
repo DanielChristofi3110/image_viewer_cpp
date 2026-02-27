@@ -4,7 +4,8 @@
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_ttf.h>
-
+#include <SDL2/SDL2_rotozoom.h>
+// sudo pacman -S sdl2_gfx
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
@@ -84,7 +85,7 @@ SDL_Color GetAverageColor(SDL_Surface* surface)
     return avg;
 }
 //image loading
- SDL_Texture* loadImage(const std::string& path, SDL_Renderer* renderer, int& w, int& h,SDL_Color &avgColor,bool calcAvg) {
+ SDL_Texture* loadImage(const std::string& path, SDL_Renderer* renderer, int& w, int& h) {
     SDL_Surface* surf = IMG_Load(path.c_str());
     if (!surf) {
         std::cout << "Failed to load: " << path << "\n";
@@ -93,10 +94,6 @@ SDL_Color GetAverageColor(SDL_Surface* surface)
     w = surf->w;
     h = surf->h;
 
-    if(calcAvg)
-    avgColor = GetAverageColor(surf);
-    else
-    avgColor={0,0,0,255};
     //std::cout << "Avg color " << int(avgColor.r)<<" "<<int(avgColor.g)<<" "<<int(avgColor.b) << std::endl;
     SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
     SDL_FreeSurface(surf);

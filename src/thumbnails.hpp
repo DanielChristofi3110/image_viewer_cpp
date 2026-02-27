@@ -8,13 +8,30 @@ private:
     SDL_Texture * tex_thumb;
     bool loaded=false ;
     int ind;
-    SDL_Color tavgcolor;
+    SDL_Color tavgcolor={0,0,0,255};
     Cordinates cords;
 
+
+
+
+    SDL_Texture* loadThumbnailImageFile(const std::string& path, SDL_Renderer* renderer, int& w, int& h) {
+            SDL_Surface* surf = IMG_Load(path.c_str());
+            if (!surf) {
+                std::cout << "Failed to load: " << path << "\n";
+                return nullptr;
+            }
+            w = surf->w;
+            h = surf->h;
+
+            tavgcolor = GetAverageColor(surf);
+            SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
+            SDL_FreeSurface(surf);
+            return tex;
+            }
 public:
     CThumbnail(SDL_Renderer* renderer,int i){
         ind=i;
-         std::cout << "Thumb constructor called for "<<ind<<std::endl;
+         //std::cout << "Thumb constructor called for "<<ind<<std::endl;
 
         // Create empty texture for thumbnail
         SDL_Texture* scaledThumb = SDL_CreateTexture(
@@ -24,6 +41,7 @@ public:
             THUMB_WIDTH,
             THUMB_HEIGHT
         );
+        
 
         if (!scaledThumb) {
             std::cout << "Failed to create thumbnail texture\n";
@@ -51,25 +69,29 @@ public:
         //thumb_proc_ind++;
         loaded=false;
 
-        std::cout << "Thumb constructor exited for:" <<ind<<std::endl;
+       // std::cout << "Thumb constructor exited for:" <<ind<<std::endl;
 
 
 
     }
-
+    ~CThumbnail(){
+        if(!loaded) return;
+        SDL_DestroyTexture(tex_thumb);
+        std::cout<<"Destroyed thumbnail "<<ind<<std::endl;
+    }
     void LoadThumbnailImage(const std::string& imgPath,SDL_Renderer* renderer) {
-        std::cout << "LoadThumbnailImage Call for " <<ind<<" loaded :"<<loaded<<std::endl;
+        //std::cout << "LoadThumbnailImage Call for " <<ind<<" loaded :"<<loaded<<std::endl;
         /* if (index >= thumbnails.size() || Loadedthumbnails[index]){
                 std::cout<<"Skiped: "<<index<<std::endl;
                 return;
             }*/
             if (loaded){
-                std::cout<<"Skiped: "<<ind<<std::endl;
+                //std::cout<<"Skiped: "<<ind<<std::endl;
                 return;
             }
              
             int w, h;
-            SDL_Texture* original = loadImage(imgPath, renderer, w, h,tavgcolor,true);
+            SDL_Texture* original = loadThumbnailImageFile(imgPath, renderer, w, h);
             if (!original)
                 return;
 
@@ -112,7 +134,7 @@ public:
             
             tex_thumb = scaledThumb;
            loaded=true;
-             std::cout << "LoadThumbnailImage exit for " <<ind<<std::endl;
+            // std::cout << "LoadThumbnailImage exit for " <<ind<<std::endl;
              
         }
 
@@ -189,7 +211,7 @@ class CThumbnailGroup{
              }
 
              size=thumbnails.size();
-        std::cout << "Created " <<size<<" thumbnais"<<std::endl;
+        //std::cout << "Created " <<size<<" thumbnais"<<std::endl;
         }
 
 
@@ -282,9 +304,9 @@ class CThumbnailGroup{
         const std::vector<std::string> imageFiles
     ) {
         int around_size=thumb_showing*2 ;
-        std::cout << "Trying Replace Around "<<thumb_showing*2 <<"\n";
+       // std::cout << "Trying Replace Around "<<thumb_showing*2 <<"\n";
         for(int i=(currentIndex-around_size>0)?currentIndex-around_size:0; i<currentIndex+around_size;i++){
-            std::cout << "Trying Replace "<<i<<"\n";
+            //std::cout << "Trying Replace "<<i<<"\n";
             if(i<0 || i>thumbnails.size()-1) continue;
 
             thumbnails[i].LoadThumbnailImage(imageFiles[i],renderer);
