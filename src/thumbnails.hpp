@@ -159,9 +159,11 @@ public:
 
     }
     ~CThumbnail(){
-        if(tex_thumb)
+        if(tex_thumb){
         SDL_DestroyTexture(tex_thumb);
-
+        
+        tex_thumb=nullptr;
+    }
         std::cout<<"Destroyed thumbnail "<<ind<<std::endl;
     }
     void LoadThumbnailImage(const std::string& imgPath,SDL_Renderer* renderer) {
