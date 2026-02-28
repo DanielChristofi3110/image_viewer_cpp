@@ -23,8 +23,8 @@
 
 #define DEBUG true
 #define FULL_PRELOAD false
-#define ASYNCLOADING 10
-#define UNLOADAT 10
+#define ASYNCLOADING 20
+#define UNLOADAT 20
 
 
 const int THUMB_WIDTH = 100;

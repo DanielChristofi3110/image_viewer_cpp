@@ -3,6 +3,7 @@
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL2_rotozoom.h>
+#include <SDL2/SDL_surface.h>
 #include <condition_variable>
 #include <cstddef>
 #include <iostream>
@@ -351,6 +352,12 @@ class CImage{
             return angle;
         }
 
+        SDL_Surface * getSurface(){
+
+            return surf;
+
+        }
+
         bool isLoaded(){return Loaded;}
         bool IsSurfaceReady() const { return surfaceReady; }
         bool IsTextureReady() const { return textureReady; }
@@ -608,7 +615,7 @@ class CImages{
 
 
     int getCurrentIndex(){return currentIndex;}
-    int getReadySurfave(){
+    int getReadySurface(){
         int cnt=0;
         for(int i=0; i<size; i++)
         
@@ -623,6 +630,16 @@ class CImages{
 
     int getCurrentImageRotation(){return images[currentIndex]->getRotation();}
     
+    SDL_Surface * getSurfaceByIndex(int i){
 
+
+        return images[i]->getSurface();
+    }
+
+    bool IsSurfaceOfIndexReady(int i){
+
+        return images[i]->IsSurfaceReady();
+
+    }
 
 }; 

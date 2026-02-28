@@ -232,7 +232,7 @@ int main(int argc, char* argv[]) {
     int thumb_proc_ind = 0;
     const int imageFiles_size = imageFiles.size();
 
-    CThumbnailGroup thumbgroup(imageFiles.size(),renderer);
+   
     std::cout<<"------------------Loaded Thumbnails-----------------------"<<std::endl; 
     
    
@@ -269,6 +269,7 @@ int main(int argc, char* argv[]) {
     SDL_GetWindowSize(window, &winW, &winH);
     //Images.LoadAround(1, winW, winH);
     CImages Images(renderer,imageFiles,currentIndex,winW,winH);
+   
     //Images.LoadAroundAsync(5);
     
   
@@ -287,6 +288,7 @@ int main(int argc, char* argv[]) {
     int lastMouseY = 0;
 
     Images.InitializeCurrentIndex(winW,winH, offsetX, offsetY,zoom);
+    CThumbnailGroup thumbgroup(imageFiles.size(),renderer,&Images);
     
     //Image.LoadImage(imageFiles[currentIndex],winW,winH);
    // Image.SyncZoomOffXOffY(zoom,offsetX, offsetY);
@@ -475,7 +477,7 @@ int main(int argc, char* argv[]) {
                     tempytext);
                     RenderText(renderer,
                             font,
-                            "Ready surfaces  "+std::to_string(Images.getReadySurfave()),
+                            "Ready surfaces  "+std::to_string(Images.getReadySurface()),
                             winW-250,
                             tempytext,
                             {255, 0, 0, 255},
@@ -518,7 +520,7 @@ int main(int argc, char* argv[]) {
                     Images.SyncZoomOffXOffYofCurrentImage(zoom, offsetX, offsetY);
 
                     thumbgroup.setThumbShowing(thumb_showing);
-                    thumbgroup.ReplaceThumbnailsAround(imageFiles);
+                    thumbgroup.ReplaceThumbnailsAround();
                   
                 }
             if (event.window.event == SDL_WINDOWEVENT_MAXIMIZED || event.window.event == SDL_WINDOWEVENT_RESTORED)
@@ -600,7 +602,7 @@ int main(int argc, char* argv[]) {
                      //ReplaceThumbnailsAround(thumb_showing*2, thumbScroll, imageFiles, renderer, thumbnails, Loadedthumbnails);
                     thumbgroup.setCurrentIndex(thumbScroll);
                       thumbgroup.setThumbShowing(thumb_showing);
-                     thumbgroup.ReplaceThumbnailsAround(imageFiles);
+                     thumbgroup.ReplaceThumbnailsAround();
 
                     if((thumbScroll>=0) &&(thumbScroll<=imageFiles.size())) thumbScroll+=1;
                     if(thumbScroll<0) thumbScroll=0; 
@@ -611,7 +613,7 @@ int main(int argc, char* argv[]) {
                    // ReplaceThumbnailsAround(thumb_showing*2, thumbScroll, imageFiles, renderer, thumbnails, Loadedthumbnails);
                      thumbgroup.setCurrentIndex(thumbScroll);
                      thumbgroup.setThumbShowing(thumb_showing);
-                   thumbgroup.ReplaceThumbnailsAround(imageFiles);
+                   thumbgroup.ReplaceThumbnailsAround();
                    if((thumbScroll>=0) &&(thumbScroll<=imageFiles.size())) thumbScroll-=1;
                     if(thumbScroll<0) thumbScroll=0;
                     if(thumbScroll>=imageFiles.size()) thumbScroll=imageFiles.size()-1; 
@@ -634,7 +636,7 @@ int main(int argc, char* argv[]) {
             
             if(Loadthumbnails){
                //ReplaceThumbnailsAround(thumb_showing*2, currentIndex, imageFiles, renderer,thumbgroup);
-               thumbgroup.ReplaceThumbnailsAround(imageFiles); 
+               thumbgroup.ReplaceThumbnailsAround(); 
                
                
                //SDL_DestroyTexture(backgroundTexture);

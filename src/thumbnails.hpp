@@ -1,11 +1,14 @@
 #pragma once
 #include "globals.hpp"
+#include "image.hpp"
 #include <SDL2/SDL_render.h>
+#include <SDL2/SDL_surface.h>
 
 
 class CThumbnail{
 private:
     SDL_Texture * tex_thumb;
+    SDL_Surface * surface;
     bool loaded=false ;
     int ind;
     SDL_Color tavgcolor={0,0,0,255};
@@ -69,6 +72,45 @@ private:
             return tex;
             }
 public:
+   
+        void loadThumbnailImageFromSurface(SDL_Renderer* renderer) {
+
+            if(!surface) return;
+            tavgcolor = GetAverageColor(surface);
+
+            SDL_Texture* original = SDL_CreateTextureFromSurface(renderer, surface);
+            if(!original) return;
+
+            SDL_Texture* scaledThumb = SDL_CreateTexture(
+                renderer,
+                SDL_PIXELFORMAT_RGBA8888,
+                SDL_TEXTUREACCESS_TARGET,
+                THUMB_WIDTH,
+                THUMB_HEIGHT
+            );
+
+            if (!scaledThumb) {
+                SDL_DestroyTexture(original);
+                return;
+            }
+
+            SDL_Texture* oldTarget = SDL_GetRenderTarget(renderer);
+            SDL_SetRenderTarget(renderer, scaledThumb);
+
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+            SDL_RenderClear(renderer);
+
+            SDL_Rect dest{0, 0, THUMB_WIDTH, THUMB_HEIGHT};
+            SDL_RenderCopy(renderer, original, NULL, &dest);
+
+            SDL_SetRenderTarget(renderer, oldTarget);
+
+            SDL_DestroyTexture(original);
+            SDL_DestroyTexture(tex_thumb);
+
+            tex_thumb = scaledThumb;
+            loaded = true;
+        }
     CThumbnail(SDL_Renderer* renderer,int i){
         ind=i;
          //std::cout << "Thumb constructor called for "<<ind<<std::endl;
@@ -115,8 +157,9 @@ public:
 
     }
     ~CThumbnail(){
-        if(!loaded) return;
+        if(tex_thumb)
         SDL_DestroyTexture(tex_thumb);
+
         std::cout<<"Destroyed thumbnail "<<ind<<std::endl;
     }
     void LoadThumbnailImage(const std::string& imgPath,SDL_Renderer* renderer) {
@@ -132,6 +175,7 @@ public:
              
             int w, h;
             SDL_Texture* original = loadThumbnailImageFile(imgPath, renderer, w, h);
+           // SDL_Texture* original = loadThumbnailImageFromSurface(renderer);
             if (!original)
                 return;
 
@@ -179,7 +223,12 @@ public:
         }
 
 
-    
+    void setSurface(SDL_Surface * s){
+
+        surface =s;
+    }
+
+
     SDL_Texture* getTexture(){
 
 
@@ -239,10 +288,11 @@ class CThumbnailGroup{
          int scrollOffset;
          int thumb_showing;
          SDL_Renderer* renderer;
+         CImages* Images;
 
     public:
 
-        CThumbnailGroup(int amount,SDL_Renderer* vrenderer){
+        CThumbnailGroup(int amount,SDL_Renderer* vrenderer,CImages* im){
             renderer=vrenderer;
              for(int i=0; i<amount; i++){
                 
@@ -252,7 +302,8 @@ class CThumbnailGroup{
              }
 
              size=thumbnails.size();
-        //std::cout << "Created " <<size<<" thumbnais"<<std::endl;
+             Images=im;
+       
         }
 
 
@@ -273,11 +324,7 @@ class CThumbnailGroup{
 
 
     void drawThumbnails(int &winW,int &winH){
-
-        //int thumbX = INIT_THUMB_X-scrollOffset*(THUMB_PADDING+THUMB_WIDTH); // start padding
-        //int thumbY = INIT_THUMB_Y;
-
-
+        thumb_showing=0;
          for (size_t i = 0; i < size; i++) {
             SDL_Rect rect = {thumbX, thumbY, THUMB_WIDTH, THUMB_HEIGHT};
 
@@ -341,21 +388,26 @@ class CThumbnailGroup{
     }
 
 
-    void ReplaceThumbnailsAround(
-        const std::vector<std::string> imageFiles
+    bool ReplaceThumbnailsAround(
     ) {
+        bool all_loaded=true;
         int around_size=thumb_showing*2 ;
        // std::cout << "Trying Replace Around "<<thumb_showing*2 <<"\n";
         for(int i=(currentIndex-around_size>0)?currentIndex-around_size:0; i<currentIndex+around_size;i++){
             //std::cout << "Trying Replace "<<i<<"\n";
             if(i<0 || i>thumbnails.size()-1) continue;
 
-            thumbnails[i]->LoadThumbnailImage(imageFiles[i],renderer);
+            //thumbnails[i]->LoadThumbnailImage(imageFiles[i],renderer);
             //ReplaceThumbnailWithImage(i,imageFiles[i],renderer,thumbnails,Loadedthumbnails);
+
+            if(!Images->IsSurfaceOfIndexReady(i)) all_loaded=false;
+            if(!Images->IsSurfaceOfIndexReady(i) || thumbnails[i]->isLoaded())continue;
+            thumbnails[i]->setSurface(Images->getSurfaceByIndex(i));
+            thumbnails[i]->loadThumbnailImageFromSurface(renderer);
 
 
         }
-
+        return true;
     }
 
 
@@ -379,11 +431,7 @@ class CThumbnailGroup{
 
 
 
-   /* std::vector<CThumbnail> * getThumbnails(){
 
-
-        return thumbnails;
-    }*/
     const std::vector<std::unique_ptr<CThumbnail>>& getThumbnails() const {
     return thumbnails;
     }
