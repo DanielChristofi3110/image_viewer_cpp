@@ -21,6 +21,7 @@
 
 
 
+#define FIX_WINDOWS false
 #define DEBUG true
 #define FULL_PRELOAD false
 #define ASYNCLOADING 20

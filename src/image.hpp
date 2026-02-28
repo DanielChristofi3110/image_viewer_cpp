@@ -490,7 +490,8 @@ class CImages{
         for (int i = -aroundnum; i <= aroundnum; i++)
         {
             int ind = (currentIndex + i + size) % size;
-
+            //std::cout<<"last index "<<ind<<std::endl;
+            if(ind<0 || ind>=size) continue;
             if (!images[ind]->IsSurfaceReady())
             {
                 std::lock_guard<std::mutex> lock(queueMutex);

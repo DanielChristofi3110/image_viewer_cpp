@@ -75,7 +75,9 @@ public:
    
         void loadThumbnailImageFromSurface(SDL_Renderer* renderer) {
 
-            if(!surface) return;
+            if(!surface) {
+                std::cout<<"no surface"<<std::endl;
+                return;}
             tavgcolor = GetAverageColor(surface);
 
             SDL_Texture* original = SDL_CreateTextureFromSurface(renderer, surface);
@@ -151,7 +153,7 @@ public:
         //thumb_proc_ind++;
         loaded=false;
 
-       // std::cout << "Thumb constructor exited for:" <<ind<<std::endl;
+      // std::cout << "Thumb constructor exited for:" <<ind<<std::endl;
 
 
 
@@ -223,13 +225,26 @@ public:
         }
 
 
+    void UnloadLoad(){
+
+        if(!FIX_WINDOWS){
+
+            return;
+        }
+
+        loaded=false;
+
+    }
+    
     void setSurface(SDL_Surface * s){
 
         surface =s;
     }
 
 
-    SDL_Texture* getTexture(){
+
+
+    SDL_Texture * getTexture(){
 
 
         return tex_thumb;
@@ -296,8 +311,8 @@ class CThumbnailGroup{
             renderer=vrenderer;
              for(int i=0; i<amount; i++){
                 
-                CThumbnail tthumb(renderer,i);
-                //thumbnails.push_back(tthumb);
+               
+               
                 thumbnails.push_back(std::make_unique<CThumbnail>(renderer,i));
              }
 
@@ -325,6 +340,8 @@ class CThumbnailGroup{
 
     void drawThumbnails(int &winW,int &winH){
         thumb_showing=0;
+
+
          for (size_t i = 0; i < size; i++) {
             SDL_Rect rect = {thumbX, thumbY, THUMB_WIDTH, THUMB_HEIGHT};
 
@@ -346,6 +363,9 @@ class CThumbnailGroup{
                 
             }
         }
+
+        //int gx=thumbnails[0]->getX();
+       // std::cout<<gx<<std::endl;
     }
 
     void drawBackground(){
@@ -390,6 +410,7 @@ class CThumbnailGroup{
 
     bool ReplaceThumbnailsAround(
     ) {
+        //return false;
         bool all_loaded=true;
         int around_size=thumb_showing*2 ;
        // std::cout << "Trying Replace Around "<<thumb_showing*2 <<"\n";
@@ -434,6 +455,17 @@ class CThumbnailGroup{
 
     const std::vector<std::unique_ptr<CThumbnail>>& getThumbnails() const {
     return thumbnails;
+    }
+
+
+    void UlnoanLoad(){
+
+        for(int i=0 ;i<size; i++){
+            thumbnails[i]->UnloadLoad();
+
+
+        }
+
     }
 
 
