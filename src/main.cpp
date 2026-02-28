@@ -46,7 +46,7 @@
     return texture;
 }
 
-int countLoadedThumbnails(std::vector<CThumbnail>& cthu){
+/*int countLoadedThumbnails(auto& cthu){
 
     int count=0;
 
@@ -60,7 +60,7 @@ int countLoadedThumbnails(std::vector<CThumbnail>& cthu){
 
     return count;
 
-}
+}*/
 //text renderer
 void RenderText(SDL_Renderer* renderer,
                      TTF_Font* font,
@@ -234,7 +234,9 @@ int main(int argc, char* argv[]) {
 
     CThumbnailGroup thumbgroup(imageFiles.size(),renderer);
     std::cout<<"------------------Loaded Thumbnails-----------------------"<<std::endl; 
-    CImage Image(renderer);
+    
+   
+    //CImage Image(renderer);
     //Image.LoadImage(imageFiles[0]);
   
 
@@ -265,10 +267,15 @@ int main(int argc, char* argv[]) {
 
     int winW, winH;
     SDL_GetWindowSize(window, &winW, &winH);
+    //Images.LoadAround(1, winW, winH);
+    CImages Images(renderer,imageFiles,currentIndex,winW,winH);
+    //Images.LoadAroundAsync(5);
+    
+  
   
 
     // ---- Initial zoom to fit window (aspect ratio kept)
-    float zoom = std::min((float)winW / Image.getW(), (float)winH / Image.getH());
+    float zoom = std::min((float)winW / Images.getCurrentImageW(), (float)winH /  Images.getCurrentImageH());
 
     float minZoom = zoom * 0.1f;
     float maxZoom = zoom * 20.0f;
@@ -279,9 +286,12 @@ int main(int argc, char* argv[]) {
     int lastMouseX = 0;
     int lastMouseY = 0;
 
-    Image.LoadImage(imageFiles[currentIndex],winW,winH);
-    Image.SyncZoomOffXOffY(zoom,offsetX, offsetY);
-
+    Images.InitializeCurrentIndex(winW,winH, offsetX, offsetY,zoom);
+    
+    //Image.LoadImage(imageFiles[currentIndex],winW,winH);
+   // Image.SyncZoomOffXOffY(zoom,offsetX, offsetY);
+    //Images.SyncZoomOffXOffYofCurrentImage(zoom, offsetX, offsetY);
+    
     SDL_Event event;
 
   
@@ -319,13 +329,6 @@ int main(int argc, char* argv[]) {
 
         //ReplaceThumbnailWithImage(currentIndex,imageFiles[currentIndex], renderer, thumbnails,Loadedthumbnails);
        
-        SDL_Rect dest;
-        dest.w = Image.getW() * zoom;
-        dest.h = Image.getH() * zoom;
-        //dest.x = offsetX;
-        //dest.y = offsetY;
-        dest.x = offsetX;
-        dest.y = offsetY;
 
        /* //h align
         if(dest.h+dest.y>winH){
@@ -342,9 +345,11 @@ int main(int argc, char* argv[]) {
        // if(DEBUG)std::cout<<"dest.h: "<<dest.h+dest.y<<"winH"<<winH<<std::endl;
         //SDL_RenderCopy(renderer, Image.getTexture(), NULL, &dest);
 
-        Image.setZoom(zoom);
+        /*Image.setZoom(zoom);
         Image.setCords({int(offsetX),int(offsetY)});
-        Image.Render();
+        Image.Render();*/
+
+       Images.Render(currentIndex, zoom, offsetX, offsetY,winW,winH);
 
         // ---- Render thumbnails at top
         //int thumbX = INIT_THUMB_X-thumbScroll*(THUMB_PADDING+THUMB_WIDTH); // start padding
@@ -365,7 +370,7 @@ int main(int argc, char* argv[]) {
 
         // ---- Render info text (with black background)
         std::string info = "File: " + std::string(imageFiles[currentIndex]) +
-                        "  Size: " + std::to_string(Image.getW()) + "x" + std::to_string(Image.getH()) +
+                        "  Size: " + std::to_string(Images.getCurrentImageW()) + "x" + std::to_string(Images.getCurrentImageH()) +
                         "  Zoom: " + std::to_string((int)(zoom*100)) + "%";
 
         //SDL_Color info_color = {255, 255, 255, 255};
@@ -413,7 +418,13 @@ int main(int argc, char* argv[]) {
                         true,
                     tempytext);
 
-            int lthu=countLoadedThumbnails(thumbgroup.getThumbnails());
+            int lthu=0;
+
+            auto& tmg= thumbgroup.getThumbnails();
+            for(auto& t :tmg){
+
+                if(t->isLoaded()){lthu++;}
+            }
             RenderText(renderer,
                             font,
                             "Preloaded thumbnails:"+std::to_string(lthu)+" "+std::to_string((lthu * 100) / imageFiles_size) + "%",
@@ -425,7 +436,46 @@ int main(int argc, char* argv[]) {
                     tempytext);
                        RenderText(renderer,
                             font,
-                            "Image Rotation "+std::to_string(Image.getRotation()),
+                            "Image Rotation "+std::to_string(Images.getCurrentImageRotation()),
+                            winW-250,
+                            tempytext,
+                            {255, 0, 0, 255},
+                            true,
+                        true,
+                    tempytext);
+
+
+                       RenderText(renderer,
+                            font,
+                            "Image Loaded "+std::to_string(Images.getLoadedImages()),
+                            winW-250,
+                            tempytext,
+                            {255, 0, 0, 255},
+                            true,
+                        true,
+                    tempytext);
+
+                      RenderText(renderer,
+                            font,
+                            "Current image "+std::to_string(Images.getCurrentIndex()),
+                            winW-250,
+                            tempytext,
+                            {255, 0, 0, 255},
+                            true,
+                        true,
+                    tempytext);
+                     RenderText(renderer,
+                            font,
+                            "Load Queue  "+std::to_string(Images.getQueueSize()),
+                            winW-250,
+                            tempytext,
+                            {255, 0, 0, 255},
+                            true,
+                        true,
+                    tempytext);
+                    RenderText(renderer,
+                            font,
+                            "Ready surfaces  "+std::to_string(Images.getReadySurfave()),
                             winW-250,
                             tempytext,
                             {255, 0, 0, 255},
@@ -462,8 +512,10 @@ int main(int argc, char* argv[]) {
                               << newWidth << " x "
                               << newHeight << std::endl;
                    
-                    Image.CenterImage(winW,  winH);
-                    Image.SyncZoomOffXOffY(zoom, offsetX, offsetY);
+                   // Image.CenterImage(winW,  winH);
+                   // Image.SyncZoomOffXOffY(zoom, offsetX, offsetY);
+                    Images.CenterCurrentImage(winW,winH);
+                    Images.SyncZoomOffXOffYofCurrentImage(zoom, offsetX, offsetY);
 
                     thumbgroup.setThumbShowing(thumb_showing);
                     thumbgroup.ReplaceThumbnailsAround(imageFiles);
@@ -488,9 +540,7 @@ int main(int argc, char* argv[]) {
                     );
                 }
                 if (event.key.keysym.sym == SDLK_r) {
-                    Image.Rotate90();
-                    Image.CenterImage(winW,  winH);
-                    Image.SyncZoomOffXOffY(zoom, offsetX, offsetY);
+                    Images.CurrentImageRotate90(winW,winH,zoom,offsetX,offsetY);
                 }
                   if (event.key.keysym.sym == SDLK_SPACE) {
                     free_mode=!free_mode;
@@ -500,26 +550,23 @@ int main(int argc, char* argv[]) {
                   }
                   if (event.key.keysym.sym == SDLK_RIGHT) {
                      Loadthumbnails=true;
-                     Image.UnloadImage();
-                    currentIndex = (currentIndex + 1) % imageFiles.size();
-                    //SDL_DestroyTexture(Image.getTexture());
-                    Image.LoadImage(imageFiles[currentIndex],winW,winH);
-                    Image.CenterImage(winW,  winH);
-                    Image.SyncZoomOffXOffY(zoom, offsetX, offsetY);
+                    int ind=Images.NextImage(1,winW,winH,zoom,offsetX,offsetY);
+                    //Images.CenterCurrentImage(winW,winH);
+                    //Images.SyncZoomOffXOffYofCurrentImage(zoom, offsetX, offsetY);
                 if (!free_mode){
-                    if(currentIndex-thumbScroll>thumb_showing-3){
+                    if(ind-thumbScroll>thumb_showing-3){
                             std::cout<<"next "<<std::endl;
                             thumbScroll+=1;
 
                     }
-                    if((currentIndex-thumbScroll<1) &&(currentIndex>2)){
+                    if((ind-thumbScroll<1) &&(ind>2)){
                             std::cout<<"back "<<std::endl;
                             thumbScroll-=2;
                           
 
-                    }else if (currentIndex<2) {
+                    }else if (ind<2) {
                         thumbScroll=0;
-                    }else if (currentIndex>imageFiles.size()-2) {
+                    }else if (ind>imageFiles.size()-2) {
                          thumbScroll=imageFiles.size()-2;
                     }
                 }
@@ -528,26 +575,23 @@ int main(int argc, char* argv[]) {
                 }
                 if (event.key.keysym.sym == SDLK_LEFT) {
                     Loadthumbnails=true;
-                    Image.UnloadImage();
-                    currentIndex = (currentIndex - 1 + imageFiles.size()) % imageFiles.size();
-                    //SDL_DestroyTexture(Image.getTexture());
-                    Image.LoadImage(imageFiles[currentIndex],winW,winH);
-                    Image.CenterImage(winW,  winH);
-                    Image.SyncZoomOffXOffY(zoom, offsetX, offsetY);
+                    int ind=Images.NextImage(-1,winW,winH,zoom,offsetX,offsetY);
+                    //Images.CenterCurrentImage(winW,winH);
+                    //Images.SyncZoomOffXOffYofCurrentImage(zoom, offsetX, offsetY);
                 if (!free_mode){
-                    if(currentIndex-thumbScroll>thumb_showing-3){
+                    if(ind-thumbScroll>thumb_showing-3){
                             std::cout<<"next "<<std::endl;
                             thumbScroll+=1;
 
                     }
-                    if((currentIndex-thumbScroll<1) &&((currentIndex>2))){
+                    if((ind-thumbScroll<1) &&((ind>2))){
                             std::cout<<"back "<<std::endl;
                             thumbScroll-=2;
                             
 
-                    }else if (currentIndex<2) {
+                    }else if (ind<2) {
                         thumbScroll=0;
-                    }else if (currentIndex>imageFiles.size()-2) {
+                    }else if (ind>imageFiles.size()-2) {
                          thumbScroll=imageFiles.size()-2;
                     }
                 }
@@ -620,16 +664,6 @@ int main(int argc, char* argv[]) {
                 offsetY = mouseY - scaleChange * (mouseY - offsetY);
                 //Image.setZoom(zoom);
             }
-           /* if (event.type == SDL_MULTIGESTURE)
-            {
-                float zoomDelta = event.mgesture.dDist;
-
-                if (zoomDelta > 0)
-                    std::cout << "Zooming in\n";
-                else if (zoomDelta < 0)
-                    std::cout << "Zooming out\n";
-            }*/
-
             // ---- Start dragging
             if (event.type == SDL_MOUSEBUTTONDOWN &&
                 event.button.button == SDL_BUTTON_LEFT) {

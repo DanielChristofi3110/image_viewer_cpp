@@ -13,7 +13,47 @@ private:
 
 
 
+    SDL_Color GetAverageColor(SDL_Surface* surface)
+        {
+            Uint64 totalR = 0;
+            Uint64 totalG = 0;
+            Uint64 totalB = 0;
 
+            int pixelCount = surface->w * surface->h;
+
+            SDL_LockSurface(surface);
+
+            Uint8* pixels = (Uint8*)surface->pixels;
+            int bpp = surface->format->BytesPerPixel;
+
+            for (int y = 0; y < surface->h; y++)
+            {
+                for (int x = 0; x < surface->w; x++)
+                {
+                    Uint8* p = pixels + y * surface->pitch + x * bpp;
+
+                    Uint32 pixelValue;
+                    memcpy(&pixelValue, p, bpp);
+
+                    Uint8 r, g, b;
+                    SDL_GetRGB(pixelValue, surface->format, &r, &g, &b);
+
+                    totalR += r;
+                    totalG += g;
+                    totalB += b;
+                }
+            }
+
+            SDL_UnlockSurface(surface);
+
+            SDL_Color avg;
+            avg.r = totalR / pixelCount;
+            avg.g = totalG / pixelCount;
+            avg.b = totalB / pixelCount;
+            avg.a = 255;
+
+            return avg;
+        }
     SDL_Texture* loadThumbnailImageFile(const std::string& path, SDL_Renderer* renderer, int& w, int& h) {
             SDL_Surface* surf = IMG_Load(path.c_str());
             if (!surf) {
@@ -191,7 +231,7 @@ public:
 
 class CThumbnailGroup{
     private:
-         std::vector<CThumbnail> thumbnails;
+         std::vector<std::unique_ptr<CThumbnail>> thumbnails;
          int size;
          int thumbX;
          int thumbY;
@@ -207,7 +247,8 @@ class CThumbnailGroup{
              for(int i=0; i<amount; i++){
                 
                 CThumbnail tthumb(renderer,i);
-                thumbnails.push_back(tthumb);
+                //thumbnails.push_back(tthumb);
+                thumbnails.push_back(std::make_unique<CThumbnail>(renderer,i));
              }
 
              size=thumbnails.size();
@@ -222,7 +263,7 @@ class CThumbnailGroup{
 
         }
 
-        return thumbnails[ind];
+        return *thumbnails[ind];
     }
 
     int getSize(){
@@ -246,11 +287,11 @@ class CThumbnailGroup{
                 SDL_RenderDrawRect(renderer, &rect);
             }
 
-            SDL_RenderCopy(renderer, thumbnails[i].getTexture(), NULL, &rect);
+            SDL_RenderCopy(renderer, thumbnails[i]->getTexture(), NULL, &rect);
 
             thumbX += THUMB_WIDTH + THUMB_PADDING; // spacing
 
-            thumbnails[i].setCords(thumbX, thumbY);
+            thumbnails[i]->setCords(thumbX, thumbY);
 
             if((thumbX<=winW) && (thumbX>=-THUMB_WIDTH/2)){
 
@@ -265,11 +306,11 @@ class CThumbnailGroup{
          thumbY = INIT_THUMB_Y;
 
         SDL_Rect bgThumBox;
-        bgThumBox.x = thumbnails[0].getX()-INIT_THUMB_X/2-THUMB_WIDTH-THUMB_PADDING; // small padding
+        bgThumBox.x = thumbnails[0]->getX()-INIT_THUMB_X/2-THUMB_WIDTH-THUMB_PADDING; // small padding
         bgThumBox.y = 0;
         bgThumBox.w = ((thumbnails.size()*(THUMB_WIDTH+INIT_THUMB_X))-INIT_THUMB_X)+(INIT_THUMB_X/2)*2;
         //bgThumBox.w = thumbnails[thumbnails.size()-1].getX()+THUMB_WIDTH;
-        bgThumBox.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbnails[0].getY();
+        bgThumBox.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbnails[0]->getY();
 
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150); // black with 150/255 alpha
@@ -286,7 +327,7 @@ class CThumbnailGroup{
         int thumbcurrentIndex=currentIndex-scrollOffset;
         SDL_Rect bgThumSel;
         //bgThumSel.x = (THUMB_PADDING+THUMB_WIDTH)*(thumbcurrentIndex)+INIT_THUMB_X/2; // sel start
-        bgThumSel.x =  thumbnails[currentIndex].getX()-THUMB_WIDTH-THUMB_PADDING*2;
+        bgThumSel.x =  thumbnails[currentIndex]->getX()-THUMB_WIDTH-THUMB_PADDING*2;
         bgThumSel.y = 0;
         bgThumSel.w = THUMB_WIDTH+THUMB_PADDING*2;
         bgThumSel.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbY;
@@ -309,7 +350,7 @@ class CThumbnailGroup{
             //std::cout << "Trying Replace "<<i<<"\n";
             if(i<0 || i>thumbnails.size()-1) continue;
 
-            thumbnails[i].LoadThumbnailImage(imageFiles[i],renderer);
+            thumbnails[i]->LoadThumbnailImage(imageFiles[i],renderer);
             //ReplaceThumbnailWithImage(i,imageFiles[i],renderer,thumbnails,Loadedthumbnails);
 
 
@@ -338,10 +379,13 @@ class CThumbnailGroup{
 
 
 
-    std::vector<CThumbnail> & getThumbnails(){
+   /* std::vector<CThumbnail> * getThumbnails(){
 
 
         return thumbnails;
+    }*/
+    const std::vector<std::unique_ptr<CThumbnail>>& getThumbnails() const {
+    return thumbnails;
     }
 
 
