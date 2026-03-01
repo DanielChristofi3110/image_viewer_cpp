@@ -505,12 +505,14 @@ class CImages{
 
     void UnLoadAround(int aroundnum){
             for(int i = 0; i < size; i++){
-
+                
                 int diff = abs(i - currentIndex);
                 int circularDiff = std::min(diff, size - diff);
 
                 if (circularDiff > aroundnum) {
-                    if (images[i]->isLoaded()) {
+                    
+                    if (images[i]->isLoaded()|| images[i]->IsSurfaceReady()) {
+                        std::cout<<"----Unloading "<<i<<std::endl;
                         images[i]->UnloadImage();
                     }
                 }

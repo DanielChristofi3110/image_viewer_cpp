@@ -2,6 +2,7 @@
 #include "globals.hpp"
 #include "thumbnails.hpp"
 #include "image.hpp"
+#include "GUI.hpp"
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_render.h>
 #include <iostream>
@@ -11,7 +12,7 @@
 
 
 
-
+bool hide_ui=false;
 
 
 
@@ -46,21 +47,7 @@
     return texture;
 }
 
-/*int countLoadedThumbnails(auto& cthu){
 
-    int count=0;
-
-    for(int i=0 ; i<cthu.size(); i++){
-
-        if(cthu[i].isLoaded())
-        count++;
-
-
-    }
-
-    return count;
-
-}*/
 //text renderer
 void RenderText(SDL_Renderer* renderer,
                      TTF_Font* font,
@@ -235,7 +222,7 @@ int main(int argc, char* argv[]) {
    
     std::cout<<"------------------Loaded Thumbnails-----------------------"<<std::endl; 
     
-   
+   std::cout << IMG_Linked_Version()->major << std::endl;
     //CImage Image(renderer);
     //Image.LoadImage(imageFiles[0]);
   
@@ -290,9 +277,38 @@ int main(int argc, char* argv[]) {
     Images.InitializeCurrentIndex(winW,winH, offsetX, offsetY,zoom);
     CThumbnailGroup thumbgroup(imageFiles.size(),renderer,&Images);
     
-    //Image.LoadImage(imageFiles[currentIndex],winW,winH);
-   // Image.SyncZoomOffXOffY(zoom,offsetX, offsetY);
-    //Images.SyncZoomOffXOffYofCurrentImage(zoom, offsetX, offsetY);
+    Clabel RotateLeftLabel(renderer,{400,400},true,true,font);
+    RotateLeftLabel.LoadSVGtoLabel("./resources/vector/RotateLeft.svg",0.03);
+    RotateLeftLabel.setIconPositionLeft();
+
+
+
+    Clabel RotateRightLabel(renderer,{400,400},true,true,font);
+    RotateRightLabel.LoadSVGtoLabel("./resources/vector/RotateRight.svg",0.03);
+    RotateRightLabel.setIconPositionLeft();
+
+
+
+    Clabel ResolutionLabel(renderer,{400,400},true,true,font);
+    ResolutionLabel.LoadSVGtoLabel("./resources/vector/Resolution.svg",0.03);
+    ResolutionLabel.setIconPositionLeft();
+
+    Clabel ZoomLabel(renderer,{400,400},true,true,font);
+    ZoomLabel.LoadSVGtoLabel("./resources/vector/Zoom.svg",0.03);
+    ZoomLabel.setIconPositionLeft();
+
+    Clabel FileLabel(renderer,{400,400},true,true,font);
+    FileLabel.LoadSVGtoLabel("./resources/vector/File.svg",0.03);
+    FileLabel.setIconPositionLeft();
+
+
+    Clabel UnhideTipLabel(renderer,{400,400},false,true,font);
+
+
+
+
+    Clabel InfoLabel(renderer,{400,400},true,false,font);
+    CDebugLabels DebugLabel(renderer,{400,400},font);
     
     SDL_Event event;
 
@@ -377,7 +393,7 @@ int main(int argc, char* argv[]) {
 
         //SDL_Color info_color = {255, 255, 255, 255};
         
-        {
+       /* {
             int tempytext;
             RenderText(renderer,
                             font,
@@ -388,7 +404,50 @@ int main(int argc, char* argv[]) {
                             true,
                         false,
                     tempytext);
+            }*/
+
+        //InfoLabel.Render({0,winH}, info);    
+
+       // testLabel2.setVisibility(true);
+       // testLabel.setVisibility(true);
+
+        FileLabel.setVisibility(!hide_ui);
+        ResolutionLabel.setVisibility(!hide_ui);
+        ZoomLabel.setVisibility(!hide_ui);
+        RotateRightLabel.setVisibility(!hide_ui);
+        RotateLeftLabel.setVisibility(!hide_ui);
+        UnhideTipLabel.setVisibility(hide_ui);
+
+        UnhideTipLabel.Render({0,winH-UnhideTipLabel.getLabelH()}, "Ctrl+H to unhide UI");
+        FileLabel.Render({0,winH-FileLabel.getLabelH()}, "File: " + std::string(imageFiles[currentIndex]));
+        ResolutionLabel.Render({0,FileLabel.getNexty()-FileLabel.getLabelH()*2}, "Size: "+std::to_string(Images.getCurrentImageW()) + "x" + std::to_string(Images.getCurrentImageH()));
+        ZoomLabel.Render({0,ResolutionLabel.getNexty()-ResolutionLabel.getLabelH()*2}, "Zoom: " + std::to_string((int)(zoom*100)) + "%");
+        RotateRightLabel.Render({0,ZoomLabel.getNexty()-ZoomLabel.getLabelH()*2}, "Shift+R");
+        RotateLeftLabel.Render({0,RotateRightLabel.getNexty()-RotateRightLabel.getLabelH()*2}, "R");
+      
+
+
+        int lthu=0;
+
+            auto& tmg= thumbgroup.getThumbnails();
+            for(auto& t :tmg){
+
+                if(t->isLoaded()){lthu++;}
             }
+        std::vector<std::string> strs;
+        strs.push_back("Fps:"+std::to_string(fps));
+        strs.push_back("Preloaded thumbnails:"+std::to_string(lthu)+" "+std::to_string((lthu * 100) / imageFiles_size) + "%");
+        strs.push_back("Image Rotation "+std::to_string(Images.getCurrentImageRotation()));
+        strs.push_back("Image Loaded "+std::to_string(Images.getLoadedImages()));
+        strs.push_back("Current image "+std::to_string(Images.getCurrentIndex()));
+        strs.push_back("Load Queue  "+std::to_string(Images.getQueueSize()));
+        strs.push_back("Ready surfaces  "+std::to_string(Images.getReadySurface()));
+         strs.push_back("Mouse (x,y) "+std::to_string(lastMouseX)+","+std::to_string(lastMouseY));
+         strs.push_back(info);
+        DebugLabel.setVisibility(debug_mode);
+        DebugLabel.setCords(0, THUMB_WIDTH);
+        DebugLabel.Render(strs);
+        
       
        // std::string debugText = "Free mode"+std::to_string(winH);
        //std::string debugText = "Free mode";
@@ -406,89 +465,6 @@ int main(int argc, char* argv[]) {
                         true,
                         tempytext);
         }
-        if(debug_mode){ 
-            int tempytext;
-             
-            
-            RenderText(renderer,
-                            font,
-                            "Fps:"+std::to_string(fps),
-                            winW-100,
-                            THUMB_WIDTH,
-                            {255, 0, 0, 255},
-                            true,
-                        true,
-                    tempytext);
-
-            int lthu=0;
-
-            auto& tmg= thumbgroup.getThumbnails();
-            for(auto& t :tmg){
-
-                if(t->isLoaded()){lthu++;}
-            }
-            RenderText(renderer,
-                            font,
-                            "Preloaded thumbnails:"+std::to_string(lthu)+" "+std::to_string((lthu * 100) / imageFiles_size) + "%",
-                            winW-250,
-                            tempytext,
-                            {255, 0, 0, 255},
-                            true,
-                        true,
-                    tempytext);
-                       RenderText(renderer,
-                            font,
-                            "Image Rotation "+std::to_string(Images.getCurrentImageRotation()),
-                            winW-250,
-                            tempytext,
-                            {255, 0, 0, 255},
-                            true,
-                        true,
-                    tempytext);
-
-
-                       RenderText(renderer,
-                            font,
-                            "Image Loaded "+std::to_string(Images.getLoadedImages()),
-                            winW-250,
-                            tempytext,
-                            {255, 0, 0, 255},
-                            true,
-                        true,
-                    tempytext);
-
-                      RenderText(renderer,
-                            font,
-                            "Current image "+std::to_string(Images.getCurrentIndex()),
-                            winW-250,
-                            tempytext,
-                            {255, 0, 0, 255},
-                            true,
-                        true,
-                    tempytext);
-                     RenderText(renderer,
-                            font,
-                            "Load Queue  "+std::to_string(Images.getQueueSize()),
-                            winW-250,
-                            tempytext,
-                            {255, 0, 0, 255},
-                            true,
-                        true,
-                    tempytext);
-                    RenderText(renderer,
-                            font,
-                            "Ready surfaces  "+std::to_string(Images.getReadySurface()),
-                            winW-250,
-                            tempytext,
-                            {255, 0, 0, 255},
-                            true,
-                        true,
-                    tempytext);
-                    
-                    
-                    
-                    
-                    }
 
         // ---- Present everything
         SDL_RenderPresent(renderer);
@@ -545,6 +521,10 @@ int main(int argc, char* argv[]) {
                 }
                 if (event.key.keysym.sym == SDLK_r) {
                     Images.CurrentImageRotate90(winW,winH,zoom,offsetX,offsetY);
+                }
+
+                if (event.key.keysym.sym == SDLK_h &&event.key.keysym.sym & KMOD_CTRL) {
+                    hide_ui=!hide_ui;
                 }
                   if (event.key.keysym.sym == SDLK_SPACE) {
                     free_mode=!free_mode;
