@@ -12,6 +12,7 @@
 #include <memory>
 #include <ostream>
 #include <queue>
+#include <string>
 #include <thread>
 #include <mutex>
 #include <atomic>
@@ -30,11 +31,11 @@ class Clabel{
     Cordinates cords{0,0};
     SDL_Renderer* renderer=nullptr;
     bool drawBackground=false,absoluteCordinates=false,visible=true;
-    SDL_Color textColor{255,255,255,255};
+    SDL_Color textColor{255,255,255,255},bg_color{76, 76, 76, 150};
     TTF_Font* font=nullptr;
     SDL_Texture* texture=nullptr;
     int Nexty;
-    int labelH=0;
+    int labelH=0,labelW=0;
     
     enum class IconPosition {
     LEFT,
@@ -131,66 +132,93 @@ class Clabel{
         std::cout<<"Destroy Label "<<std::endl;
     }
 
-    void RenderText(const std::string& text)
+    Clabel(const Clabel&) = delete;
+    Clabel& operator=(const Clabel&) = delete;
+
+void RenderText(const std::string& text)
+{
+    if (!visible) return;
+    if (!font || !renderer) return;
+
+    SDL_Surface* textSurface = nullptr;
+    SDL_Texture* textTexture = nullptr;
+
+    int textW = 0;
+    int textH = 0;
+
+    // -------- Render Text Surface (only if not empty) --------
+    if (!text.empty())
     {
-        if (!visible) return;
-        if (!font || !renderer) return;
-
-        SDL_Surface* textSurface = TTF_RenderText_Blended(font, text.c_str(), textColor);
-        if (!textSurface) return;
-
-        SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-        if (!textTexture)
+        textSurface = TTF_RenderText_Blended(font, text.c_str(), textColor);
+        if (textSurface)
         {
+            textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+            textW = textSurface->w;
+            textH = textSurface->h;
             SDL_FreeSurface(textSurface);
-            return;
+
+            if (!textTexture)
+                return;
         }
+    }
 
-        int textW = textSurface->w;
-        int textH = textSurface->h;
+    // Base Y position
+    //int baseY = absoluteCordinates ? cords.y : cords.y - textH;
 
-        SDL_FreeSurface(textSurface);
+    // Calculate total width
+// Calculate total width
+    int totalWidth = textW;
 
-        // Base Y position
-        int baseY = absoluteCordinates ? cords.y : cords.y - textH;
-
-        // Calculate total width if icon exists
-        int totalWidth = textW;
-        if (texture)
+    if (texture)
+    {
+        if (text.empty())
+            totalWidth += iconWidth;
+        else
             totalWidth += iconWidth + spacing;
+    }
 
-        int currentX = cords.x;
-         labelH=textH;
-        // -------- Background --------
-        if (drawBackground)
-        {
-            SDL_Rect bgRect;
-            bgRect.x = cords.x - 5;
-            bgRect.y = baseY - 5;
-            bgRect.w = totalWidth + 10;
-            bgRect.h = std::max(textH, iconHeight) + 10;
-            labelH=bgRect.h;
+    // Calculate content height FIRST
+    int contentHeight = std::max(textH, texture ? iconHeight : 0);
 
-            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-            SDL_SetRenderDrawColor(renderer, 76, 76, 76, 150);
-            SDL_RenderFillRect(renderer, &bgRect);
-        }
+    // Base Y position AFTER height is known
+    int baseY = absoluteCordinates ? cords.y : cords.y - contentHeight;
 
-        // -------- Render LEFT icon --------
-        if (texture && iconPosition == IconPosition::LEFT)
-        {
-            SDL_Rect iconRect;
-            iconRect.x = currentX;
-            iconRect.y = baseY + (textH - iconHeight) / 2;
-            iconRect.w = iconWidth;
-            iconRect.h = iconHeight;
-            //labelH=iconHeight;
-            SDL_RenderCopy(renderer, texture, nullptr, &iconRect);
+    int currentX = cords.x;
 
-            currentX += iconWidth + spacing;
-        }
+    // -------- Background --------
+    if (drawBackground)
+    {
+        SDL_Rect bgRect;
+        bgRect.x = cords.x - 5;
+        bgRect.y = baseY - 5;
+        bgRect.w = totalWidth + 10;
+        bgRect.h = contentHeight + 10;
 
-        // -------- Render Text --------
+        labelH = bgRect.h;
+        labelW = bgRect.w;
+
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer, bg_color.r, bg_color.g, bg_color.b, bg_color.a);
+        SDL_RenderFillRect(renderer, &bgRect);
+    }
+
+    // -------- Render LEFT icon --------
+    if (texture && iconPosition == IconPosition::LEFT)
+    {
+        SDL_Rect iconRect;
+        iconRect.x = currentX;
+        iconRect.y = baseY + (contentHeight - iconHeight) / 2;
+        iconRect.w = iconWidth;
+        iconRect.h = iconHeight;
+
+        SDL_RenderCopy(renderer, texture, nullptr, &iconRect);
+
+        currentX += iconWidth + (text.empty() ? 0 : spacing);
+    }
+
+    // -------- Render Text --------
+    if (textTexture)
+    {
         SDL_Rect textRect;
         textRect.x = currentX;
         textRect.y = baseY;
@@ -200,23 +228,25 @@ class Clabel{
         SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
 
         currentX += textW + spacing;
-
-        // -------- Render RIGHT icon --------
-        if (texture && iconPosition == IconPosition::RIGHT)
-        {
-            SDL_Rect iconRect;
-            iconRect.x = currentX;
-            iconRect.y = baseY + (textH - iconHeight) / 2;
-            iconRect.w = iconWidth;
-            iconRect.h = iconHeight;
-
-            SDL_RenderCopy(renderer, texture, nullptr, &iconRect);
-        }
-
-        Nexty = baseY + std::max(textH, iconHeight) + 10;
-
-        SDL_DestroyTexture(textTexture);
     }
+
+    // -------- Render RIGHT icon --------
+    if (texture && iconPosition == IconPosition::RIGHT)
+    {
+        SDL_Rect iconRect;
+        iconRect.x = currentX;
+        iconRect.y = baseY + (contentHeight - iconHeight) / 2;
+        iconRect.w = iconWidth;
+        iconRect.h = iconHeight;
+
+        SDL_RenderCopy(renderer, texture, nullptr, &iconRect);
+    }
+
+    Nexty = baseY + contentHeight + 10;
+
+    if (textTexture)
+        SDL_DestroyTexture(textTexture);
+}
 
 void Render(Cordinates c,const std::string& text){
     if(!visible) return;
@@ -259,6 +289,7 @@ void LoadSVGtoLabel(const char* filename, float scale = 1.0f)
 int getNexty(){return Nexty;}
 int isVisible(){return visible;}
 int getLabelH(){return  labelH;}
+int getLabelW(){return  labelW;}
 
 
 void setVisibility(bool b){visible=b;}
@@ -271,7 +302,10 @@ void setCords(int x,int y){
 
 void setIconPositionLeft()  { iconPosition = IconPosition::LEFT; }
 void setIconPositionRight() { iconPosition = IconPosition::RIGHT; }
+void setBackgroundColor(SDL_Color c){
 
+    bg_color=c;
+}
 
 
 
@@ -298,6 +332,7 @@ class CDebugLabels{
 
         for(int i=0; i<n;i++)
         labels.push_back(std::make_unique<Clabel>(renderer, Cordinates{cords.x,cords.y}, true, true,false ,font,SDL_Color{255,0,0,255}));
+        
     }
 
     public:
@@ -313,11 +348,14 @@ class CDebugLabels{
 
     }
 
+    CDebugLabels(const CDebugLabels&) = delete;
+    CDebugLabels& operator=(const CDebugLabels&) = delete;
+
 
 
 
     void Render(const std::vector<std::string>& strs){
-        if(strs.size()<0) return;
+        if(strs.empty()) return;
 
         if(strs.size()>labels.size())
             CreateLabels(strs.size()-labels.size());
@@ -367,3 +405,122 @@ class CDebugLabels{
 
 
 };
+
+
+class CButton{
+
+    private:
+        std::unique_ptr<Clabel> label;
+        Cordinates cords{0,0,};
+        bool pressed=false,clickable=true,enabled=true;
+        SDL_Renderer * render;
+        Cordinates mouseLoaction{0,0};
+        SDL_Color nColor{64,64,64,64},hColor{128,128,128,128+64};
+        std::string Text;
+
+    public:
+
+
+    CButton(const std::string text,SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
+
+        cords=c;
+        label=std::unique_ptr<Clabel>(new Clabel(r,c,db,abs,v,f,tc));
+        label->setBackgroundColor({64,64,64,64});
+        Text=text;
+
+    }
+
+
+
+
+
+    void Render(){
+        if(!enabled) return;
+        //std::cout<<"----renderButton"<<std::endl;
+        label->Render(cords,Text);
+
+
+    }
+
+    void Render(int x,int y){
+
+        cords.x=x;
+        cords.y=y;
+        label->setCords(x, y);
+
+        Render();
+    }
+
+
+
+
+
+    void setMouseLocation(int mX,int mY){
+        if(!enabled) return;
+
+        mouseLoaction.x=mX;
+        mouseLoaction.y=mY;
+
+
+    }
+
+
+    bool CheckIfClicked(){
+
+        if(!clickable || !enabled) return false;
+
+       if((((cords.x+label->getLabelW())>mouseLoaction.x) && ((cords.x)<mouseLoaction.x)) &&  (((cords.y+label->getLabelH())>mouseLoaction.y) && ((cords.y)<mouseLoaction.y))){
+        label->setBackgroundColor({128,128,128,128+64});
+
+        //std::cout<<"----renderButton Click"<<std::endl;
+        return true;
+       }
+    
+
+
+
+       return false;
+    }
+
+    void CheckIfHover(int x,int y){
+
+        if(!clickable || !enabled) return ;
+
+       if((((cords.x+label->getLabelW())>x) && ((cords.x)<x)) &&  (((cords.y+label->getLabelH())>y) && ((cords.y)<y))){
+        label->setBackgroundColor(hColor);
+
+       // std::cout<<"----renderButton Click"<<std::endl;
+       
+       }else {
+        label->setBackgroundColor(nColor);
+       }
+    
+
+
+
+    }
+
+    void setSvgIcon(const char *filename,bool svgLeft,float scale=1 ){
+
+        label->LoadSVGtoLabel(filename,scale);
+
+        if(svgLeft) label->setIconPositionLeft();
+        else label->setIconPositionRight();
+
+    }
+
+    void setEnabled(bool b){
+
+        enabled=b;
+
+    }
+
+
+    int getW(){return label->getLabelW();}
+    int getH(){return label->getLabelH();}
+
+
+
+
+};
+

@@ -43,6 +43,7 @@ bool free_mode=false;
 bool debug_mode=false;
 bool Loadthumbnails=true;
 int fps=0;
+std::string execDir_Windows=".";
 
 
 

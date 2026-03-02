@@ -6,6 +6,7 @@
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_render.h>
 #include <iostream>
+#include <string>
 
 
 
@@ -245,7 +246,7 @@ int main(int argc, char* argv[]) {
     //int imgW = 100;
     //int imgH= 100;
    
-    int thumbScroll=0;
+    
     //SDL_Texture* texture = loadImage(imageFiles[currentIndex], renderer, imgW, imgH);
    
     bool running = true;
@@ -275,40 +276,48 @@ int main(int argc, char* argv[]) {
     int lastMouseY = 0;
 
     Images.InitializeCurrentIndex(winW,winH, offsetX, offsetY,zoom);
-    CThumbnailGroup thumbgroup(imageFiles.size(),renderer,&Images);
+    CThumbnailGroup thumbgroup(imageFiles.size(),renderer,&Images,font,true);
     
     Clabel RotateLeftLabel(renderer,{400,400},true,true,font);
-    RotateLeftLabel.LoadSVGtoLabel("./resources/vector/RotateLeft.svg",0.03);
+    RotateLeftLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/RotateLeft.svg").c_str(),0.03);
     RotateLeftLabel.setIconPositionLeft();
 
 
 
     Clabel RotateRightLabel(renderer,{400,400},true,true,font);
-    RotateRightLabel.LoadSVGtoLabel("./resources/vector/RotateRight.svg",0.03);
+    RotateRightLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/RotateRight.svg").c_str(),0.03);
     RotateRightLabel.setIconPositionLeft();
 
 
 
     Clabel ResolutionLabel(renderer,{400,400},true,true,font);
-    ResolutionLabel.LoadSVGtoLabel("./resources/vector/Resolution.svg",0.03);
+    ResolutionLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/Resolution.svg").c_str(),0.03);
     ResolutionLabel.setIconPositionLeft();
 
     Clabel ZoomLabel(renderer,{400,400},true,true,font);
-    ZoomLabel.LoadSVGtoLabel("./resources/vector/Zoom.svg",0.03);
+    ZoomLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/Zoom.svg").c_str(),0.03);
     ZoomLabel.setIconPositionLeft();
 
     Clabel FileLabel(renderer,{400,400},true,true,font);
-    FileLabel.LoadSVGtoLabel("./resources/vector/File.svg",0.03);
+    FileLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/File.svg").c_str(),0.03);
     FileLabel.setIconPositionLeft();
 
 
-    Clabel UnhideTipLabel(renderer,{400,400},false,true,font);
+    Clabel UnhideTipLabel(renderer,{400,400},true,true,font);
+       // UnhideTipLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/File.svg").c_str(),0.03);
 
 
-
+    int thumbScroll=currentIndex;
 
     Clabel InfoLabel(renderer,{400,400},true,false,font);
     CDebugLabels DebugLabel(renderer,{400,400},font);
+
+    CButton NextImageRightButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
+    NextImageRightButton.setSvgIcon((execDir_Windows+"/resources/vector/ArrowRight.svg").c_str(),false,0.06);
+
+    CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
+    NextImageLeftButton.setSvgIcon((execDir_Windows+"/resources/vector/ArrowLeft.svg").c_str(),false,0.06);
+    
     
     SDL_Event event;
 
@@ -417,9 +426,11 @@ int main(int argc, char* argv[]) {
         RotateRightLabel.setVisibility(!hide_ui);
         RotateLeftLabel.setVisibility(!hide_ui);
         UnhideTipLabel.setVisibility(hide_ui);
+        
 
         UnhideTipLabel.Render({0,winH-UnhideTipLabel.getLabelH()}, "Ctrl+H to unhide UI");
-        FileLabel.Render({0,winH-FileLabel.getLabelH()}, "File: " + std::string(imageFiles[currentIndex]));
+        std::string DisplayFilePath = imageFiles[currentIndex].substr(imageFiles[currentIndex].find_last_of(("/"),imageFiles[currentIndex].length()));
+        FileLabel.Render({0,winH-FileLabel.getLabelH()}, "File: " + DisplayFilePath.substr(1,DisplayFilePath.length()));
         ResolutionLabel.Render({0,FileLabel.getNexty()-FileLabel.getLabelH()*2}, "Size: "+std::to_string(Images.getCurrentImageW()) + "x" + std::to_string(Images.getCurrentImageH()));
         ZoomLabel.Render({0,ResolutionLabel.getNexty()-ResolutionLabel.getLabelH()*2}, "Zoom: " + std::to_string((int)(zoom*100)) + "%");
         RotateRightLabel.Render({0,ZoomLabel.getNexty()-ZoomLabel.getLabelH()*2}, "Shift+R");
@@ -447,11 +458,23 @@ int main(int argc, char* argv[]) {
         DebugLabel.setVisibility(debug_mode);
         DebugLabel.setCords(0, THUMB_WIDTH);
         DebugLabel.Render(strs);
+
         
       
        // std::string debugText = "Free mode"+std::to_string(winH);
        //std::string debugText = "Free mode";
-       
+       NextImageRightButton.setEnabled(!hide_ui);
+       NextImageLeftButton.setEnabled(!hide_ui);
+        {
+
+            int mouseX, mouseY;
+            SDL_GetMouseState(&mouseX, &mouseY);
+            NextImageRightButton.CheckIfHover(mouseX,mouseY);
+            NextImageLeftButton.CheckIfHover(mouseX,mouseY);
+        }
+
+        NextImageRightButton.Render(winW/2,winH-NextImageRightButton.getH());
+        NextImageLeftButton.Render(winW/2-NextImageLeftButton.getW(),winH-NextImageLeftButton.getH());
         if (free_mode)
         {
             int tempytext;
@@ -646,6 +669,8 @@ int main(int argc, char* argv[]) {
                 // Adjust offset so zoom happens toward mouse
                 offsetX = mouseX - scaleChange * (mouseX - offsetX);
                 offsetY = mouseY - scaleChange * (mouseY - offsetY);
+
+               
                 //Image.setZoom(zoom);
             }
             // ---- Start dragging
@@ -655,6 +680,42 @@ int main(int argc, char* argv[]) {
                 dragging = true;
                 lastMouseX = event.button.x;
                 lastMouseY = event.button.y;
+
+
+            
+
+                ///btn test
+            int mouseX, mouseY;
+            SDL_GetMouseState(&mouseX, &mouseY);
+            NextImageRightButton.setMouseLocation(mouseX, mouseY);
+            NextImageLeftButton.setMouseLocation(mouseX, mouseY);
+          
+            //NextImageRightButton.CheckIfClicked();
+            if(NextImageRightButton.CheckIfClicked()|| NextImageLeftButton.CheckIfClicked()){
+             Loadthumbnails=true;
+                    int ind=Images.NextImage(NextImageRightButton.CheckIfClicked()?1:-1,winW,winH,zoom,offsetX,offsetY);
+                    //Images.CenterCurrentImage(winW,winH);
+                    //Images.SyncZoomOffXOffYofCurrentImage(zoom, offsetX, offsetY);
+                if (!free_mode){
+                    if(ind-thumbScroll>thumb_showing-3){
+                            std::cout<<"next "<<std::endl;
+                            thumbScroll+=1;
+
+                    }
+                    if((ind-thumbScroll<1) &&(ind>2)){
+                            std::cout<<"back "<<std::endl;
+                            thumbScroll-=2;
+                          
+
+                    }else if (ind<2) {
+                        thumbScroll=0;
+                    }else if (ind>imageFiles.size()-2) {
+                         thumbScroll=imageFiles.size()-2;
+                    }
+                }
+            }
+               
+                
             }
 
             // ---- Stop dragging

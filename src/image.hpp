@@ -163,7 +163,8 @@ class CImage{
                 if (texture) SDL_DestroyTexture(texture);
                 std::cout<<"Destroyed Image "<<std::endl;
             }
-
+        CImage(const CImage&) = delete;
+        CImage& operator=(const CImage&) = delete;
 
         void CenterImage(int winW,int winH){
             //return;
@@ -460,6 +461,8 @@ class CImages{
         if (loaderThread.joinable())
             loaderThread.join();
     }
+    CImages(const CImages&) = delete;
+    CImages& operator=(const CImages&) = delete;
 
     void LoadAround(int aroundnum,int winW,int winH){
 

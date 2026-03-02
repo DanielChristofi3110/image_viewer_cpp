@@ -1,8 +1,11 @@
 #pragma once
 #include "globals.hpp"
 #include "image.hpp"
+#include "GUI.hpp"
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
+#include <SDL2/SDL_ttf.h>
+#include <string>
 
 
 class CThumbnail{
@@ -166,6 +169,11 @@ public:
     }
         std::cout<<"Destroyed thumbnail "<<ind<<std::endl;
     }
+
+    CThumbnail(const CThumbnail&) = delete;
+    CThumbnail& operator=(const CThumbnail&) = delete;
+
+
     void LoadThumbnailImage(const std::string& imgPath,SDL_Renderer* renderer) {
         //std::cout << "LoadThumbnailImage Call for " <<ind<<" loaded :"<<loaded<<std::endl;
         /* if (index >= thumbnails.size() || Loadedthumbnails[index]){
@@ -298,6 +306,7 @@ public:
 class CThumbnailGroup{
     private:
          std::vector<std::unique_ptr<CThumbnail>> thumbnails;
+         std::vector<std::unique_ptr<Clabel>> labels;
          int size;
          int thumbX;
          int thumbY;
@@ -309,19 +318,24 @@ class CThumbnailGroup{
 
     public:
 
-        CThumbnailGroup(int amount,SDL_Renderer* vrenderer,CImages* im){
+        CThumbnailGroup(int amount,SDL_Renderer* vrenderer,CImages* im,TTF_Font *f,bool drawLabels){
             renderer=vrenderer;
              for(int i=0; i<amount; i++){
                 
                
                
                 thumbnails.push_back(std::make_unique<CThumbnail>(renderer,i));
+                if(drawLabels)
+                labels.push_back(std::make_unique<Clabel>(renderer,thumbnails[i]->gerCords(),false,false,f));
              }
 
              size=thumbnails.size();
              Images=im;
        
         }
+
+    CThumbnailGroup(const CThumbnailGroup&) = delete;
+    CThumbnailGroup& operator=(const CThumbnailGroup&) = delete;
 
 
     
@@ -368,6 +382,19 @@ class CThumbnailGroup{
 
         //int gx=thumbnails[0]->getX();
        // std::cout<<gx<<std::endl;
+    }
+
+    void drawLabels(){
+        if(labels.empty()) return;
+        for(int i=0; i<size; i++){
+
+            Cordinates cordtemp=thumbnails[i]->gerCords();
+            cordtemp.x-=THUMB_WIDTH;
+            labels[i]->Render({cordtemp.x,cordtemp.y+20},std::to_string(i+1)+"/"+std::to_string(size));
+
+        }
+
+
     }
 
     void drawBackground(){
@@ -440,6 +467,7 @@ class CThumbnailGroup{
         drawBackground();
         drawSelection();
         drawThumbnails(winW, winH);
+        drawLabels();
 
     }
 
