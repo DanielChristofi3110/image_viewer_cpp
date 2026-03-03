@@ -272,8 +272,18 @@ class CImage{
         }
         void Rotate90(){
             angle+=90;
-            if(angle>=360) angle=0;
+            
           texture = rotatedTexture(angle);
+            angle=angle%360;
+
+        }
+
+        void Rotate270(){
+            angle+=270;
+            //if(angle>=360) angle=0;
+          texture = rotatedTexture(angle);
+
+          angle=angle%360;
 
         }
 
@@ -610,6 +620,20 @@ class CImages{
 
 
         images[currentIndex]->Rotate90();
+        images[currentIndex]->CenterImage(winW,  winH);
+
+        float z2,x2,y2;
+        images[currentIndex]->SyncZoomOffXOffY(z2, x2, y2);
+        z=z2;
+        x=x2;
+        y=y2;
+    }
+
+
+    void CurrentImageRotate270(int winW,int winH,float& z,float& x,float &y){
+
+
+        images[currentIndex]->Rotate270();
         images[currentIndex]->CenterImage(winW,  winH);
 
         float z2,x2,y2;

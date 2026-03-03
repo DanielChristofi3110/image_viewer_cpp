@@ -412,11 +412,19 @@ class CButton{
     private:
         std::unique_ptr<Clabel> label;
         Cordinates cords{0,0,};
-        bool pressed=false,clickable=true,enabled=true;
+        bool pressed=false,clickable=true,enabled=true,isLerping=false;
         SDL_Renderer * render;
         Cordinates mouseLoaction{0,0};
-        SDL_Color nColor{64,64,64,64},hColor{128,128,128,128+64};
+        SDL_Color nColor{76,76,76,128},hColor{128,128,128,128+64},startColor,targetColor,cColor;
         std::string Text;
+        float lerpDuration=0,lerpProgress=0;
+
+
+
+
+        Uint8 LerpChannel(Uint8 a, Uint8 b, float t) {
+          return static_cast<Uint8>(a + (b - a) * t);
+        }
 
     public:
 
@@ -426,6 +434,7 @@ class CButton{
         cords=c;
         label=std::unique_ptr<Clabel>(new Clabel(r,c,db,abs,v,f,tc));
         label->setBackgroundColor({64,64,64,64});
+        cColor=nColor;
         Text=text;
 
     }
@@ -482,17 +491,22 @@ class CButton{
        return false;
     }
 
-    void CheckIfHover(int x,int y){
+    void CheckIfHover(int x,int y,float dt){
 
         if(!clickable || !enabled) return ;
 
+        
        if((((cords.x+label->getLabelW())>x) && ((cords.x)<x)) &&  (((cords.y+label->getLabelH())>y) && ((cords.y)<y))){
-        label->setBackgroundColor(hColor);
+        //label->setBackgroundColor(hColor);
+        Update(dt);
+        StartLerp(hColor,0.15f);
 
        // std::cout<<"----renderButton Click"<<std::endl;
        
        }else {
-        label->setBackgroundColor(nColor);
+        Update(dt);
+         StartLerp(nColor,0.15f);
+        //label->setBackgroundColor(nColor);
        }
     
 
@@ -515,9 +529,52 @@ class CButton{
 
     }
 
+    void StartLerp(SDL_Color newColor, float duration) {
+        if(isLerping) return;
+        startColor = cColor;
+        targetColor = newColor;
+        lerpDuration = duration;
+        lerpProgress = 0.0f;
+        isLerping = true;
+    }
+
+  
+    void Update(float deltaTime) {
+        if (!isLerping)
+            return;
+
+        lerpProgress += deltaTime / lerpDuration;
+
+        if (lerpProgress >= 1.0f) {
+            lerpProgress = 1.0f;
+            isLerping = false;
+        }
+
+        cColor.r = LerpChannel(startColor.r, targetColor.r, lerpProgress);
+        cColor.g = LerpChannel(startColor.g, targetColor.g, lerpProgress);
+        cColor.b = LerpChannel(startColor.b, targetColor.b, lerpProgress);
+        cColor.a = LerpChannel(startColor.a, targetColor.a, lerpProgress);
+
+        label->setBackgroundColor(cColor);
+    }
+
+
+
+
+
 
     int getW(){return label->getLabelW();}
     int getH(){return label->getLabelH();}
+    int getX(){return  cords.x;}
+    int getY(){return  cords.y;}
+
+
+    void setText(const std::string s){
+
+        Text=s;
+
+
+    }
 
 
 

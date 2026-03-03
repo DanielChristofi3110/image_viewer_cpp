@@ -3,6 +3,7 @@
 #include "thumbnails.hpp"
 #include "image.hpp"
 #include "GUI.hpp"
+#include "background.hpp"
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_render.h>
 #include <iostream>
@@ -14,6 +15,7 @@
 
 
 bool hide_ui=false;
+ float deltaTime=0;
 
 
 
@@ -282,6 +284,13 @@ int main(int argc, char* argv[]) {
     RotateLeftLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/RotateLeft.svg").c_str(),0.03);
     RotateLeftLabel.setIconPositionLeft();
 
+    CButton RotateLeftButton("R",renderer,{400,400},true,true,true,font,{255,255,255,255});
+    RotateLeftButton.setSvgIcon((execDir_Windows+"/resources/vector/RotateLeft.svg").c_str(), true,0.03f);
+
+
+
+    CButton RotateRightButton("Shift+R",renderer,{400,400},true,true,true,font,{255,255,255,255});
+    RotateRightButton.setSvgIcon((execDir_Windows+"/resources/vector/RotateRight.svg").c_str(), true,0.03f);
 
 
     Clabel RotateRightLabel(renderer,{400,400},true,true,font);
@@ -321,8 +330,12 @@ int main(int argc, char* argv[]) {
     
     SDL_Event event;
 
-  
-    SDL_Texture* backgroundTexture = CreateRadialGradientTexture(renderer, winW, winH,{0,0,0,255});
+    CBackground background(renderer);
+    //SDL_Texture* backgroundTexture = CreateRadialGradientTexture(renderer, winW, winH,{0,0,0,255});
+
+
+    Uint32 lastTime = SDL_GetTicks();
+
 
     //main loop
     while (running) {
@@ -339,14 +352,18 @@ int main(int argc, char* argv[]) {
         // ---- Clear screen
         //gAvgColor.g=250;
         //std::cout<<"-------------------AVG: "<< int(thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().b)<<"current index: "<<currentIndex<<std::endl;
-        if(true){
-        SDL_SetRenderDrawColor(renderer, int(thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().r), int(thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().g), int(thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().b), 255); // optional background color
-        SDL_RenderClear(renderer);
+        //if(true){
+       ///b  SDL_SetRenderDrawColor(renderer, cColor.r,cColor.g,cColor.b,cColor.a); // optional background color
+
+       background.StartLerp({thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().r,thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().g,thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().b,255}, 0.5f);
+       background.Update(deltaTime);
+       background.Render();
         
         
-        }else {
-            SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr);
-        }
+        
+      //  }else {
+      //      SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr);
+      //  }
         // renderBacground(renderer,winW,winH);
          //SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr);
        
@@ -425,16 +442,20 @@ int main(int argc, char* argv[]) {
         ZoomLabel.setVisibility(!hide_ui);
         RotateRightLabel.setVisibility(!hide_ui);
         RotateLeftLabel.setVisibility(!hide_ui);
+        RotateRightButton.setEnabled(!hide_ui);
+        RotateLeftButton.setEnabled(!hide_ui);
         UnhideTipLabel.setVisibility(hide_ui);
         
+
+      
 
         UnhideTipLabel.Render({0,winH-UnhideTipLabel.getLabelH()}, "Ctrl+H to unhide UI");
         std::string DisplayFilePath = imageFiles[currentIndex].substr(imageFiles[currentIndex].find_last_of(("/"),imageFiles[currentIndex].length()));
         FileLabel.Render({0,winH-FileLabel.getLabelH()}, "File: " + DisplayFilePath.substr(1,DisplayFilePath.length()));
         ResolutionLabel.Render({0,FileLabel.getNexty()-FileLabel.getLabelH()*2}, "Size: "+std::to_string(Images.getCurrentImageW()) + "x" + std::to_string(Images.getCurrentImageH()));
         ZoomLabel.Render({0,ResolutionLabel.getNexty()-ResolutionLabel.getLabelH()*2}, "Zoom: " + std::to_string((int)(zoom*100)) + "%");
-        RotateRightLabel.Render({0,ZoomLabel.getNexty()-ZoomLabel.getLabelH()*2}, "Shift+R");
-        RotateLeftLabel.Render({0,RotateRightLabel.getNexty()-RotateRightLabel.getLabelH()*2}, "R");
+       // RotateRightLabel.Render({0,ZoomLabel.getNexty()-ZoomLabel.getLabelH()*2}, "Shift+R");
+        //RotateLeftLabel.Render({0,RotateRightLabel.getNexty()-RotateRightLabel.getLabelH()*2}, "R");
       
 
 
@@ -455,6 +476,7 @@ int main(int argc, char* argv[]) {
         strs.push_back("Ready surfaces  "+std::to_string(Images.getReadySurface()));
          strs.push_back("Mouse (x,y) "+std::to_string(lastMouseX)+","+std::to_string(lastMouseY));
          strs.push_back(info);
+         strs.push_back("DeltaT  "+std::to_string(deltaTime));
         DebugLabel.setVisibility(debug_mode);
         DebugLabel.setCords(0, THUMB_WIDTH);
         DebugLabel.Render(strs);
@@ -469,10 +491,16 @@ int main(int argc, char* argv[]) {
 
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
-            NextImageRightButton.CheckIfHover(mouseX,mouseY);
-            NextImageLeftButton.CheckIfHover(mouseX,mouseY);
+            NextImageRightButton.CheckIfHover(mouseX,mouseY,deltaTime);
+            NextImageLeftButton.CheckIfHover(mouseX,mouseY,deltaTime);
+            RotateLeftButton.CheckIfHover(mouseX,mouseY,deltaTime);
+            RotateRightButton.CheckIfHover(mouseX,mouseY,deltaTime);
+            
         }
-
+       
+        RotateRightButton.Render(0,ZoomLabel.getNexty()-ZoomLabel.getLabelH()*2);
+        //std::cout<<RotateRightButton.getY()<<std::endl;
+         RotateLeftButton.Render(0,RotateRightButton.getY()-RotateRightButton.getH());
         NextImageRightButton.Render(winW/2,winH-NextImageRightButton.getH());
         NextImageLeftButton.Render(winW/2-NextImageLeftButton.getW(),winH-NextImageLeftButton.getH());
         if (free_mode)
@@ -689,6 +717,19 @@ int main(int argc, char* argv[]) {
             SDL_GetMouseState(&mouseX, &mouseY);
             NextImageRightButton.setMouseLocation(mouseX, mouseY);
             NextImageLeftButton.setMouseLocation(mouseX, mouseY);
+            RotateLeftButton.setMouseLocation(mouseX,mouseY);
+            RotateRightButton.setMouseLocation(mouseX,mouseY);
+
+           if( RotateLeftButton.CheckIfClicked()){
+
+             Images.CurrentImageRotate90(winW,winH,zoom,offsetX,offsetY);
+           }
+
+           if( RotateRightButton.CheckIfClicked()){
+
+             Images.CurrentImageRotate270(winW,winH,zoom,offsetX,offsetY);
+           }
+          
           
             //NextImageRightButton.CheckIfClicked();
             if(NextImageRightButton.CheckIfClicked()|| NextImageLeftButton.CheckIfClicked()){
@@ -742,13 +783,18 @@ int main(int argc, char* argv[]) {
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
         fps=round((float)1000/(duration.count()/1000));
+
+        Uint32 currentTime = SDL_GetTicks();
+        deltaTime = (currentTime - lastTime) / 1000.0f; // convert ms to seconds
+        lastTime = currentTime;
+
         //std::cout << "Execution time: " <<(float)1000/(duration.count()/1000) << " microseconds\n";
 
     }
 
 
     //clean
-    SDL_DestroyTexture(backgroundTexture);
+    //SDL_DestroyTexture(backgroundTexture);
    // SDL_DestroyTexture(Image.getTexture());
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
