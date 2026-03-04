@@ -248,11 +248,49 @@ void RenderText(const std::string& text)
         SDL_DestroyTexture(textTexture);
 }
 
+
+void RenderBackground(int width, int height)
+{
+    if (!visible) return;
+    if (!renderer) return;
+    if (!drawBackground) return;
+
+    // Base Y position
+    int baseY = absoluteCordinates ? cords.y : cords.y - height;
+
+    SDL_Rect bgRect;
+    bgRect.x = cords.x;
+    bgRect.y = baseY;
+    bgRect.w = width;
+    bgRect.h = height;
+
+    labelW = width;
+    labelH = height;
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, bg_color.r, bg_color.g, bg_color.b, bg_color.a);
+    SDL_RenderFillRect(renderer, &bgRect);
+
+    Nexty = baseY + height;
+}
+
 void Render(Cordinates c,const std::string& text){
     if(!visible) return;
     cords.x=c.x;
     cords.y=c.y;
     RenderText(text);
+    //std::cout<<"Render label "<<cords.x<<" "<<text<<std::endl;
+
+
+
+
+}
+
+void Render(Cordinates c,Cordinates b){
+    if(!visible) return;
+    cords.x=c.x;
+    cords.y=c.y;
+    RenderBackground(b.x, b.y);
     //std::cout<<"Render label "<<cords.x<<" "<<text<<std::endl;
 
 
@@ -461,6 +499,18 @@ class CButton{
     }
 
 
+    void Render(int x,int y,int w,int h){
+
+        cords.x=x;
+        cords.y=y;
+        label->setCords(x, y);
+
+       //if(!enabled) return;
+        //std::cout<<"----renderButton"<<std::endl;
+        label->Render(cords,Cordinates{w,h});
+    }
+
+
 
 
 
@@ -576,6 +626,15 @@ class CButton{
 
     }
 
+    void setnColor(SDL_Color c){
+
+        nColor=c;
+    }
+
+    void sethColor(SDL_Color c){
+
+        hColor=c;
+    }
 
 
 

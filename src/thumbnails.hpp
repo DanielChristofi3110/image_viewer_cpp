@@ -5,7 +5,20 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_ttf.h>
+#include <memory>
 #include <string>
+#include <vector>
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <atomic>
+
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize2.h"
 
 
 class CThumbnail{
@@ -16,6 +29,14 @@ private:
     int ind;
     SDL_Color tavgcolor={0,0,0,255};
     Cordinates cords;
+    std::atomic<bool> loading{false};
+    std::atomic<bool> ready{false};
+
+    std::vector<unsigned char> pendingPixels;
+    int pendingW = 0;
+    int pendingH = 0;
+
+    std::mutex pixelMutex;
 
 
 
@@ -60,20 +81,129 @@ private:
 
             return avg;
         }
-    SDL_Texture* loadThumbnailImageFile(const std::string& path, SDL_Renderer* renderer, int& w, int& h) {
-            SDL_Surface* surf = IMG_Load(path.c_str());
-            if (!surf) {
-                std::cout << "Failed to load: " << path << "\n";
+        SDL_Texture* loadThumbnailImageFile(
+            const std::string& path,
+            SDL_Renderer* renderer,
+            int& outW,
+            int& outH,
+            int targetW,
+            int targetH)
+        {
+            int width, height, channels;
+
+            // Force RGBA (4 channels)
+            unsigned char* data =
+                stbi_load(path.c_str(), &width, &height, &channels, 4);
+
+            if (!data)
+            {
+                std::cout << "Failed to load image: " << path << "\n";
                 return nullptr;
             }
-            w = surf->w;
-            h = surf->h;
 
-            tavgcolor = GetAverageColor(surf);
-            SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
-            SDL_FreeSurface(surf);
-            return tex;
+            unsigned char* resizedData =
+                new unsigned char[targetW * targetH * 4];
+
+            // ✅ Correct resize2 call
+            bool success = stbir_resize_uint8_srgb(
+                data,
+                width,
+                height,
+                width * 4,          // input stride
+                resizedData,
+                targetW,
+                targetH,
+                targetW * 4,        // output stride
+                STBIR_RGBA          // pixel layout only
+            );
+
+            if (!success)
+            {
+                std::cout << "Failed to resize image\n";
+                stbi_image_free(data);
+                delete[] resizedData;
+                return nullptr;
             }
+
+            SDL_Surface* surface =
+                SDL_CreateRGBSurfaceWithFormatFrom(
+                    resizedData,
+                    targetW,
+                    targetH,
+                    32,
+                    targetW * 4,
+                    SDL_PIXELFORMAT_RGBA32);
+
+            if (!surface)
+            {
+                stbi_image_free(data);
+                delete[] resizedData;
+                return nullptr;
+            }
+
+            outW = targetW;
+            outH = targetH;
+
+            tavgcolor = GetAverageColor(surface);
+
+            SDL_Texture* texture =
+                SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_FreeSurface(surface);
+            stbi_image_free(data);
+            delete[] resizedData;
+
+            return texture;
+        }
+
+
+
+        void BackgroundLoad(const std::string& path, int targetW, int targetH)
+        {
+            int width, height, channels;
+
+            unsigned char* data =
+                stbi_load(path.c_str(), &width, &height, &channels, 4);
+
+            if (!data)
+            {
+                loading = false;
+                return;
+            }
+
+            std::vector<unsigned char> resized(targetW * targetH * 4);
+
+            unsigned char* result =
+                stbir_resize_uint8_srgb(
+                    data,
+                    width,
+                    height,
+                    width * 4,
+                    resized.data(),
+                    targetW,
+                    targetH,
+                    targetW * 4,
+                    STBIR_RGBA
+                );
+
+            stbi_image_free(data);
+
+            if (!result)
+            {
+                loading = false;
+                return;
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(pixelMutex);
+                pendingPixels = std::move(resized);
+                pendingW = targetW;
+                pendingH = targetH;
+                ready = true;
+            }
+
+            loading = false;
+        }
 public:
    
         void loadThumbnailImageFromSurface(SDL_Renderer* renderer) {
@@ -175,19 +305,37 @@ public:
 
 
     void LoadThumbnailImage(const std::string& imgPath,SDL_Renderer* renderer) {
+
+        if(THUMBNAIL_ASYNCLOADING){
+          if (loaded || loading)
+            return;
+
+         std::cout<<"Loading tumb"<<std::endl;    
+        loading = true;
+
+        std::thread(&CThumbnail::BackgroundLoad,
+                    this,
+                    imgPath,
+                    THUMB_WIDTH,
+                    THUMB_HEIGHT).detach();
+
+        }else{
         //std::cout << "LoadThumbnailImage Call for " <<ind<<" loaded :"<<loaded<<std::endl;
         /* if (index >= thumbnails.size() || Loadedthumbnails[index]){
                 std::cout<<"Skiped: "<<index<<std::endl;
                 return;
             }*/
+            //old
+            
             if (loaded){
                 //std::cout<<"Skiped: "<<ind<<std::endl;
                 return;
             }
              
             int w, h;
-            SDL_Texture* original = loadThumbnailImageFile(imgPath, renderer, w, h);
-           // SDL_Texture* original = loadThumbnailImageFromSurface(renderer);
+            SDL_Texture* original = loadThumbnailImageFile(imgPath, renderer, w, h,100,100);
+            std::cout << "LoadThumbnailImage Call for " <<ind<<" loaded :"<<loaded<<std::endl;
+            // SDL_Texture* original = loadThumbnailImageFromSurface(renderer)
             if (!original)
                 return;
 
@@ -231,10 +379,47 @@ public:
             tex_thumb = scaledThumb;
            loaded=true;
             // std::cout << "LoadThumbnailImage exit for " <<ind<<std::endl;
+            
+        }
              
         }
 
+    void Update(SDL_Renderer* renderer)
+        {
+            if (!ready)
+                return;
+            std::cout<<"Updateing tumb "<<pendingPixels.size()<<std::endl;
+            std::lock_guard<std::mutex> lock(pixelMutex);
 
+            SDL_Surface* surface =
+                SDL_CreateRGBSurfaceWithFormatFrom(
+                    pendingPixels.data(),
+                    pendingW,
+                    pendingH,
+                    32,
+                    pendingW * 4,
+                    SDL_PIXELFORMAT_RGBA32);
+
+            if (!surface)
+                return;
+
+            tavgcolor = GetAverageColor(surface);
+
+            SDL_Texture* newTexture =
+                SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_FreeSurface(surface);
+
+            if (newTexture)
+            {
+                SDL_DestroyTexture(tex_thumb);
+                tex_thumb = newTexture;
+                loaded = true;
+            }
+            pendingPixels.clear();
+            pendingPixels.shrink_to_fit();
+            ready = false;
+        }
     void UnloadLoad(){
 
         if(!FIX_WINDOWS){
@@ -306,7 +491,7 @@ public:
 class CThumbnailGroup{
     private:
          std::vector<std::unique_ptr<CThumbnail>> thumbnails;
-         std::vector<std::unique_ptr<Clabel>> labels;
+         std::vector<std::unique_ptr<CButton>> buttons;
          int size;
          int thumbX;
          int thumbY;
@@ -315,6 +500,7 @@ class CThumbnailGroup{
          int thumb_showing;
          SDL_Renderer* renderer;
          CImages* Images;
+         bool visible=true;
 
     public:
 
@@ -325,8 +511,14 @@ class CThumbnailGroup{
                
                
                 thumbnails.push_back(std::make_unique<CThumbnail>(renderer,i));
-                if(drawLabels)
-                labels.push_back(std::make_unique<Clabel>(renderer,thumbnails[i]->gerCords(),false,false,f));
+                if(drawLabels){
+
+
+                //labels.push_back(std::make_unique<Clabel>(renderer,thumbnails[i]->gerCords(),false,false,f));
+                buttons.push_back(std::make_unique<CButton>(" ",renderer,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255}));
+                buttons.back()->setnColor({0,0,0,0});
+                buttons.back()->sethColor({255,255,255,128});  
+            }
              }
 
              size=thumbnails.size();
@@ -385,16 +577,49 @@ class CThumbnailGroup{
     }
 
     void drawLabels(){
-        if(labels.empty()) return;
+        if(buttons.empty()) return;
         for(int i=0; i<size; i++){
 
             Cordinates cordtemp=thumbnails[i]->gerCords();
-            cordtemp.x-=THUMB_WIDTH;
-            labels[i]->Render({cordtemp.x,cordtemp.y+20},std::to_string(i+1)+"/"+std::to_string(size));
+            //cordtemp.x-=THUMB_WIDTH;
+            //labels[i]->Render({cordtemp.x,cordtemp.y+20},std::to_string(i+1)+"/"+std::to_string(size));
+            buttons[i]->setText(std::to_string(i+1)+"/"+std::to_string(size));
+            buttons[i]->Render(cordtemp.x-THUMB_WIDTH-THUMB_PADDING,cordtemp.y,THUMB_WIDTH,THUMB_HEIGHT);
 
         }
 
 
+    }
+
+    void CheckThumbnailPress(float dt,int mx,int my){
+         if(buttons.empty()) return;
+
+         for(int i=0;i<buttons.size();i++){
+            //int x=buttons[i]->getX();
+            //int y=buttons[i]->getY();
+            buttons[i]->CheckIfHover(mx,my,dt);
+
+         }
+
+
+    }
+      int CheckIfThumbnaiClicked(int s,int e,int mx,int my){
+         if(buttons.empty()) return -1;
+
+         for(int i=s;i<(e<0?buttons.size():e);i++){
+            //int x=buttons[i]->getX();
+            //int y=buttons[i]->getY();
+            buttons[i]->setMouseLocation(mx, my);
+            if(buttons[i]->CheckIfClicked()){
+
+
+                std::cout<<"--Clicked thumbnail "<<i<<std::endl;
+                return i;
+            }
+
+         }
+
+         return -1;
     }
 
     void drawBackground(){
@@ -437,7 +662,7 @@ class CThumbnailGroup{
     }
 
 
-    bool ReplaceThumbnailsAround(
+    bool ReplaceThumbnailsAround(std::vector<std::string> imageFiles
     ) {
         //return false;
         bool all_loaded=true;
@@ -447,27 +672,34 @@ class CThumbnailGroup{
             //std::cout << "Trying Replace "<<i<<"\n";
             if(i<0 || i>thumbnails.size()-1) continue;
 
-            //thumbnails[i]->LoadThumbnailImage(imageFiles[i],renderer);
+            if(THUMBNAIL_ASYNCLOADING){
+            thumbnails[i]->LoadThumbnailImage(imageFiles[i],renderer);
+            }else{
             //ReplaceThumbnailWithImage(i,imageFiles[i],renderer,thumbnails,Loadedthumbnails);
-
+            
             if(!Images->IsSurfaceOfIndexReady(i)) all_loaded=false;
             if(!Images->IsSurfaceOfIndexReady(i) || thumbnails[i]->isLoaded())continue;
             thumbnails[i]->setSurface(Images->getSurfaceByIndex(i));
             thumbnails[i]->loadThumbnailImageFromSurface(renderer);
-
-
+            
+            }
         }
         return true;
     }
 
 
-    void Render(int &winH,int &winW){
-
-
+    void Render(int &winH,int &winW,int mx,int my,float dt){
+        if(!visible) return;
+        if(THUMBNAIL_ASYNCLOADING)
+        for(int i=0; i<thumbnails.size(); i++){
+        thumbnails[i]->Update(renderer);
+    
+      }
         drawBackground();
         drawSelection();
         drawThumbnails(winW, winH);
         drawLabels();
+        CheckThumbnailPress(dt,mx,my);
 
     }
 
@@ -497,6 +729,17 @@ class CThumbnailGroup{
         }
 
     }
+
+    void setVisibility(bool b){visible=b;
+        
+        if(buttons.empty()) return;
+        for(int i=0;i<buttons.size();i++){
+
+            buttons[i]->setEnabled(b);
+            //buttons[i].se
+        }
+    }
+    bool getVisibility(){return visible;}
 
 
 };

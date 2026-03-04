@@ -26,7 +26,7 @@
 #define FULL_PRELOAD false
 #define ASYNCLOADING 3
 #define UNLOADAT 4
-
+#define THUMBNAIL_ASYNCLOADING true
 
 const int THUMB_WIDTH = 100;
 const int THUMB_HEIGHT = 75;
@@ -44,6 +44,7 @@ bool debug_mode=false;
 bool Loadthumbnails=true;
 int fps=0;
 std::string execDir_Windows=".";
+std::string delim="/";
 
 
 
