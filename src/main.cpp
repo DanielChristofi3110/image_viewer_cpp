@@ -356,14 +356,14 @@ SDL_FreeSurface(surface);*/
 
     Uint32 lastTime = SDL_GetTicks();
 
-
+     int thumb_showing=0;
     //main loop
     while (running) {
         auto start = std::chrono::high_resolution_clock::now();
         //int image_x=0;
         // int image_y=0;
 
-        int thumb_showing=0;
+       
         // ---- Get window size
         // SDL_GetWindowSize(window, &winW, &winH);
         SDL_GetRendererOutputSize(renderer, &winW, &winH);
@@ -422,7 +422,7 @@ SDL_FreeSurface(surface);*/
 
         thumbgroup.setCurrentIndex(currentIndex);
         thumbgroup.setScrollOffset(thumbScroll);
-        thumbgroup.setThumbShowing(thumb_showing);
+        //thumbgroup.setThumbShowing(thumb_showing);
         
         thumb_showing=thumbgroup.getThumbShowing();
 
@@ -657,7 +657,7 @@ SDL_FreeSurface(surface);*/
                 if (event.key.keysym.sym == SDLK_UP) {
                     //ReplaceThumbnailsAround(thumb_showing*2, thumbScroll, imageFiles, renderer, thumbnails, Loadedthumbnails);
                     thumbgroup.setCurrentIndex(thumbScroll);
-                    thumbgroup.setThumbShowing(thumb_showing);
+                    //thumbgroup.setThumbShowing(thumb_showing);
                     thumbgroup.ReplaceThumbnailsAround(imageFiles);
 
                     if((thumbScroll>=0) &&(thumbScroll<=imageFiles.size())) thumbScroll+=1;
@@ -667,8 +667,8 @@ SDL_FreeSurface(surface);*/
                 }
                 if (event.key.keysym.sym == SDLK_DOWN) {
                     // ReplaceThumbnailsAround(thumb_showing*2, thumbScroll, imageFiles, renderer, thumbnails, Loadedthumbnails);
-                    thumbgroup.setCurrentIndex(thumbScroll);
-                    thumbgroup.setThumbShowing(thumb_showing);
+                   thumbgroup.setCurrentIndex(thumbScroll);
+                    //thumbgroup.setThumbShowing(thumb_showing);
                     thumbgroup.ReplaceThumbnailsAround(imageFiles);
                     if((thumbScroll>=0) &&(thumbScroll<=imageFiles.size())) thumbScroll-=1;
                     if(thumbScroll<0) thumbScroll=0;

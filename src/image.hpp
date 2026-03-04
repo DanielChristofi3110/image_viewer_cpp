@@ -600,8 +600,10 @@ class CImages{
       // LoadAround(1, winW, winH);
        LoadAroundAsync(ASYNCLOADING);
        UnLoadAround(UNLOADAT);
+       images[currentIndex]->Initialize(winW, winH,x,y,z);
        images[currentIndex]->calcZoom(winW,winH);
        images[currentIndex]->CenterImage(winW,winH);
+       
        float z2,x2,y2;
        images[currentIndex]->SyncZoomOffXOffY(z2, x2, y2);
        z=z2;
