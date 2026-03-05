@@ -57,17 +57,11 @@ private:
             {
                 for (int x = 0; x < surface->w; x++)
                 {
-                    Uint8* p = pixels + y * surface->pitch + x * bpp;
+                   Uint8* p = pixels + y * surface->pitch + x * 4;
 
-                    Uint32 pixelValue;
-                    memcpy(&pixelValue, p, bpp);
-
-                    Uint8 r, g, b;
-                    SDL_GetRGB(pixelValue, surface->format, &r, &g, &b);
-
-                    totalR += r;
-                    totalG += g;
-                    totalB += b;
+                    totalR += p[0];
+                    totalG += p[1];
+                    totalB += p[2];
                 }
             }
 
@@ -313,11 +307,9 @@ public:
          std::cout<<"Loading tumb"<<std::endl;    
         loading = true;
 
-        std::thread(&CThumbnail::BackgroundLoad,
-                    this,
-                    imgPath,
-                    THUMB_WIDTH,
-                    THUMB_HEIGHT).detach();
+        std::thread([this, imgPath]() {
+                BackgroundLoad(imgPath, THUMB_WIDTH, THUMB_HEIGHT);
+            }).detach();
 
         }else{
         //std::cout << "LoadThumbnailImage Call for " <<ind<<" loaded :"<<loaded<<std::endl;
@@ -417,7 +409,7 @@ public:
                 loaded = true;
             }
             pendingPixels.clear();
-            pendingPixels.shrink_to_fit();
+            //pendingPixels.shrink_to_fit();
             ready = false;
         }
     void UnloadLoad(){
@@ -439,7 +431,7 @@ public:
 
 
 
-    SDL_Texture * getTexture(){
+    SDL_Texture * getTexture()const{
 
 
         return tex_thumb;
@@ -583,7 +575,7 @@ class CThumbnailGroup{
             Cordinates cordtemp=thumbnails[i]->gerCords();
             //cordtemp.x-=THUMB_WIDTH;
             //labels[i]->Render({cordtemp.x,cordtemp.y+20},std::to_string(i+1)+"/"+std::to_string(size));
-            buttons[i]->setText(std::to_string(i+1)+"/"+std::to_string(size));
+            //buttons[i]->setText(std::to_string(i+1)+"/"+std::to_string(size));
             buttons[i]->Render(cordtemp.x-THUMB_WIDTH-THUMB_PADDING,cordtemp.y,THUMB_WIDTH,THUMB_HEIGHT);
 
         }

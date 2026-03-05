@@ -243,52 +243,23 @@ int main(int argc, char* argv[]) {
 
     std::cout<<"------------------Loaded Thumbnails-----------------------"<<std::endl;
 
-    std::cout << IMG_Linked_Version()->major << std::endl;
-    //CImage Image(renderer);
-    //Image.LoadImage(imageFiles[0]);
-
-
-
-
-
-    ///////img
-
-    /*   SDL_Surface* surface = IMG_Load(argv[1]);
-     *   if (!surface) {
-     *       std::cout << "Failed to load image\n";
-     *       return 1;
-}
-
-SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-int imgW = surface->w;
-int imgH = surface->h;
-SDL_FreeSurface(surface);*/
-    //int imgW = 100;
-    //int imgH= 100;
-
-
-    //SDL_Texture* texture = loadImage(imageFiles[currentIndex], renderer, imgW, imgH);
+    
 
     bool running = true;
     bool fullscreen = false;
     bool dragging = false;
 
     int winW, winH;
-    //SDL_GetWindowSize(window, &winW, &winH);
+    
     SDL_GetRendererOutputSize(renderer, &winW, &winH);
-    //Images.LoadAround(1, winW, winH);
+  
     CImages Images(renderer,imageFiles,currentIndex,winW,winH);
 
-    //Images.LoadAroundAsync(5);
 
 
 
-
-    // ---- Initial zoom to fit window (aspect ratio kept)
-    float zoom = std::min((float)winW / Images.getCurrentImageW(), (float)winH /  Images.getCurrentImageH());
-
-    float minZoom = zoom * 0.1f;
-    float maxZoom = zoom * 20.0f;
+ 
+    float zoom = 0;
 
     float offsetX = 0;
     float offsetY = 0;
@@ -296,7 +267,8 @@ SDL_FreeSurface(surface);*/
     int lastMouseX = 0;
     int lastMouseY = 0;
 
-    Images.InitializeCurrentIndex(winW,winH, offsetX, offsetY,zoom);
+   
+    Images.LoadAroundAsync(ASYNCLOADING);
     CThumbnailGroup thumbgroup(imageFiles.size(),renderer,&Images,font,true);
 
     Clabel RotateLeftLabel(renderer,{400,400},true,true,font);
@@ -360,69 +332,31 @@ SDL_FreeSurface(surface);*/
     //main loop
     while (running) {
         auto start = std::chrono::high_resolution_clock::now();
-        //int image_x=0;
-        // int image_y=0;
 
-       
-        // ---- Get window size
-        // SDL_GetWindowSize(window, &winW, &winH);
         SDL_GetRendererOutputSize(renderer, &winW, &winH);
 
 
 
-        // ---- Clear screen
-        //gAvgColor.g=250;
-        //std::cout<<"-------------------AVG: "<< int(thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().b)<<"current index: "<<currentIndex<<std::endl;
-        //if(true){
-        ///b  SDL_SetRenderDrawColor(renderer, cColor.r,cColor.g,cColor.b,cColor.a); // optional background color
-
+       
         background.StartLerp({thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().r,thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().g,thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().b,255}, 0.5f);
         background.Update(deltaTime);
         background.Render();
 
 
 
-        //  }else {
-        //      SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr);
-        //  }
-        // renderBacground(renderer,winW,winH);
-        //SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr);
+      
 
+        Images.Render(winW,winH);
+        currentIndex= Images.getCurrentIndex();
+        zoom=Images.getCurrentImageZoom();
+        Cordinates c=Images.getCurrentImageCords();
+        offsetX=c.x;
+        offsetY=c.y;
 
-
-        // ---- Render image
-
-        //ReplaceThumbnailWithImage(currentIndex,imageFiles[currentIndex], renderer, thumbnails,Loadedthumbnails);
-
-
-        /* //h align
-         *       if(dest.h+dest.y>winH){
-         *
-         *       int H_comp=dest.h+dest.y-winH;
-         *       dest.y-=H_comp;
-         *       //if(DEBUG)std::cout<<"over: "<<W_comp<<std::endl;
-         *
-    }*/
-
-        //dest.x=winW-dest.w;
-
-
-        // if(DEBUG)std::cout<<"dest.h: "<<dest.h+dest.y<<"winH"<<winH<<std::endl;
-        //SDL_RenderCopy(renderer, Image.getTexture(), NULL, &dest);
-
-        /*Image.setZoom(zoom);
-         *       Image.setCords({int(offsetX),int(offsetY)});
-         *       Image.Render();*/
-
-        Images.Render(currentIndex, zoom, offsetX, offsetY,winW,winH);
-
-        // ---- Render thumbnails at top
-        //int thumbX = INIT_THUMB_X-thumbScroll*(THUMB_PADDING+THUMB_WIDTH); // start padding
-        //int thumbY = INIT_THUMB_Y;
+ 
 
         thumbgroup.setCurrentIndex(currentIndex);
         thumbgroup.setScrollOffset(thumbScroll);
-        //thumbgroup.setThumbShowing(thumb_showing);
         
         thumb_showing=thumbgroup.getThumbShowing();
 
@@ -438,25 +372,7 @@ SDL_FreeSurface(surface);*/
         "  Size: " + std::to_string(Images.getCurrentImageW()) + "x" + std::to_string(Images.getCurrentImageH()) +
         "  Zoom: " + std::to_string((int)(zoom*100)) + "%";
 
-        //SDL_Color info_color = {255, 255, 255, 255};
 
-        /* {
-         *           int tempytext;
-         *           RenderText(renderer,
-         *                           font,
-         *                           info,
-         *                           0,
-         *                           winH,
-         *                           {255, 255, 255, 255},
-         *                           true,
-         *                       false,
-         *                   tempytext);
-    }*/
-
-        //InfoLabel.Render({0,winH}, info);
-
-        // testLabel2.setVisibility(true);
-        // testLabel.setVisibility(true);
 
         FileLabel.setVisibility(!hide_ui);
         ResolutionLabel.setVisibility(!hide_ui);
@@ -476,8 +392,6 @@ SDL_FreeSurface(surface);*/
         FileLabel.Render({0,winH-FileLabel.getLabelH()}, "File: " + DisplayFilePath.substr(1,DisplayFilePath.length()));
         ResolutionLabel.Render({0,FileLabel.getNexty()-FileLabel.getLabelH()*2}, "Size: "+std::to_string(Images.getCurrentImageW()) + "x" + std::to_string(Images.getCurrentImageH()));
         ZoomLabel.Render({0,ResolutionLabel.getNexty()-ResolutionLabel.getLabelH()*2}, "Zoom: " + std::to_string((int)(zoom*100)) + "%");
-        // RotateRightLabel.Render({0,ZoomLabel.getNexty()-ZoomLabel.getLabelH()*2}, "Shift+R");
-        //RotateLeftLabel.Render({0,RotateRightLabel.getNexty()-RotateRightLabel.getLabelH()*2}, "R");
 
 
 
@@ -505,8 +419,7 @@ SDL_FreeSurface(surface);*/
 
 
 
-        // std::string debugText = "Free mode"+std::to_string(winH);
-        //std::string debugText = "Free mode";
+
         NextImageRightButton.setEnabled(!hide_ui);
         NextImageLeftButton.setEnabled(!hide_ui);
         {
@@ -522,32 +435,14 @@ SDL_FreeSurface(surface);*/
         }
 
         RotateRightButton.Render(0,ZoomLabel.getNexty()-ZoomLabel.getLabelH()*2);
-        //std::cout<<RotateRightButton.getY()<<std::endl;
+
         RotateLeftButton.Render(0,RotateRightButton.getY()-RotateRightButton.getH());
         NextImageRightButton.Render(winW/2,winH-NextImageRightButton.getH());
         NextImageLeftButton.Render(winW/2-NextImageLeftButton.getW(),winH-NextImageLeftButton.getH());
-        if (free_mode)
-        {
-            int tempytext;
-            RenderText(renderer,
-                       font,
-                       "Free mode",
-                       THUMB_PADDING,
-                       THUMB_WIDTH,
-                       {255, 255, 255, 255},
-                       true,
-                       true,
-                       tempytext);
-        }
 
-        // ---- Present everything
         SDL_RenderPresent(renderer);
 
-        //dest
-        //SDL_DestroyTexture(textTextureDbg);
-        //SDL_DestroyTexture(textTexture);
-        //SDL_FreeSurface(textSurface);  //mem leak
-
+        
 
         while (SDL_PollEvent(&event)) {
 
@@ -564,10 +459,9 @@ SDL_FreeSurface(surface);*/
                 << newWidth << " x "
                 << newHeight << std::endl;
 
-                // Image.CenterImage(winW,  winH);
-                // Image.SyncZoomOffXOffY(zoom, offsetX, offsetY);
+
                 Images.CenterCurrentImage(winW,winH);
-                Images.SyncZoomOffXOffYofCurrentImage(zoom, offsetX, offsetY);
+     
 
                 thumbgroup.setThumbShowing(thumb_showing);
                 thumbgroup.ReplaceThumbnailsAround(imageFiles);
@@ -594,7 +488,7 @@ SDL_FreeSurface(surface);*/
                     thumbgroup.UlnoanLoad();
                 }
                 if (event.key.keysym.sym == SDLK_r) {
-                    Images.CurrentImageRotate90(winW,winH,zoom,offsetX,offsetY);
+                    Images.CurrentImageRotate90(winW,winH);
                 }
 
                 if (event.key.keysym.sym == SDLK_h &&event.key.keysym.sym & KMOD_CTRL) {
@@ -608,9 +502,8 @@ SDL_FreeSurface(surface);*/
                 }
                 if (event.key.keysym.sym == SDLK_RIGHT) {
                     Loadthumbnails=true;
-                    int ind=Images.NextImage(1,winW,winH,zoom,offsetX,offsetY);
-                    //Images.CenterCurrentImage(winW,winH);
-                    //Images.SyncZoomOffXOffYofCurrentImage(zoom, offsetX, offsetY);
+                    int ind=Images.NextImage(1,winW,winH);
+
                     if (!free_mode){
                         if(ind-thumbScroll>thumb_showing-3){
                             std::cout<<"next "<<std::endl;
@@ -633,7 +526,7 @@ SDL_FreeSurface(surface);*/
                 }
                 if (event.key.keysym.sym == SDLK_LEFT) {
                     Loadthumbnails=true;
-                    int ind=Images.NextImage(-1,winW,winH,zoom,offsetX,offsetY);
+                    int ind=Images.NextImage(-1,winW,winH);
                     //Images.CenterCurrentImage(winW,winH);
                     //Images.SyncZoomOffXOffYofCurrentImage(zoom, offsetX, offsetY);
                     if (!free_mode){
@@ -655,9 +548,9 @@ SDL_FreeSurface(surface);*/
                     }
                 }
                 if (event.key.keysym.sym == SDLK_UP) {
-                    //ReplaceThumbnailsAround(thumb_showing*2, thumbScroll, imageFiles, renderer, thumbnails, Loadedthumbnails);
+                  
                     thumbgroup.setCurrentIndex(thumbScroll);
-                    //thumbgroup.setThumbShowing(thumb_showing);
+
                     thumbgroup.ReplaceThumbnailsAround(imageFiles);
 
                     if((thumbScroll>=0) &&(thumbScroll<=imageFiles.size())) thumbScroll+=1;
@@ -666,9 +559,9 @@ SDL_FreeSurface(surface);*/
 
                 }
                 if (event.key.keysym.sym == SDLK_DOWN) {
-                    // ReplaceThumbnailsAround(thumb_showing*2, thumbScroll, imageFiles, renderer, thumbnails, Loadedthumbnails);
+
                    thumbgroup.setCurrentIndex(thumbScroll);
-                    //thumbgroup.setThumbShowing(thumb_showing);
+
                     thumbgroup.ReplaceThumbnailsAround(imageFiles);
                     if((thumbScroll>=0) &&(thumbScroll<=imageFiles.size())) thumbScroll-=1;
                     if(thumbScroll<0) thumbScroll=0;
@@ -691,40 +584,41 @@ SDL_FreeSurface(surface);*/
             }
 
             if(Loadthumbnails){
-                //ReplaceThumbnailsAround(thumb_showing*2, currentIndex, imageFiles, renderer,thumbgroup);
+
                 thumbgroup.ReplaceThumbnailsAround(imageFiles);
 
-
-                //SDL_DestroyTexture(backgroundTexture);
-                // backgroundTexture=CreateRadialGradientTexture(renderer, winW, winH,thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor());
                 Loadthumbnails=false;
             }
 
-            // ---- Mouse wheel zoom centered to cursor
+        
             if (event.type == SDL_MOUSEWHEEL) {
 
                 int mouseX, mouseY;
                 SDL_GetMouseState(&mouseX, &mouseY);
 
-                float oldZoom = zoom;
-
+                float oldZoom = Images.getCurrentImageZoom();
+                zoom=oldZoom;
                 if (event.wheel.y > 0)
                     zoom *= 1.1f;
                 else if (event.wheel.y < 0)
                     zoom /= 1.1f;
 
-                //zoom = std::clamp(zoom, minZoom, maxZoom);
+              
 
                 float scaleChange = zoom / oldZoom;
 
-                // Adjust offset so zoom happens toward mouse
+               
+               
                 offsetX = mouseX - scaleChange * (mouseX - offsetX);
                 offsetY = mouseY - scaleChange * (mouseY - offsetY);
 
+                Images.setCurrentImageZoom(zoom);
+                Images.setCurrentImageCords({(int)offsetX,(int)offsetY});
 
-                //Image.setZoom(zoom);
+
+        
             }
-            // ---- Start dragging
+          
             if (event.type == SDL_MOUSEBUTTONDOWN &&
                 event.button.button == SDL_BUTTON_LEFT) {
 
@@ -735,7 +629,7 @@ SDL_FreeSurface(surface);*/
 
 
 
-            ///btn test
+      
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
             NextImageRightButton.setMouseLocation(mouseX, mouseY);
@@ -746,19 +640,17 @@ SDL_FreeSurface(surface);*/
 
             if( RotateLeftButton.CheckIfClicked()){
 
-                Images.CurrentImageRotate90(winW,winH,zoom,offsetX,offsetY);
+                Images.CurrentImageRotate90(winW,winH);
             }
 
             if( RotateRightButton.CheckIfClicked()){
 
-                Images.CurrentImageRotate270(winW,winH,zoom,offsetX,offsetY);
+                Images.CurrentImageRotate270(winW,winH);
             }
 
             if(nimg!=-1){
                 Loadthumbnails=true;
-                int ind=Images.NextImage(nimg-currentIndex,winW,winH,zoom,offsetX,offsetY);
-               // thumbgroup.setCurrentIndex(ind);
-                //thumbgroup.ReplaceThumbnailsAround();
+                int ind=Images.NextImage(nimg-currentIndex,winW,winH);
                 if (!free_mode){
                     if(ind-thumbScroll>thumb_showing-3){
                         std::cout<<"next "<<std::endl;
@@ -779,12 +671,11 @@ SDL_FreeSurface(surface);*/
 
             }
 
-            //NextImageRightButton.CheckIfClicked();
+
             if(NextImageRightButton.CheckIfClicked()|| NextImageLeftButton.CheckIfClicked()){
                 Loadthumbnails=true;
-                int ind=Images.NextImage(NextImageRightButton.CheckIfClicked()?1:-1,winW,winH,zoom,offsetX,offsetY);
-                //Images.CenterCurrentImage(winW,winH);
-                //Images.SyncZoomOffXOffYofCurrentImage(zoom, offsetX, offsetY);
+                int ind=Images.NextImage(NextImageRightButton.CheckIfClicked()?1:-1,winW,winH);
+
                 if (!free_mode){
                     if(ind-thumbScroll>thumb_showing-3){
                         std::cout<<"next "<<std::endl;
@@ -807,43 +698,40 @@ SDL_FreeSurface(surface);*/
 
                 }
 
-                // ---- Stop dragging
+
                 if (event.type == SDL_MOUSEBUTTONUP &&
                     event.button.button == SDL_BUTTON_LEFT) {
                     dragging = false;
                     }
 
-                    // ---- Drag motion
+
                     if (event.type == SDL_MOUSEMOTION && dragging) {
                         int dx = event.motion.x - lastMouseX;
                         int dy = event.motion.y - lastMouseY;
 
-                        offsetX += dx;
-                        offsetY += dy;
-
+                        
+                        Images.moveCurrentImage(dx, dy);
                         lastMouseX = event.motion.x;
                         lastMouseY = event.motion.y;
                     }
         }
         auto end = std::chrono::high_resolution_clock::now();
 
-        // Calculate duration
+  
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
         fps=round((float)1000/(duration.count()/1000));
 
         Uint32 currentTime = SDL_GetTicks();
-        deltaTime = (currentTime - lastTime) / 1000.0f; // convert ms to seconds
+        deltaTime = (currentTime - lastTime) / 1000.0f; 
         lastTime = currentTime;
 
-        //std::cout << "Execution time: " <<(float)1000/(duration.count()/1000) << " microseconds\n";
+   
 
     }
 
 
-    //clean
-    //SDL_DestroyTexture(backgroundTexture);
-    // SDL_DestroyTexture(Image.getTexture());
+
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     IMG_Quit();

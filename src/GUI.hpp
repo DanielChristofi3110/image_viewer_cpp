@@ -56,21 +56,24 @@ class Clabel{
                 return nullptr;
             }
 
-            int width = image->width * scale;
-            int height = image->height * scale;
+            //int width = image->width * scale;
+            //int height = image->height * scale;
+            int width  = std::round(image->width * scale);
+            int height = std::round(image->height * scale);
 
             
             NSVGrasterizer* rast = nsvgCreateRasterizer();
 
             
-            unsigned char* img = new unsigned char[width * height * 4];
+            //unsigned char* img = new unsigned char[width * height * 4];
+            std::vector<unsigned char> img(width * height * 4);
 
            
-            nsvgRasterize(rast, image, 0, 0, scale, img, width, height, width * 4);
+            nsvgRasterize(rast, image, 0, 0, scale, img.data(), width, height, width * 4);
 
             
             SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
-                img,
+                img.data(),
                 width,
                 height,
                 32,
@@ -84,7 +87,7 @@ class Clabel{
             SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
 
             SDL_FreeSurface(surface);
-            delete[] img;
+            
             nsvgDeleteRasterizer(rast);
             nsvgDelete(image);
 
@@ -467,10 +470,10 @@ class CButton{
     public:
 
 
-    CButton(const std::string text,SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
+    CButton(const std::string& text,SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
 
         cords=c;
-        label=std::unique_ptr<Clabel>(new Clabel(r,c,db,abs,v,f,tc));
+        label = std::make_unique<Clabel>(r,c,db,abs,v,f,tc);
         label->setBackgroundColor({64,64,64,64});
         cColor=nColor;
         Text=text;
@@ -619,7 +622,7 @@ class CButton{
     int getY(){return  cords.y;}
 
 
-    void setText(const std::string s){
+    void setText(const std::string& s){
 
         Text=s;
 

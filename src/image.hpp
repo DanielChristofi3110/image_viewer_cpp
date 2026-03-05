@@ -21,7 +21,7 @@ class CImage{
     private:
         Cordinates cords={0,0};
         int angle=0;
-        float zoom;
+        float zoom=1;
         int imgW,imgH;
         SDL_Texture *texture;
         SDL_Renderer *renderer;
@@ -29,6 +29,7 @@ class CImage{
         float offsetX,offsetY;
         SDL_Color AvgColor;
         bool Loaded=false;
+        int cload=0;
         std::atomic<bool> surfaceReady{false};
         std::atomic<bool> textureReady{false};
         std::mutex imageMutex;
@@ -137,6 +138,46 @@ class CImage{
 
 
         }
+        void SetDefaultTexture()
+            {
+                std::lock_guard<std::mutex> lock(imageMutex);
+
+                // Cleanup old data
+                if (surf) {
+                    SDL_FreeSurface(surf);
+                    surf = nullptr;
+                }
+
+                if (texture) {
+                    SDL_DestroyTexture(texture);
+                    texture = nullptr;
+                }
+
+                // Create 100x100 surface (RGBA)
+                surf = SDL_CreateRGBSurfaceWithFormat(0, 100, 100, 32, SDL_PIXELFORMAT_RGBA32);
+                if (!surf) {
+                    std::cout << "Failed to create default surface: " << SDL_GetError() << std::endl;
+                    return;
+                }
+
+                // Fill with gray color
+                Uint32 gray = SDL_MapRGBA(surf->format, 128, 128, 128, 0);
+                SDL_FillRect(surf, NULL, gray);
+
+                imgW = 100;
+                imgH = 100;
+
+                // Create texture from surface
+                texture = SDL_CreateTextureFromSurface(renderer, surf);
+                if (!texture) {
+                    std::cout << "Failed to create default texture: " << SDL_GetError() << std::endl;
+                    return;
+                }
+
+                 std::cout << "Created default texture " <<std::endl;
+
+                
+            }
 
     public:
 
@@ -149,9 +190,12 @@ class CImage{
            zoom=1.0f;
            offsetX=0;
            offsetY=0;
+           cords.x=0;
+           cords.y=0;
            renderer=r;
            texture = nullptr;
            surf = nullptr;
+           SetDefaultTexture();
            std::cout << "Image constructor exited"<<std::endl;
 
 
@@ -167,7 +211,7 @@ class CImage{
         CImage& operator=(const CImage&) = delete;
 
         void CenterImage(int winW,int winH){
-            //return;
+           // return;
 
             zoom = std::min((float)winW / imgW, (float)winH / imgH);
                     offsetX = 0;
@@ -177,7 +221,7 @@ class CImage{
 
             cords.x=offsetX;
             cords.y=offsetY;
-            std::cout<<"Centered "<<cords.y<<std::endl;
+            //std::cout << "Debug Center image cords : " << cords.x << " " << cords.y << std::endl;
 
         }
        void LoadImage(const std::string& path,int winW,int winH){
@@ -196,14 +240,17 @@ class CImage{
             texture = loadImageFile(path, renderer);
            Loaded=true;
              CenterImage(winW,winH);
+             
               
         }
 
         void calcZoom(int winW,int winH){
             
-            std::cout<<"zoomlevel "<<winW<<" "<<imgW<<std::endl;
+          
 
             zoom = std::min((float)winW / imgW, (float)winH / imgH);
+
+            
         }
 
         void UnloadImage(){
@@ -220,17 +267,26 @@ class CImage{
                 Loaded = false;
                 textureReady=false;
                 surfaceReady=false;
-                std::cout<<"Unloaded Image "<<std::endl;
+
             }
 
 
 
         void Render(int winW,int winH){
             // std::cout<<textureReady<<" "<<zoom<<std::endl;
+            //zoom=z;
             if(surfaceReady && !textureReady){
-
+                
                 CreateTextureFromSurface();
+                CenterImage(winW, winH);
+                
+                //std::cout<<textureReady<<" -Zoom"<<zoom<<std::endl;
+                
+
             }
+        
+            //cords.x=600;
+            //cords.y=600;
             
             if (!texture) return;
             
@@ -242,7 +298,7 @@ class CImage{
            
 
             SDL_Rect dstRect;
-
+          
                 dstRect = { cords.x, cords.y, renderW, renderH };
 
                 //std::cout<<dstRect.y<<" "<<cords.y<<std::endl;
@@ -252,6 +308,8 @@ class CImage{
             if (SDL_RenderCopyEx(renderer, texture, NULL, &dstRect, 0, &center, SDL_FLIP_NONE) != 0) {
                 std::cout << "Render error: " << SDL_GetError() << std::endl;
             }
+
+
             //std::cout << "Rendering" << " " <<imgW<<" x "<<zoom<< std::endl;
         }
 
@@ -259,17 +317,6 @@ class CImage{
 
         
 
-        void SyncZoomOffXOffY(float& z,float &x,float &y){
-
-            z=zoom;
-            x=cords.x;
-            y=cords.y;
-
-
-
-
-
-        }
         void Rotate90(){
             angle+=90;
             
@@ -288,7 +335,7 @@ class CImage{
         }
 
 
-        void LoadSurfaceOnly(const std::string& path)
+        void LoadSurfaceOnly(const std::string& path,int wW,int wH)
             {
                 std::lock_guard<std::mutex> lock(imageMutex);
 
@@ -303,8 +350,10 @@ class CImage{
                 surf = loaded;
                 imgW = surf->w;
                 imgH = surf->h;
-
+              
+                CenterImage(wW,wH);
                 surfaceReady = true;
+                   
             }
 
 
@@ -323,17 +372,18 @@ class CImage{
                 // We no longer need the surface after texture creation
                 //SDL_FreeSurface(surf);
                 //surf = nullptr;
+                 
             }
 
 
         void Initialize(int winW,int winH,float &x,float& y,float& z){
+            return;
 
-
-            while (!surfaceReady) {
-             
-            }
-            CreateTextureFromSurface();
-             CenterImage(winW,winH);
+          //  while (!surfaceReady) {
+          //   
+          //  }
+           // CreateTextureFromSurface();
+             //CenterImage(winW,winH);
              std::cout<<"cord y"<<cords.y<<" zoom "<<zoom;
              x=cords.x;
              y=cords.y;
@@ -368,6 +418,10 @@ class CImage{
             return surf;
 
         }
+        Cordinates getCords(){
+
+            return cords;
+        }
 
         bool isLoaded(){return Loaded;}
         bool IsSurfaceReady() const { return surfaceReady; }
@@ -378,7 +432,11 @@ class CImage{
 
         void setZoom(float n){zoom=n;}
          void setRotation(double n){angle=n;}
-        void setCords(Cordinates c){cords=c;}
+        void setCords(Cordinates c){
+            if(Loaded)
+            cords=c;
+        
+        }
         
         
 
@@ -400,7 +458,7 @@ class CImages{
     std::vector<std::string> imageFiles;
     SDL_Renderer* renderer;
     int currentIndex;
-    int size;
+    int size,winW,winH;
     std::thread loaderThread;
     std::mutex queueMutex;
     std::condition_variable cv;
@@ -411,15 +469,17 @@ class CImages{
    
 
 
-    CImages(SDL_Renderer* r,  std::vector<std::string> iF,int cind,int winW,int winH){
+    CImages(SDL_Renderer* r,  std::vector<std::string> iF,int cind,int wW,int wH){
         renderer=r;
         imageFiles=iF;
         currentIndex=cind;
         size=imageFiles.size();
+        winW=wW;
+        winH=wH;
         for(int i=0; i<size; i++){
             images.push_back(std::make_unique<CImage>(renderer));
         }
-
+        //std::vector<std::unique_ptr<CImage>> images(size);
         loaderThread = std::thread([this]() {
 
             while (running)
@@ -428,7 +488,7 @@ class CImages{
                 
                 {
                     std::unique_lock<std::mutex> lock(queueMutex);
-                    cv.wait(lock, [this] {
+                    cv.wait(lock, [&] {
                         return !loadQueue.empty() || !running;
                     });
 
@@ -443,7 +503,8 @@ class CImages{
                     if (!images[index]->IsSurfaceReady())
                     {
                          std::cout<<"Loading async Surface "<<index<<std::endl;
-                        images[index]->LoadSurfaceOnly(imageFiles[index]);
+                        images[index]->LoadSurfaceOnly(imageFiles[index],1000,700);
+                        std::cout<<"Loaded async Surface "<<index<<std::endl;
                     }
                 }
             }
@@ -455,7 +516,11 @@ class CImages{
         std::cout<<"Images constructor loaded "<<iF.size()<<std::endl;
     };
 
+    void set_window(int wx,int wy){
 
+        winW=wx;
+        winH=wy;
+    }
     void InitializeCurrentIndex(int winW,int winH, float& x, float&y,float& z){
 
             LoadAroundAsync(ASYNCLOADING);
@@ -476,7 +541,7 @@ class CImages{
 
     void LoadAround(int aroundnum,int winW,int winH){
 
-        //for(int i=0)
+
 
         for(int i=-aroundnum;i<=aroundnum ;i++){
 
@@ -525,7 +590,7 @@ class CImages{
                 if (circularDiff > aroundnum) {
                     
                     if (images[i]->isLoaded()|| images[i]->IsSurfaceReady()) {
-                        std::cout<<"----Unloading "<<i<<std::endl;
+               
                         images[i]->UnloadImage();
                     }
                 }
@@ -540,16 +605,12 @@ class CImages{
                 {
                     std::cout<<"Createing Texture"<<std::endl;
                     img->CreateTextureFromSurface();
+                    
                 }
             }
         }
-    void Render(int& cind,float zoom,float x,float y,int winW,int winH){
-       // currentIndex=cind;
-       cind=currentIndex;
-       //UpdateTexturesFromSurfaces();
-        //images[currentIndex]->CenterImage(winW, winH);
-        images[currentIndex]->setZoom(zoom);
-        images[currentIndex]->setCords({int(x),int(y)});
+    void Render(int winW,int winH){
+        //UpdateTexturesFromSurfaces();
         images[currentIndex]->Render(winW,winH);
 
 
@@ -578,37 +639,24 @@ class CImages{
         return cnt;
     }
 
-    void SyncZoomOffXOffYofCurrentImage(float &z,float& x,float& y){
-        images[currentIndex]->SyncZoomOffXOffY(z, x, y);
 
-    }
       void CenterCurrentImage(int winW, int winH){
         images[currentIndex]->CenterImage(winW, winH);
 
     }
 
-    int NextImage(int i,int winW,int winH,float &z,float &x,float& y){
-        //i=0;
+    int NextImage(int i,int winW,int winH){
          std::cout<<"Next caled "<<std::endl;
-      //  if(i+currentIndex<0 || i+currentIndex>=size) return;
         if(i>0)
         currentIndex=(currentIndex + i) % size;
         else
         currentIndex = (currentIndex + i + imageFiles.size()) % imageFiles.size();
         std::cout<<"Next by "<<i<<" ="<<currentIndex<<std::endl;
-        //currentIndex=i+currentIndex;
-      // LoadAround(1, winW, winH);
        LoadAroundAsync(ASYNCLOADING);
        UnLoadAround(UNLOADAT);
-       images[currentIndex]->Initialize(winW, winH,x,y,z);
-       images[currentIndex]->calcZoom(winW,winH);
        images[currentIndex]->CenterImage(winW,winH);
        
-       float z2,x2,y2;
-       images[currentIndex]->SyncZoomOffXOffY(z2, x2, y2);
-       z=z2;
-       x=x2;
-       y=y2;
+    
 
        return currentIndex;
         
@@ -618,33 +666,55 @@ class CImages{
 
     }
 
-    void CurrentImageRotate90(int winW,int winH,float& z,float& x,float &y){
+    void CurrentImageRotate90(int winW,int winH){
 
 
         images[currentIndex]->Rotate90();
         images[currentIndex]->CenterImage(winW,  winH);
 
-        float z2,x2,y2;
-        images[currentIndex]->SyncZoomOffXOffY(z2, x2, y2);
-        z=z2;
-        x=x2;
-        y=y2;
+        
     }
 
 
-    void CurrentImageRotate270(int winW,int winH,float& z,float& x,float &y){
+    void CurrentImageRotate270(int winW,int winH){
 
 
         images[currentIndex]->Rotate270();
         images[currentIndex]->CenterImage(winW,  winH);
 
-        float z2,x2,y2;
-        images[currentIndex]->SyncZoomOffXOffY(z2, x2, y2);
-        z=z2;
-        x=x2;
-        y=y2;
     }
 
+    void setCurrentImageCords(Cordinates c){
+        images[currentIndex]->setCords(c);
+
+        
+    }
+
+     float getCurrentImageZoom(){return images[currentIndex]->getZoom();}
+
+     void setCurrentImageZoom(float z){
+
+        images[currentIndex]->setZoom(z);
+     }
+
+
+    void moveCurrentImage(int dx,int dy){
+
+        Cordinates init = images[currentIndex]->getCords();
+
+        init.x+=dx;
+        init.y+=dy;
+
+
+        images[currentIndex]->setCords(init);
+
+    }
+
+    Cordinates getCurrentImageCords(){
+
+
+        return  images[currentIndex]->getCords();
+    }
 
     int getCurrentIndex(){return currentIndex;}
     int getReadySurface(){

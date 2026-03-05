@@ -24,8 +24,8 @@
 #define FIX_WINDOWS false
 #define DEBUG true
 #define FULL_PRELOAD false
-#define ASYNCLOADING 3
-#define UNLOADAT 4
+#define ASYNCLOADING 1
+#define UNLOADAT 3
 #define THUMBNAIL_ASYNCLOADING true
 
 const int THUMB_WIDTH = 100;
