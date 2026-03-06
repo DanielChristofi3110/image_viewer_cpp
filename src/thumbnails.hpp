@@ -5,6 +5,7 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_ttf.h>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -484,20 +485,23 @@ class CThumbnailGroup{
     private:
          std::vector<std::unique_ptr<CThumbnail>> thumbnails;
          std::vector<std::unique_ptr<CButton>> buttons;
+         std::vector<std::string> imageFiles;
          int size;
          int thumbX;
          int thumbY;
-         int currentIndex;
-         int scrollOffset;
+         int currentIndex=0;
+         int scrollOffset=0;
          int thumb_showing;
+         Cordinates CindCords{0,0},FCords{0,0},LCords{0,0};
          SDL_Renderer* renderer;
          CImages* Images;
          bool visible=true;
 
     public:
 
-        CThumbnailGroup(int amount,SDL_Renderer* vrenderer,CImages* im,TTF_Font *f,bool drawLabels){
+        CThumbnailGroup(int amount,SDL_Renderer* vrenderer,CImages* im,TTF_Font *f,bool drawLabels,const std::vector<std::string>& files){
             renderer=vrenderer;
+            imageFiles=files;
              for(int i=0; i<amount; i++){
                 
                
@@ -564,6 +568,8 @@ class CThumbnailGroup{
             }
         }
 
+        FCords =thumbnails[0]->gerCords();
+        LCords =thumbnails.back()->gerCords();
         //int gx=thumbnails[0]->getX();
        // std::cout<<gx<<std::endl;
     }
@@ -606,6 +612,7 @@ class CThumbnailGroup{
 
 
                 std::cout<<"--Clicked thumbnail "<<i<<std::endl;
+                currentIndex=i;
                 return i;
             }
 
@@ -621,6 +628,7 @@ class CThumbnailGroup{
         SDL_Rect bgThumBox;
         bgThumBox.x = thumbnails[0]->getX()-INIT_THUMB_X/2-THUMB_WIDTH-THUMB_PADDING; // small padding
         bgThumBox.y = 0;
+
         bgThumBox.w = ((thumbnails.size()*(THUMB_WIDTH+INIT_THUMB_X))-INIT_THUMB_X)+(INIT_THUMB_X/2)*2;
         //bgThumBox.w = thumbnails[thumbnails.size()-1].getX()+THUMB_WIDTH;
         bgThumBox.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbnails[0]->getY();
@@ -642,6 +650,14 @@ class CThumbnailGroup{
         //bgThumSel.x = (THUMB_PADDING+THUMB_WIDTH)*(thumbcurrentIndex)+INIT_THUMB_X/2; // sel start
         bgThumSel.x =  thumbnails[currentIndex]->getX()-THUMB_WIDTH-THUMB_PADDING*2;
         bgThumSel.y = 0;
+        CindCords.x=bgThumSel.x;
+        CindCords.y=bgThumSel.y;
+
+        if( bgThumSel.x<0){
+           // scrollOffset--;
+
+        }
+
         bgThumSel.w = THUMB_WIDTH+THUMB_PADDING*2;
         bgThumSel.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbY;
 
@@ -654,13 +670,38 @@ class CThumbnailGroup{
     }
 
 
-    bool ReplaceThumbnailsAround(std::vector<std::string> imageFiles
+    bool ReplaceThumbnailsAround() {
+        //return false;
+        bool all_loaded=true;
+        int around_size=thumb_showing*2 ;
+       std::cout << "Trying Replace Around "<<thumb_showing*2 <<"  "<<currentIndex<<"\n";
+        for(int i=(currentIndex-around_size>0)?currentIndex-around_size:0; i<currentIndex+around_size;i++){
+            //std::cout << "Trying Replace "<<i<<"\n";
+            if(i<0 || i>thumbnails.size()-1) continue;
+
+            if(THUMBNAIL_ASYNCLOADING){
+            thumbnails[i]->LoadThumbnailImage(imageFiles[i],renderer);
+            }else{
+            //ReplaceThumbnailWithImage(i,imageFiles[i],renderer,thumbnails,Loadedthumbnails);
+            
+            if(!Images->IsSurfaceOfIndexReady(i)) all_loaded=false;
+            if(!Images->IsSurfaceOfIndexReady(i) || thumbnails[i]->isLoaded())continue;
+            thumbnails[i]->setSurface(Images->getSurfaceByIndex(i));
+            thumbnails[i]->loadThumbnailImageFromSurface(renderer);
+            
+            }
+        }
+        return true;
+    }
+
+
+    bool ReplaceThumbnailsAround(int ind
     ) {
         //return false;
         bool all_loaded=true;
         int around_size=thumb_showing*2 ;
-       // std::cout << "Trying Replace Around "<<thumb_showing*2 <<"\n";
-        for(int i=(currentIndex-around_size>0)?currentIndex-around_size:0; i<currentIndex+around_size;i++){
+       std::cout << "Trying Replace Around "<<thumb_showing*2 <<"  "<<ind<<"\n";
+        for(int i=(ind-around_size>0)?ind-around_size:0; i<ind+around_size;i++){
             //std::cout << "Trying Replace "<<i<<"\n";
             if(i<0 || i>thumbnails.size()-1) continue;
 
@@ -704,6 +745,88 @@ class CThumbnailGroup{
     void setThumbShowing(int n){ thumb_showing=n;}
     int  getThumbShowing(){ return thumb_showing;}    
 
+    void UpdateScrollOffset(int n,int wW,int wH){
+        if(LCords.x-THUMB_WIDTH<wW && n>0)
+            return;
+
+        if(FCords.x>THUMB_WIDTH && n<0)
+            return;
+        
+        //currentIndex+=n;
+        scrollOffset+=n;
+        ReplaceThumbnailsAround(scrollOffset);
+        
+    
+    
+    }
+
+    void MoveScrollTo(int n,int wW,int wH){
+       int est_showing=0;
+       int t_thumbX=0;
+
+
+         for (size_t i = 0; i < size; i++) {
+
+
+            t_thumbX += THUMB_WIDTH + THUMB_PADDING; // spacing
+
+
+
+            if((t_thumbX<=wW) && (t_thumbX>=-THUMB_WIDTH/2)){
+
+                est_showing+=1;
+                
+            }
+        }
+
+        if(n>size-est_showing){
+
+            scrollOffset=size-est_showing;
+        }else if(n<est_showing){
+
+
+            scrollOffset=0;
+        }else{
+
+
+            scrollOffset=n;
+        }
+
+      
+
+
+    }
+
+    void NextThumbnail(int n,int wW,int wH){
+
+        
+
+         currentIndex+=n;
+
+         if(currentIndex<0) {
+            currentIndex=size-1;
+             UpdateScrollOffset(size-thumb_showing,wW,wH);
+        
+        }
+        if(currentIndex>=size){
+
+            UpdateScrollOffset(-(size-thumb_showing)-1,wW,wH);
+
+        }
+         currentIndex=currentIndex%size;
+
+
+         if(CindCords.x>wW-THUMB_WIDTH*2 && n>0){
+                //scrollOffset+=n;
+                UpdateScrollOffset(n,wW,wH);
+         }
+
+
+          if(CindCords.x<THUMB_WIDTH*2 && n<0){
+                UpdateScrollOffset(n,wW,wH);
+         }
+
+    }
 
 
 

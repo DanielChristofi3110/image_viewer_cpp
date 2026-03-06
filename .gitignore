@@ -27,3 +27,4 @@ src/test.cpp
 build/ingimg/wallpaperflare.com_wallpaper.jpg
 build/ingimg/wallhaven-k81776.jpg
 build/debug_log.txt
+build/valgrind_leaktest.txt

@@ -39,7 +39,7 @@ namespace fs = std::filesystem;
 
 struct Cordinates{int x,y;};
 
-bool free_mode=false;
+bool free_mode=true;
 bool debug_mode=false;
 bool Loadthumbnails=true;
 int fps=0;

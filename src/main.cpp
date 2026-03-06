@@ -7,6 +7,7 @@
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_render.h>
 #include <iostream>
+#include <ostream>
 #include <string>
 #ifdef _WIN32
 #include <dwmapi.h>
@@ -269,7 +270,11 @@ int main(int argc, char* argv[]) {
 
    
     Images.LoadAroundAsync(ASYNCLOADING);
-    CThumbnailGroup thumbgroup(imageFiles.size(),renderer,&Images,font,true);
+    CThumbnailGroup thumbgroup(imageFiles.size(),renderer,&Images,font,true,imageFiles);
+    thumbgroup.ReplaceThumbnailsAround(currentIndex);
+    thumbgroup.setCurrentIndex(currentIndex);
+    thumbgroup.MoveScrollTo(currentIndex, winW, winH);
+
 
     Clabel RotateLeftLabel(renderer,{400,400},true,true,font);
     RotateLeftLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/RotateLeft.svg").c_str(),0.03);
@@ -304,11 +309,7 @@ int main(int argc, char* argv[]) {
 
 
     Clabel UnhideTipLabel(renderer,{400,400},true,true,font);
-    
-    // UnhideTipLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/File.svg").c_str(),0.03);
 
-
-    int thumbScroll=currentIndex;
 
     Clabel InfoLabel(renderer,{400,400},true,false,font);
     CDebugLabels DebugLabel(renderer,{400,400},font);
@@ -355,8 +356,6 @@ int main(int argc, char* argv[]) {
 
  
 
-        thumbgroup.setCurrentIndex(currentIndex);
-        thumbgroup.setScrollOffset(thumbScroll);
         
         thumb_showing=thumbgroup.getThumbShowing();
 
@@ -463,8 +462,8 @@ int main(int argc, char* argv[]) {
                 Images.CenterCurrentImage(winW,winH);
      
 
-                thumbgroup.setThumbShowing(thumb_showing);
-                thumbgroup.ReplaceThumbnailsAround(imageFiles);
+                //thumbgroup.setThumbShowing(thumb_showing);
+                thumbgroup.ReplaceThumbnailsAround();
                 thumbgroup.UlnoanLoad();
 
             }
@@ -495,7 +494,7 @@ int main(int argc, char* argv[]) {
                     hide_ui=!hide_ui;
                 }
                 if (event.key.keysym.sym == SDLK_SPACE) {
-                    free_mode=!free_mode;
+                    //free_mode=!free_mode;
                     std::cout<<"free: "<<free_mode<<std::endl;
 
 
@@ -503,69 +502,38 @@ int main(int argc, char* argv[]) {
                 if (event.key.keysym.sym == SDLK_RIGHT) {
                     Loadthumbnails=true;
                     int ind=Images.NextImage(1,winW,winH);
+                    thumbgroup.NextThumbnail(1,winW,winH);
 
-                    if (!free_mode){
-                        if(ind-thumbScroll>thumb_showing-3){
-                            std::cout<<"next "<<std::endl;
-                            thumbScroll+=1;
-
-                        }
-                        if((ind-thumbScroll<1) &&(ind>2)){
-                            std::cout<<"back "<<std::endl;
-                            thumbScroll-=2;
-
-
-                        }else if (ind<2) {
-                            thumbScroll=0;
-                        }else if (ind>imageFiles.size()-2) {
-                            thumbScroll=imageFiles.size()-2;
-                        }
-                    }
+                    
 
 
                 }
                 if (event.key.keysym.sym == SDLK_LEFT) {
                     Loadthumbnails=true;
                     int ind=Images.NextImage(-1,winW,winH);
-                    //Images.CenterCurrentImage(winW,winH);
-                    //Images.SyncZoomOffXOffYofCurrentImage(zoom, offsetX, offsetY);
-                    if (!free_mode){
-                        if(ind-thumbScroll>thumb_showing-3){
-                            std::cout<<"next "<<std::endl;
-                            thumbScroll+=1;
 
-                        }
-                        if((ind-thumbScroll<1) &&((ind>2))){
-                            std::cout<<"back "<<std::endl;
-                            thumbScroll-=2;
-
-
-                        }else if (ind<2) {
-                            thumbScroll=0;
-                        }else if (ind>imageFiles.size()-2) {
-                            thumbScroll=imageFiles.size()-2;
-                        }
-                    }
+                    thumbgroup.NextThumbnail(-1,winW,winH);
+                    
                 }
                 if (event.key.keysym.sym == SDLK_UP) {
                   
-                    thumbgroup.setCurrentIndex(thumbScroll);
+        
 
-                    thumbgroup.ReplaceThumbnailsAround(imageFiles);
+                    
 
-                    if((thumbScroll>=0) &&(thumbScroll<=imageFiles.size())) thumbScroll+=1;
-                    if(thumbScroll<0) thumbScroll=0;
-                    if(thumbScroll>=imageFiles.size()) thumbScroll=imageFiles.size()-1;
-
+                    thumbgroup.UpdateScrollOffset(1,winW,winH);
+                    thumbgroup.ReplaceThumbnailsAround();
+      
                 }
                 if (event.key.keysym.sym == SDLK_DOWN) {
 
-                   thumbgroup.setCurrentIndex(thumbScroll);
+   
 
-                    thumbgroup.ReplaceThumbnailsAround(imageFiles);
-                    if((thumbScroll>=0) &&(thumbScroll<=imageFiles.size())) thumbScroll-=1;
-                    if(thumbScroll<0) thumbScroll=0;
-                    if(thumbScroll>=imageFiles.size()) thumbScroll=imageFiles.size()-1;
+                
+
+                    thumbgroup.UpdateScrollOffset(-1,winW,winH);
+                    thumbgroup.ReplaceThumbnailsAround();
+
 
 
                 }
@@ -576,7 +544,7 @@ int main(int argc, char* argv[]) {
 
 
                 }
-                std::cout << "tmb " <<currentIndex-thumbScroll <<" scroll:"<<thumbScroll<<" ind:"<<currentIndex<<std::endl;
+                std::cout << "tmb " <<currentIndex-thumbgroup.getScrollOffset() <<" scroll:"<<thumbgroup.getScrollOffset()<<" ind:"<<currentIndex<<std::endl;
                 std::cout<<"winW over "<<thumb_showing<<std::endl;
 
 
@@ -585,7 +553,7 @@ int main(int argc, char* argv[]) {
 
             if(Loadthumbnails){
 
-                thumbgroup.ReplaceThumbnailsAround(imageFiles);
+                thumbgroup.ReplaceThumbnailsAround();
 
                 Loadthumbnails=false;
             }
@@ -596,25 +564,36 @@ int main(int argc, char* argv[]) {
                 int mouseX, mouseY;
                 SDL_GetMouseState(&mouseX, &mouseY);
 
-                float oldZoom = Images.getCurrentImageZoom();
-                zoom=oldZoom;
-                if (event.wheel.y > 0)
-                    zoom *= 1.1f;
-                else if (event.wheel.y < 0)
-                    zoom /= 1.1f;
 
-              
+                if(mouseY>THUMB_HEIGHT){
 
-                float scaleChange = zoom / oldZoom;
 
-               
-               
-                offsetX = mouseX - scaleChange * (mouseX - offsetX);
-                offsetY = mouseY - scaleChange * (mouseY - offsetY);
+                    float oldZoom = Images.getCurrentImageZoom();
+                    zoom=oldZoom;
+                    if (event.wheel.y > 0)
+                        zoom *= 1.1f;
+                    else if (event.wheel.y < 0)
+                        zoom /= 1.1f;
 
-                Images.setCurrentImageZoom(zoom);
-                Images.setCurrentImageCords({(int)offsetX,(int)offsetY});
+                
 
+                    float scaleChange = zoom / oldZoom;
+
+                
+                
+                    offsetX = mouseX - scaleChange * (mouseX - offsetX);
+                    offsetY = mouseY - scaleChange * (mouseY - offsetY);
+
+                    Images.setCurrentImageZoom(zoom);
+                    Images.setCurrentImageCords({(int)offsetX,(int)offsetY});
+
+                }else {
+
+                    std::cout<<"THUMB MOUSE SCROLL "<<event.wheel.y <<std::endl;
+
+                    
+                    thumbgroup.UpdateScrollOffset(event.wheel.y,winH,winW);
+                }
 
         
             }
@@ -651,23 +630,7 @@ int main(int argc, char* argv[]) {
             if(nimg!=-1){
                 Loadthumbnails=true;
                 int ind=Images.NextImage(nimg-currentIndex,winW,winH);
-                if (!free_mode){
-                    if(ind-thumbScroll>thumb_showing-3){
-                        std::cout<<"next "<<std::endl;
-                        thumbScroll+=1;
-
-                    }
-                    if((ind-thumbScroll<1) &&(ind>2)){
-                        std::cout<<"back "<<std::endl;
-                        thumbScroll-=2;
-
-
-                    }else if (ind<2) {
-                        thumbScroll=0;
-                    }else if (ind>imageFiles.size()-2) {
-                        thumbScroll=imageFiles.size()-2;
-                    }
-                }
+               
 
             }
 
@@ -675,24 +638,8 @@ int main(int argc, char* argv[]) {
             if(NextImageRightButton.CheckIfClicked()|| NextImageLeftButton.CheckIfClicked()){
                 Loadthumbnails=true;
                 int ind=Images.NextImage(NextImageRightButton.CheckIfClicked()?1:-1,winW,winH);
-
-                if (!free_mode){
-                    if(ind-thumbScroll>thumb_showing-3){
-                        std::cout<<"next "<<std::endl;
-                        thumbScroll+=1;
-
-                    }
-                    if((ind-thumbScroll<1) &&(ind>2)){
-                        std::cout<<"back "<<std::endl;
-                        thumbScroll-=2;
-
-
-                    }else if (ind<2) {
-                        thumbScroll=0;
-                    }else if (ind>imageFiles.size()-2) {
-                        thumbScroll=imageFiles.size()-2;
-                    }
-                }
+                thumbgroup.NextThumbnail(NextImageRightButton.CheckIfClicked()?1:-1,winW,winH);
+              
             }
 
 
