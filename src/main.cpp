@@ -271,7 +271,7 @@ int main(int argc, char* argv[]) {
    
     Images.LoadAroundAsync(ASYNCLOADING);
     CThumbnailGroup thumbgroup(imageFiles.size(),renderer,&Images,font,true,imageFiles);
-    thumbgroup.ReplaceThumbnailsAround(currentIndex);
+    thumbgroup.ReplaceThumbnailsAround(currentIndex,winW/THUMB_WIDTH);
     thumbgroup.setCurrentIndex(currentIndex);
     thumbgroup.MoveScrollTo(currentIndex, winW, winH);
 

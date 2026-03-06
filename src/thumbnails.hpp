@@ -696,11 +696,11 @@ class CThumbnailGroup{
 
 
     bool ReplaceThumbnailsAround(int ind
-    ) {
+    ,int temp_thumb_showing) {
         //return false;
         bool all_loaded=true;
-        int around_size=thumb_showing*2 ;
-       std::cout << "Trying Replace Around "<<thumb_showing*2 <<"  "<<ind<<"\n";
+        int around_size=temp_thumb_showing*2 ;
+       std::cout << "Trying Replace Around "<<temp_thumb_showing*2 <<"  "<<ind<<"\n";
         for(int i=(ind-around_size>0)?ind-around_size:0; i<ind+around_size;i++){
             //std::cout << "Trying Replace "<<i<<"\n";
             if(i<0 || i>thumbnails.size()-1) continue;
@@ -754,7 +754,7 @@ class CThumbnailGroup{
         
         //currentIndex+=n;
         scrollOffset+=n;
-        ReplaceThumbnailsAround(scrollOffset);
+        ReplaceThumbnailsAround(scrollOffset,thumb_showing);
         
     
     
