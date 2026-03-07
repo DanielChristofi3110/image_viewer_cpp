@@ -4,6 +4,7 @@
 #include "image.hpp"
 #include "GUI.hpp"
 #include "background.hpp"
+#include "FrameControl.hpp"
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_render.h>
 #include <iostream>
@@ -22,111 +23,16 @@
 bool hide_ui=false;
 float deltaTime=0;
 
+ int DES_FPS = 30;
+ bool windowActive=true;
 
 
 //background
 
+int estimateFrameDelat(int dfps){
 
 
-SDL_Texture* CreateYellowBox(SDL_Renderer* renderer, int w, int h){
-    // Create empty texture (render target)
-    SDL_Texture* texture = SDL_CreateTexture(
-        renderer,
-        SDL_PIXELFORMAT_RGBA8888,
-        SDL_TEXTUREACCESS_TARGET,
-        w,
-        h
-    );
-
-    if (!texture) return nullptr;
-
-    // Enable rendering to texture
-    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
-
-    SDL_SetRenderTarget(renderer, texture);
-
-    // Fill with yellow
-    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow
-    SDL_RenderClear(renderer);
-
-    // Reset render target back to screen
-    SDL_SetRenderTarget(renderer, NULL);
-
-    return texture;
-}
-
-
-//text renderer
-void RenderText(SDL_Renderer* renderer,
-                TTF_Font* font,
-                const std::string& text,
-                int x,
-                int y,
-                SDL_Color textColor,
-                bool drawBackground,bool absoluteCordinates,int &Nexty)
-{
-
-    SDL_Surface* textSurface = TTF_RenderText_Blended(font, text.c_str(), textColor);
-    if (!textSurface) return;
-
-
-    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-    if (!textTexture)
-    {
-        SDL_FreeSurface(textSurface);
-        return;
-    }
-
-    SDL_Rect textRect;
-    textRect.x = x;
-    textRect.y =absoluteCordinates?y:y-textSurface->h; // abs cord
-    textRect.w = textSurface->w;
-    textRect.h = textSurface->h;
-
-    Nexty=textRect.y+textRect.h+10;
-    SDL_FreeSurface(textSurface);
-
-
-    if (drawBackground)
-    {
-        SDL_Rect bgRect = textRect;
-        bgRect.x -= 5;
-        bgRect.y -= 5;
-        bgRect.w += 10;
-        bgRect.h += 10;
-
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150);
-        SDL_RenderFillRect(renderer, &bgRect);
-    }
-
-
-    SDL_RenderCopy(renderer, textTexture, NULL, &textRect);
-
-
-    SDL_DestroyTexture(textTexture);
-}
-
-
-
-void ReplaceThumbnailsAround(
-    int around_size,
-    int index,
-    const std::vector<std::string> imageFiles,
-    SDL_Renderer* renderer,
-    CThumbnailGroup & thumbnails
-) {
-    std::cout << "Trying Replace Around "<<index-around_size <<"\n";
-    for(int i=(index-around_size>0)?index-around_size:0; i<index+around_size;i++){
-        std::cout << "Trying Replace "<<i<<"\n";
-        if(i<0 || i>thumbnails.getSize()-1) continue;
-
-        thumbnails.getThumbnailByInd(i).LoadThumbnailImage(imageFiles[i],renderer);
-        //ReplaceThumbnailWithImage(i,imageFiles[i],renderer,thumbnails,Loadedthumbnails);
-
-
-    }
-
+    return 1000/dfps;
 }
 
 
@@ -328,10 +234,34 @@ int main(int argc, char* argv[]) {
 
 
     Uint32 lastTime = SDL_GetTicks();
-
+    SDL_DisplayMode mode;
      int thumb_showing=0;
+
+
+     CFrameControl FrameControl(2,true);
     //main loop
     while (running) {
+        //DES_FPS=10;
+        FrameControl.makeAllFalse();
+        
+        int displayIndex = SDL_GetWindowDisplayIndex(window);
+        
+        
+        SDL_GetCurrentDisplayMode(displayIndex, &mode);
+
+        int refreshRate = mode.refresh_rate;
+
+        if(windowActive){
+
+            DES_FPS=165;
+        }else {
+            DES_FPS=10;
+        }
+
+        //FrameControl.setWindowActive(windowActive)
+       
+    
+        Uint32 frameStart = SDL_GetTicks();
         auto start = std::chrono::high_resolution_clock::now();
 
         SDL_GetRendererOutputSize(renderer, &winW, &winH);
@@ -402,7 +332,7 @@ int main(int argc, char* argv[]) {
             if(t->isLoaded()){lthu++;}
         }
         std::vector<std::string> strs;
-        strs.push_back("Fps:"+std::to_string(fps));
+        strs.push_back("MAX: "+std::to_string(refreshRate)+"|DES: "+std::to_string(FrameControl.estimateFrameDelat(refreshRate))+"|DP_index: "+std::to_string(displayIndex)+"|Fps: "+std::to_string(fps));
         strs.push_back("Preloaded thumbnails:"+std::to_string(lthu)+" "+std::to_string((lthu * 100) / imageFiles_size) + "%");
         strs.push_back("Image Rotation "+std::to_string(Images.getCurrentImageRotation()));
         strs.push_back("Image Loaded "+std::to_string(Images.getLoadedImages()));
@@ -426,10 +356,12 @@ int main(int argc, char* argv[]) {
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
             thumbgroup.Render(winH, winW,mouseX,mouseY,deltaTime);
-            NextImageRightButton.CheckIfHover(mouseX,mouseY,deltaTime);
-            NextImageLeftButton.CheckIfHover(mouseX,mouseY,deltaTime);
-            RotateLeftButton.CheckIfHover(mouseX,mouseY,deltaTime);
-            RotateRightButton.CheckIfHover(mouseX,mouseY,deltaTime);
+            FrameControl.setMouseOnButton(NextImageRightButton.CheckIfHover(mouseX,mouseY,deltaTime));
+            FrameControl.setMouseOnButton(NextImageLeftButton.CheckIfHover(mouseX,mouseY,deltaTime));
+            FrameControl.setMouseOnButton(RotateLeftButton.CheckIfHover(mouseX,mouseY,deltaTime));
+            FrameControl.setMouseOnButton(RotateRightButton.CheckIfHover(mouseX,mouseY,deltaTime));
+            //if(mouseY!=lastMouseY)
+            FrameControl.setMouseOnThmbnails(mouseY<THUMB_WIDTH&&windowActive);
 
         }
 
@@ -466,7 +398,17 @@ int main(int argc, char* argv[]) {
                 thumbgroup.ReplaceThumbnailsAround();
                 thumbgroup.UlnoanLoad();
 
+               // FrameControl.ResetCoolDown();
+                FrameControl.ResetCoolDown(0.2f);
+
             }
+             if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
+                windowActive = true;
+                }
+
+                if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
+                    windowActive = false;
+                }
             if (event.window.event == SDL_WINDOWEVENT_MAXIMIZED || event.window.event == SDL_WINDOWEVENT_RESTORED)
             {
 
@@ -485,6 +427,9 @@ int main(int argc, char* argv[]) {
                         fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0
                     );
                     thumbgroup.UlnoanLoad();
+
+                    FrameControl.ResetCoolDown();
+                    //FrameControl.ResetCoolDown(0.2f);
                 }
                 if (event.key.keysym.sym == SDLK_r) {
                     Images.CurrentImageRotate90(winW,winH);
@@ -503,6 +448,7 @@ int main(int argc, char* argv[]) {
                     Loadthumbnails=true;
                     int ind=Images.NextImage(1,winW,winH);
                     thumbgroup.NextThumbnail(1,winW,winH);
+                    FrameControl.ResetCoolDown();
 
                     
 
@@ -513,6 +459,7 @@ int main(int argc, char* argv[]) {
                     int ind=Images.NextImage(-1,winW,winH);
 
                     thumbgroup.NextThumbnail(-1,winW,winH);
+                    FrameControl.ResetCoolDown();
                     
                 }
                 if (event.key.keysym.sym == SDLK_UP) {
@@ -523,6 +470,7 @@ int main(int argc, char* argv[]) {
 
                     thumbgroup.UpdateScrollOffset(1,winW,winH);
                     thumbgroup.ReplaceThumbnailsAround();
+                     FrameControl.ResetCoolDown(0.2f);
       
                 }
                 if (event.key.keysym.sym == SDLK_DOWN) {
@@ -533,6 +481,7 @@ int main(int argc, char* argv[]) {
 
                     thumbgroup.UpdateScrollOffset(-1,winW,winH);
                     thumbgroup.ReplaceThumbnailsAround();
+                    FrameControl.ResetCoolDown(0.2f);
 
 
 
@@ -564,8 +513,8 @@ int main(int argc, char* argv[]) {
                 int mouseX, mouseY;
                 SDL_GetMouseState(&mouseX, &mouseY);
 
-
-                if(mouseY>THUMB_HEIGHT){
+                 FrameControl.setMouseOnScroll(true);
+                if(mouseY>THUMB_HEIGHT || hide_ui){
 
 
                     float oldZoom = Images.getCurrentImageZoom();
@@ -602,6 +551,7 @@ int main(int argc, char* argv[]) {
                 event.button.button == SDL_BUTTON_LEFT) {
 
                 dragging = true;
+                FrameControl.setScrolling(true);
             lastMouseX = event.button.x;
             lastMouseY = event.button.y;
 
@@ -662,16 +612,26 @@ int main(int argc, char* argv[]) {
                         lastMouseY = event.motion.y;
                     }
         }
+       
+        Uint32 currentTime = SDL_GetTicks();
+     
+        Uint32 frameTime = SDL_GetTicks() - frameStart;
+        //int frameDelay=estimateFrameDelat(DES_FPS);
+        int frameDelay=FrameControl.estimateFrameDelat(refreshRate);
+            if (frameDelay > frameTime) {
+                SDL_Delay(frameDelay - frameTime);
+            }
+
         auto end = std::chrono::high_resolution_clock::now();
 
   
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
         fps=round((float)1000/(duration.count()/1000));
-
-        Uint32 currentTime = SDL_GetTicks();
         deltaTime = (currentTime - lastTime) / 1000.0f; 
         lastTime = currentTime;
+        FrameControl.UpdateCoolDown(deltaTime);
+
 
    
 

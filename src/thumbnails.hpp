@@ -543,6 +543,7 @@ class CThumbnailGroup{
 
 
     void drawThumbnails(int &winW,int &winH){
+        //if(!visible) return;
         thumb_showing=0;
 
 
@@ -550,13 +551,14 @@ class CThumbnailGroup{
             SDL_Rect rect = {thumbX, thumbY, THUMB_WIDTH, THUMB_HEIGHT};
 
             // highlight current image
+            if(visible){
             if (i == currentIndex) {
                 SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // yellow border
                 SDL_RenderDrawRect(renderer, &rect);
             }
 
             SDL_RenderCopy(renderer, thumbnails[i]->getTexture(), NULL, &rect);
-
+        }
             thumbX += THUMB_WIDTH + THUMB_PADDING; // spacing
 
             thumbnails[i]->setCords(thumbX, thumbY);
@@ -575,7 +577,8 @@ class CThumbnailGroup{
     }
 
     void drawLabels(){
-        if(buttons.empty()) return;
+        
+        if(buttons.empty() || !visible) return;
         for(int i=0; i<size; i++){
 
             Cordinates cordtemp=thumbnails[i]->gerCords();
@@ -622,6 +625,7 @@ class CThumbnailGroup{
     }
 
     void drawBackground(){
+        //if(!visible) return;
          thumbX = INIT_THUMB_X-scrollOffset*(THUMB_PADDING+THUMB_WIDTH); // start padding
          thumbY = INIT_THUMB_Y;
 
@@ -632,18 +636,18 @@ class CThumbnailGroup{
         bgThumBox.w = ((thumbnails.size()*(THUMB_WIDTH+INIT_THUMB_X))-INIT_THUMB_X)+(INIT_THUMB_X/2)*2;
         //bgThumBox.w = thumbnails[thumbnails.size()-1].getX()+THUMB_WIDTH;
         bgThumBox.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbnails[0]->getY();
-
+       if(visible){
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150); // black with 150/255 alpha
         SDL_RenderFillRect(renderer, &bgThumBox);
-
+    }
 
 
 
     }
 
     void drawSelection(){
-
+        
 
         int thumbcurrentIndex=currentIndex-scrollOffset;
         SDL_Rect bgThumSel;
@@ -661,10 +665,11 @@ class CThumbnailGroup{
         bgThumSel.w = THUMB_WIDTH+THUMB_PADDING*2;
         bgThumSel.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbY;
 
-
+        if(visible) {
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 150); // black with 150/255 alpha
         SDL_RenderFillRect(renderer, &bgThumSel);
+        }
 
 
     }
@@ -722,12 +727,13 @@ class CThumbnailGroup{
 
 
     void Render(int &winH,int &winW,int mx,int my,float dt){
-        if(!visible) return;
+        
         if(THUMBNAIL_ASYNCLOADING)
         for(int i=0; i<thumbnails.size(); i++){
         thumbnails[i]->Update(renderer);
     
       }
+     
         drawBackground();
         drawSelection();
         drawThumbnails(winW, winH);

@@ -544,16 +544,17 @@ class CButton{
        return false;
     }
 
-    void CheckIfHover(int x,int y,float dt){
+    bool CheckIfHover(int x,int y,float dt){
 
-        if(!clickable || !enabled) return ;
-
+        if(!clickable || !enabled) return false ;
+        bool b=false;
         
        if((((cords.x+label->getLabelW())>x) && ((cords.x)<x)) &&  (((cords.y+label->getLabelH())>y) && ((cords.y)<y))){
         //label->setBackgroundColor(hColor);
         Update(dt);
         StartLerp(hColor,0.15f);
-
+         b=true;
+        
        // std::cout<<"----renderButton Click"<<std::endl;
        
        }else {
@@ -564,7 +565,7 @@ class CButton{
     
 
 
-
+       return b;
     }
 
     void setSvgIcon(const char *filename,bool svgLeft,float scale=1 ){
