@@ -239,6 +239,7 @@ int main(int argc, char* argv[]) {
 
 
      CFrameControl FrameControl(2,true);
+     FrameControl.ResetCoolDown(2);
     //main loop
     while (running) {
         //DES_FPS=10;
