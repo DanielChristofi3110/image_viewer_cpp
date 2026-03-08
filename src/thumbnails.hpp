@@ -2,6 +2,7 @@
 #include "globals.hpp"
 #include "image.hpp"
 #include "GUI.hpp"
+#include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_ttf.h>
@@ -486,6 +487,10 @@ class CThumbnailGroup{
          std::vector<std::unique_ptr<CThumbnail>> thumbnails;
          std::vector<std::unique_ptr<CButton>> buttons;
          std::vector<std::string> imageFiles;
+         std::unique_ptr<Clabel> scrollProgress;
+         std::unique_ptr<Clabel> scrollOffsetProgress;
+        std::unique_ptr<Clabel> scrollProgressBack;
+        
          int size;
          int thumbX;
          int thumbY;
@@ -494,15 +499,26 @@ class CThumbnailGroup{
          int thumb_showing;
          Cordinates CindCords{0,0},FCords{0,0},LCords{0,0};
          SDL_Renderer* renderer;
-         CImages* Images;
+         std::shared_ptr<CImages> Images;
          bool visible=true;
 
     public:
 
-        CThumbnailGroup(int amount,SDL_Renderer* vrenderer,CImages* im,TTF_Font *f,bool drawLabels,const std::vector<std::string>& files){
+        CThumbnailGroup(int amount,SDL_Renderer* vrenderer,std::shared_ptr<CImages> im,TTF_Font *f,bool drawLabels,const std::vector<std::string>& files){
             renderer=vrenderer;
             imageFiles=files;
-             for(int i=0; i<amount; i++){
+
+            scrollProgress=std::make_unique<Clabel>(vrenderer,Cordinates{0,0},true,false,true,f,SDL_Color{255,255,255,255});
+            scrollProgress->setBackgroundColor(SDL_Color{255,255,255,255});
+
+
+            scrollOffsetProgress=std::make_unique<Clabel>(vrenderer,Cordinates{0,0},true,false,true,f,SDL_Color{255,255,255,255});
+            scrollOffsetProgress->setBackgroundColor(SDL_Color{128,128,128,255});
+
+            scrollProgressBack=std::make_unique<Clabel>(vrenderer,Cordinates{0,0},true,false,true,f,SDL_Color{255,255,255,255});
+            scrollProgressBack->setBackgroundColor(SDL_Color{0,0,0,255});
+
+            for(int i=0; i<amount; i++){
                 
                
                
@@ -527,14 +543,12 @@ class CThumbnailGroup{
 
 
     
-    CThumbnail& getThumbnailByInd(int ind){
-        if(ind<0 || ind>=size){
-             std::cout << "Invalid thumb ind  " <<ind<<std::endl;
+        CThumbnail* getThumbnailByInd(int ind){
+            if(ind < 0 || ind >= size)
+                return nullptr;
 
+            return thumbnails[ind].get();
         }
-
-        return *thumbnails[ind];
-    }
 
     int getSize(){
 
@@ -735,12 +749,58 @@ class CThumbnailGroup{
       }
      
         drawBackground();
-        drawSelection();
-        drawThumbnails(winW, winH);
-        drawLabels();
+      
+       
         CheckThumbnailPress(dt,mx,my);
 
+
+        scrollProgressBack->Render(Cordinates{0,10},Cordinates{winW,10});
+
+
+        if(visible)drawProgressCon(scrollOffsetProgress, scrollOffset, winW);
+        
+        drawProgress(scrollProgress, currentIndex, winW);
+        
+      /*  {
+        float scCordx=winW*float(currentIndex)/size;
+        float scWidth=(float(1)/size)*winW;
+       // std::cout<<"---------------- scCordx    "<<scCordx<<std::endl;
+        scrollProgress->Render(Cordinates{(int)scCordx,10},Cordinates{(int)scWidth,10,});
+        }
+
+        float scCordx=winW*float(currentIndex)/size;
+        float scWidth=(float(1)/size)*winW;
+       // std::cout<<"---------------- scCordx    "<<scCordx<<std::endl;
+        scrollProgress->Render(Cordinates{(int)scCordx,10},Cordinates{(int)scWidth,10,});
+        */
+
+        drawSelection();
+         drawThumbnails(winW, winH);
+        drawLabels();
+
     }
+    void drawProgress(std::unique_ptr<Clabel>& s,int c,int m){
+
+
+         float scCordx=m*float(c)/size;
+        float scWidth=(float(1)/size)*m;
+       // std::cout<<"---------------- scCordx    "<<scCordx<<std::endl;
+        s->Render(Cordinates{(int)scCordx,10},Cordinates{(int)scWidth,10,});
+
+
+    }
+
+     void drawProgressCon(std::unique_ptr<Clabel>& s,int c,int m){
+
+
+         float scCordx=m*float(c+thumb_showing)/size;
+        float scWidth=(float(1)/size)*m;
+       
+        s->Render(Cordinates{0,10},Cordinates{(int)scCordx,10,});
+
+
+    }
+
 
     void setCurrentIndex(int n){ currentIndex=n;}
     int  getCurrentIndex(){ return currentIndex;}   

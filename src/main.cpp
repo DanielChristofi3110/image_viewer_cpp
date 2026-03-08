@@ -160,8 +160,8 @@ int main(int argc, char* argv[]) {
     
     SDL_GetRendererOutputSize(renderer, &winW, &winH);
   
-    CImages Images(renderer,imageFiles,currentIndex,winW,winH);
-
+    //CImages Images(renderer,imageFiles,currentIndex,winW,winH);
+    std::shared_ptr<CImages> Images = std::make_shared<CImages>(renderer,imageFiles,currentIndex,winW,winH);
 
 
 
@@ -175,8 +175,8 @@ int main(int argc, char* argv[]) {
     int lastMouseY = 0;
 
    
-    Images.LoadAroundAsync(ASYNCLOADING);
-    CThumbnailGroup thumbgroup(imageFiles.size(),renderer,&Images,font,true,imageFiles);
+    Images->LoadAroundAsync(ASYNCLOADING);
+    CThumbnailGroup thumbgroup(imageFiles.size(),renderer,Images,font,true,imageFiles);
     thumbgroup.ReplaceThumbnailsAround(currentIndex,winW/THUMB_WIDTH);
     thumbgroup.setCurrentIndex(currentIndex);
     thumbgroup.MoveScrollTo(currentIndex, winW, winH);
@@ -260,6 +260,7 @@ int main(int argc, char* argv[]) {
         }
 
         //FrameControl.setWindowActive(windowActive)
+        FrameControl.setScrolling(dragging);
        
     
         Uint32 frameStart = SDL_GetTicks();
@@ -270,7 +271,7 @@ int main(int argc, char* argv[]) {
 
 
        
-        background.StartLerp({thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().r,thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().g,thumbgroup.getThumbnailByInd(currentIndex).getTavgcolor().b,255}, 0.5f);
+        background.StartLerp({thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().r,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().g,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().b,255}, 0.5f);
         background.Update(deltaTime);
         background.Render();
 
@@ -278,10 +279,10 @@ int main(int argc, char* argv[]) {
 
       
 
-        Images.Render(winW,winH);
-        currentIndex= Images.getCurrentIndex();
-        zoom=Images.getCurrentImageZoom();
-        Cordinates c=Images.getCurrentImageCords();
+        Images->Render(winW,winH);
+        currentIndex= Images->getCurrentIndex();
+        zoom=Images->getCurrentImageZoom();
+        Cordinates c=Images->getCurrentImageCords();
         offsetX=c.x;
         offsetY=c.y;
 
@@ -291,7 +292,7 @@ int main(int argc, char* argv[]) {
         thumb_showing=thumbgroup.getThumbShowing();
 
 
-
+      
 
 
 
@@ -299,11 +300,11 @@ int main(int argc, char* argv[]) {
 
         // ---- Render info text (with black background)
         std::string info = "File: " + std::string(imageFiles[currentIndex]) +
-        "  Size: " + std::to_string(Images.getCurrentImageW()) + "x" + std::to_string(Images.getCurrentImageH()) +
+        "  Size: " + std::to_string(Images->getCurrentImageW()) + "x" + std::to_string(Images->getCurrentImageH()) +
         "  Zoom: " + std::to_string((int)(zoom*100)) + "%";
 
 
-
+      
         FileLabel.setVisibility(!hide_ui);
         ResolutionLabel.setVisibility(!hide_ui);
         ZoomLabel.setVisibility(!hide_ui);
@@ -315,12 +316,13 @@ int main(int argc, char* argv[]) {
         thumbgroup.setVisibility(!hide_ui);
 
 
-
-
+         
+       
         UnhideTipLabel.Render({0,winH-UnhideTipLabel.getLabelH()}, "Ctrl+H to unhide UI");
         std::string DisplayFilePath = imageFiles[currentIndex].substr(imageFiles[currentIndex].find_last_of((delim),imageFiles[currentIndex].length()));
+        
         FileLabel.Render({0,winH-FileLabel.getLabelH()}, "File: " + DisplayFilePath.substr(1,DisplayFilePath.length()));
-        ResolutionLabel.Render({0,FileLabel.getNexty()-FileLabel.getLabelH()*2}, "Size: "+std::to_string(Images.getCurrentImageW()) + "x" + std::to_string(Images.getCurrentImageH()));
+        ResolutionLabel.Render({0,FileLabel.getNexty()-FileLabel.getLabelH()*2}, "Size: "+std::to_string(Images->getCurrentImageW()) + "x" + std::to_string(Images->getCurrentImageH()));
         ZoomLabel.Render({0,ResolutionLabel.getNexty()-ResolutionLabel.getLabelH()*2}, "Zoom: " + std::to_string((int)(zoom*100)) + "%");
 
 
@@ -332,14 +334,15 @@ int main(int argc, char* argv[]) {
 
             if(t->isLoaded()){lthu++;}
         }
+       
         std::vector<std::string> strs;
         strs.push_back("MAX: "+std::to_string(refreshRate)+"|DES: "+std::to_string(FrameControl.estimateFrameDelat(refreshRate))+"|DP_index: "+std::to_string(displayIndex)+"|Fps: "+std::to_string(fps));
         strs.push_back("Preloaded thumbnails:"+std::to_string(lthu)+" "+std::to_string((lthu * 100) / imageFiles_size) + "%");
-        strs.push_back("Image Rotation "+std::to_string(Images.getCurrentImageRotation()));
-        strs.push_back("Image Loaded "+std::to_string(Images.getLoadedImages()));
-        strs.push_back("Current image "+std::to_string(Images.getCurrentIndex()));
-        strs.push_back("Load Queue  "+std::to_string(Images.getQueueSize()));
-        strs.push_back("Ready surfaces  "+std::to_string(Images.getReadySurface()));
+        strs.push_back("Image Rotation "+std::to_string(Images->getCurrentImageRotation()));
+        strs.push_back("Image Loaded "+std::to_string(Images->getLoadedImages()));
+        strs.push_back("Current image "+std::to_string(Images->getCurrentIndex()));
+        strs.push_back("Load Queue  "+std::to_string(Images->getQueueSize()));
+        strs.push_back("Ready surfaces  "+std::to_string(Images->getReadySurface()));
         strs.push_back("Mouse (x,y) "+std::to_string(lastMouseX)+","+std::to_string(lastMouseY));
         strs.push_back(info);
         strs.push_back("DeltaT  "+std::to_string(deltaTime));
@@ -349,7 +352,7 @@ int main(int argc, char* argv[]) {
 
 
 
-
+           
         NextImageRightButton.setEnabled(!hide_ui);
         NextImageLeftButton.setEnabled(!hide_ui);
         {
@@ -392,7 +395,7 @@ int main(int argc, char* argv[]) {
                 << newHeight << std::endl;
 
 
-                Images.CenterCurrentImage(winW,winH);
+                Images->CenterCurrentImage(winW,winH);
      
 
                 //thumbgroup.setThumbShowing(thumb_showing);
@@ -433,7 +436,7 @@ int main(int argc, char* argv[]) {
                     //FrameControl.ResetCoolDown(0.2f);
                 }
                 if (event.key.keysym.sym == SDLK_r) {
-                    Images.CurrentImageRotate90(winW,winH);
+                    Images->CurrentImageRotate90(winW,winH);
                 }
 
                 if (event.key.keysym.sym == SDLK_h &&event.key.keysym.sym & KMOD_CTRL) {
@@ -447,7 +450,7 @@ int main(int argc, char* argv[]) {
                 }
                 if (event.key.keysym.sym == SDLK_RIGHT) {
                     Loadthumbnails=true;
-                    int ind=Images.NextImage(1,winW,winH);
+                    int ind=Images->NextImage(1,winW,winH);
                     thumbgroup.NextThumbnail(1,winW,winH);
                     FrameControl.ResetCoolDown();
 
@@ -457,7 +460,7 @@ int main(int argc, char* argv[]) {
                 }
                 if (event.key.keysym.sym == SDLK_LEFT) {
                     Loadthumbnails=true;
-                    int ind=Images.NextImage(-1,winW,winH);
+                    int ind=Images->NextImage(-1,winW,winH);
 
                     thumbgroup.NextThumbnail(-1,winW,winH);
                     FrameControl.ResetCoolDown();
@@ -515,10 +518,10 @@ int main(int argc, char* argv[]) {
                 SDL_GetMouseState(&mouseX, &mouseY);
 
                  FrameControl.setMouseOnScroll(true);
-                if(mouseY>THUMB_HEIGHT || hide_ui){
+                if(mouseY>THUMB_HEIGHT+2*THUMB_PADDING || hide_ui){
 
 
-                    float oldZoom = Images.getCurrentImageZoom();
+                    float oldZoom = Images->getCurrentImageZoom();
                     zoom=oldZoom;
                     if (event.wheel.y > 0)
                         zoom *= 1.1f;
@@ -534,8 +537,8 @@ int main(int argc, char* argv[]) {
                     offsetX = mouseX - scaleChange * (mouseX - offsetX);
                     offsetY = mouseY - scaleChange * (mouseY - offsetY);
 
-                    Images.setCurrentImageZoom(zoom);
-                    Images.setCurrentImageCords({(int)offsetX,(int)offsetY});
+                    Images->setCurrentImageZoom(zoom);
+                    Images->setCurrentImageCords({(int)offsetX,(int)offsetY});
 
                 }else {
 
@@ -552,8 +555,9 @@ int main(int argc, char* argv[]) {
                 event.button.button == SDL_BUTTON_LEFT) {
 
                 dragging = true;
-                FrameControl.setScrolling(true);
+                
             lastMouseX = event.button.x;
+
             lastMouseY = event.button.y;
 
 
@@ -569,26 +573,28 @@ int main(int argc, char* argv[]) {
             int nimg= thumbgroup.CheckIfThumbnaiClicked(0, -1, mouseX, mouseY);
 
             if( RotateLeftButton.CheckIfClicked()){
-
-                Images.CurrentImageRotate90(winW,winH);
+                dragging=false;
+                Images->CurrentImageRotate90(winW,winH);
             }
 
             if( RotateRightButton.CheckIfClicked()){
-
-                Images.CurrentImageRotate270(winW,winH);
+                dragging=false;
+                Images->CurrentImageRotate270(winW,winH);
             }
 
             if(nimg!=-1){
+                dragging=false;
                 Loadthumbnails=true;
-                int ind=Images.NextImage(nimg-currentIndex,winW,winH);
+                int ind=Images->NextImage(nimg-currentIndex,winW,winH);
                
 
             }
 
 
             if(NextImageRightButton.CheckIfClicked()|| NextImageLeftButton.CheckIfClicked()){
+                dragging=false;
                 Loadthumbnails=true;
-                int ind=Images.NextImage(NextImageRightButton.CheckIfClicked()?1:-1,winW,winH);
+                int ind=Images->NextImage(NextImageRightButton.CheckIfClicked()?1:-1,winW,winH);
                 thumbgroup.NextThumbnail(NextImageRightButton.CheckIfClicked()?1:-1,winW,winH);
               
             }
@@ -608,7 +614,7 @@ int main(int argc, char* argv[]) {
                         int dy = event.motion.y - lastMouseY;
 
                         
-                        Images.moveCurrentImage(dx, dy);
+                        Images->moveCurrentImage(dx, dy);
                         lastMouseX = event.motion.x;
                         lastMouseY = event.motion.y;
                     }
