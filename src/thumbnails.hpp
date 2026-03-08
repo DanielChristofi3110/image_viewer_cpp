@@ -784,6 +784,8 @@ class CThumbnailGroup{
 
          float scCordx=m*float(c)/size;
         float scWidth=(float(1)/size)*m;
+
+        if (scWidth<5) scWidth=5;
        // std::cout<<"---------------- scCordx    "<<scCordx<<std::endl;
         s->Render(Cordinates{(int)scCordx,10},Cordinates{(int)scWidth,10,});
 
