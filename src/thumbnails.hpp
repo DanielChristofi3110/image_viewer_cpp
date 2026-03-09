@@ -7,6 +7,7 @@
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_ttf.h>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <vector>
@@ -380,6 +381,7 @@ public:
 
     void Update(SDL_Renderer* renderer)
         {
+            
             if (!ready)
                 return;
             std::cout<<"Updateing tumb "<<pendingPixels.size()<<std::endl;
@@ -490,6 +492,8 @@ class CThumbnailGroup{
          std::unique_ptr<Clabel> scrollProgress;
          std::unique_ptr<Clabel> scrollOffsetProgress;
         std::unique_ptr<Clabel> scrollProgressBack;
+
+        TTF_Font *font;
         
          int size;
          int thumbX;
@@ -507,7 +511,7 @@ class CThumbnailGroup{
         CThumbnailGroup(int amount,SDL_Renderer* vrenderer,std::shared_ptr<CImages> im,TTF_Font *f,bool drawLabels,const std::vector<std::string>& files){
             renderer=vrenderer;
             imageFiles=files;
-
+            font=f;
             scrollProgress=std::make_unique<Clabel>(vrenderer,Cordinates{0,0},true,false,true,f,SDL_Color{255,255,255,255});
             scrollProgress->setBackgroundColor(SDL_Color{255,255,255,255});
 
@@ -741,42 +745,49 @@ class CThumbnailGroup{
 
 
     void Render(int &winH,int &winW,int mx,int my,float dt){
+
+         // std::cout<<"Render call"<<std::endl;
         
+          // std::cout<<"ASYNC call"<<std::endl;
         if(THUMBNAIL_ASYNCLOADING)
         for(int i=0; i<thumbnails.size(); i++){
         thumbnails[i]->Update(renderer);
     
       }
-     
+
+       //std::cout<<"ASYNC exit"<<std::endl;
+
+
+     // std::cout<<"BACK call"<<std::endl;
         drawBackground();
+        // std::cout<<"BACK exit"<<std::endl;
       
        
+        //std::cout<<"PRESS call"<<std::endl;
         CheckThumbnailPress(dt,mx,my);
+        //std::cout<<"PRESS exit"<<std::endl;
 
 
+      // std::cout<<"ScrollPr call"<<std::endl;
         scrollProgressBack->Render(Cordinates{0,10},Cordinates{winW,10});
+        // std::cout<<"ScrollPr exit"<<std::endl;
 
-
+       // std::cout<<"drawProgressCon call"<<std::endl;
         if(visible)drawProgressCon(scrollOffsetProgress, scrollOffset, winW);
+       //  std::cout<<"drawProgressCon exit"<<std::endl;
         
+        //  std::cout<<"scrollProgress call"<<std::endl;
         drawProgress(scrollProgress, currentIndex, winW);
-        
-      /*  {
-        float scCordx=winW*float(currentIndex)/size;
-        float scWidth=(float(1)/size)*winW;
-       // std::cout<<"---------------- scCordx    "<<scCordx<<std::endl;
-        scrollProgress->Render(Cordinates{(int)scCordx,10},Cordinates{(int)scWidth,10,});
-        }
+       // std::cout<<"scrollProgress exit"<<std::endl;
 
-        float scCordx=winW*float(currentIndex)/size;
-        float scWidth=(float(1)/size)*winW;
-       // std::cout<<"---------------- scCordx    "<<scCordx<<std::endl;
-        scrollProgress->Render(Cordinates{(int)scCordx,10},Cordinates{(int)scWidth,10,});
-        */
-
+       //   std::cout<<"drawSelection call"<<std::endl;
         drawSelection();
+      //  std::cout<<"drawThumbnails call"<<std::endl;
          drawThumbnails(winW, winH);
+       //  std::cout<<"drawLabels call"<<std::endl;
         drawLabels();
+
+       //   std::cout<<"Render exit"<<std::endl;
 
     }
     void drawProgress(std::unique_ptr<Clabel>& s,int c,int m){
@@ -923,6 +934,26 @@ class CThumbnailGroup{
         }
     }
     bool getVisibility(){return visible;}
+
+
+    void addThumbnail(const std::string path){
+
+       // std::cout<<"add call"<<std::endl;
+        thumbnails.push_back(std::make_unique<CThumbnail>(renderer,size));
+        imageFiles.push_back(path);
+        //
+        buttons.push_back(std::make_unique<CButton>(" ",renderer,Cordinates{0,0},true,true,true,font,SDL_Color{255,255,255,255}));
+        buttons.back()->setnColor({0,0,0,0});
+        buttons.back()->sethColor({255,255,255,128});  
+        //
+        size+=1;
+        ReplaceThumbnailsAround();
+        // std::cout<<"add exit"<<std::endl;
+
+
+    }
+
+ 
 
 
 };

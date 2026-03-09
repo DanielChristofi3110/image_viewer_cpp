@@ -5,13 +5,17 @@
 #include "GUI.hpp"
 #include "background.hpp"
 #include "FrameControl.hpp"
+#include "FileScanner.hpp"
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_render.h>
 #include <iostream>
 #include <ostream>
 #include <string>
+#include <unordered_set>
+
 #ifdef _WIN32
 #include <dwmapi.h>
+#include<Windows.h>
 #endif
 
 
@@ -36,13 +40,21 @@ int estimateFrameDelat(int dfps){
 }
 
 
+#ifdef _WIN32
+std::string getExecutableDirectory() {
+    char buffer[MAX_PATH];
+    GetModuleFileNameA(NULL, buffer, MAX_PATH);
+    std::string exePath(buffer);
+    return exePath.substr(0, exePath.find_last_of("\\/")); // Get the directory
+}
+#endif
+
+
+
 int main(int argc, char* argv[]) {
     #ifdef _WIN32
     SetProcessDPIAware();
     #endif
-    std::vector<std::string> imageFiles;
-    std::vector<SDL_Texture*> thumbnails;
-    std::vector<bool> Loadedthumbnails;
 
 
     if (argc < 2) {
@@ -59,44 +71,17 @@ int main(int argc, char* argv[]) {
     }
 
     // image load f
+    CFileScanner FileScanner(argv[1],1);
 
-    fs::path firstImagePath(argv[1]);
-    fs::path dir = firstImagePath.parent_path();
-
-
-    // Supported extensions
-    std::vector<std::string> exts = {".png", ".jpg", ".jpeg", ".bmp"};
-
-    for (auto& entry : fs::directory_iterator(dir)) {
-        if (!entry.is_regular_file()) continue;
-        std::string ext = entry.path().extension().string();
-        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-        if (std::find(exts.begin(), exts.end(), ext) != exts.end()) {
-            //printf("Loaded image ");
-
-            if(DEBUG)std::cout<<"Loaded image "<<entry.path().string()<<std::endl;
-
-
-
-            //debug_menu.print_dbg("\nLoaded image ");
-            imageFiles.push_back(entry.path().string());
-        }
-    }
-
-    std::cout<<"------------------Images Loaded-----------------------"<<std::endl;
-    std::sort(imageFiles.begin(), imageFiles.end());
-    std::cout<<"------------------Images Sorted-----------------------"<<std::endl;
+    // std::cout<<"------------------Images Loaded-----------------------"<<std::endl;
+  
+    // std::cout<<"------------------Images Sorted-----------------------"<<std::endl;
 
     int currentIndex = 0;
 
     int thumbcurrentIndex=0;
-    for (size_t i = 0; i < imageFiles.size(); i++) {
-        if (imageFiles[i] == firstImagePath.string()) {
-            currentIndex = i;
-            break;
-        }
-    }
 
+    currentIndex=FileScanner.getInitCurrentIndex();
     //AA
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
@@ -145,7 +130,7 @@ int main(int argc, char* argv[]) {
 
     std::cout<<"------------------Loaded font-----------------------"<<std::endl;
     int thumb_proc_ind = 0;
-    const int imageFiles_size = imageFiles.size();
+    //const int imageFiles_size = imageFiles.size();
 
 
     std::cout<<"------------------Loaded Thumbnails-----------------------"<<std::endl;
@@ -161,7 +146,7 @@ int main(int argc, char* argv[]) {
     SDL_GetRendererOutputSize(renderer, &winW, &winH);
   
     //CImages Images(renderer,imageFiles,currentIndex,winW,winH);
-    std::shared_ptr<CImages> Images = std::make_shared<CImages>(renderer,imageFiles,currentIndex,winW,winH);
+    std::shared_ptr<CImages> Images = std::make_shared<CImages>(renderer,FileScanner.getImageFiles(),currentIndex,winW,winH);
 
 
 
@@ -176,7 +161,7 @@ int main(int argc, char* argv[]) {
 
    
     Images->LoadAroundAsync(ASYNCLOADING);
-    CThumbnailGroup thumbgroup(imageFiles.size(),renderer,Images,font,true,imageFiles);
+    CThumbnailGroup thumbgroup(FileScanner.getImageFilesSize(),renderer,Images,font,true,FileScanner.getImageFiles());
     thumbgroup.ReplaceThumbnailsAround(currentIndex,winW/THUMB_WIDTH);
     thumbgroup.setCurrentIndex(currentIndex);
     thumbgroup.MoveScrollTo(currentIndex, winW, winH);
@@ -240,8 +225,20 @@ int main(int argc, char* argv[]) {
 
      CFrameControl FrameControl(2,true);
      FrameControl.ResetCoolDown(2);
+     FileScanner.startWatching();
     //main loop
     while (running) {
+
+
+        if(FileScanner.hasNewImages()){
+
+
+            thumbgroup.addThumbnail(FileScanner.getLastImageFile());
+            Images->addImage(FileScanner.getLastImageFile());
+        };
+
+
+
         //DES_FPS=10;
         FrameControl.makeAllFalse();
         
@@ -299,7 +296,7 @@ int main(int argc, char* argv[]) {
 
 
         // ---- Render info text (with black background)
-        std::string info = "File: " + std::string(imageFiles[currentIndex]) +
+        std::string info = "File: " + std::string(FileScanner.getImageFile(currentIndex)) +
         "  Size: " + std::to_string(Images->getCurrentImageW()) + "x" + std::to_string(Images->getCurrentImageH()) +
         "  Zoom: " + std::to_string((int)(zoom*100)) + "%";
 
@@ -319,7 +316,7 @@ int main(int argc, char* argv[]) {
          
        
         UnhideTipLabel.Render({0,winH-UnhideTipLabel.getLabelH()}, "Ctrl+H to unhide UI");
-        std::string DisplayFilePath = imageFiles[currentIndex].substr(imageFiles[currentIndex].find_last_of((delim),imageFiles[currentIndex].length()));
+        std::string DisplayFilePath = FileScanner.getImageFile(currentIndex).substr(FileScanner.getImageFile(currentIndex).find_last_of((delim),FileScanner.getImageFile(currentIndex).length()));
         
         FileLabel.Render({0,winH-FileLabel.getLabelH()}, "File: " + DisplayFilePath.substr(1,DisplayFilePath.length()));
         ResolutionLabel.Render({0,FileLabel.getNexty()-FileLabel.getLabelH()*2}, "Size: "+std::to_string(Images->getCurrentImageW()) + "x" + std::to_string(Images->getCurrentImageH()));
@@ -337,7 +334,7 @@ int main(int argc, char* argv[]) {
        
         std::vector<std::string> strs;
         strs.push_back("MAX: "+std::to_string(refreshRate)+"|DES: "+std::to_string(FrameControl.estimateFrameDelat(refreshRate))+"|DP_index: "+std::to_string(displayIndex)+"|Fps: "+std::to_string(fps));
-        strs.push_back("Preloaded thumbnails:"+std::to_string(lthu)+" "+std::to_string((lthu * 100) / imageFiles_size) + "%");
+        strs.push_back("Preloaded thumbnails:"+std::to_string(lthu)+" "+std::to_string((lthu * 100) / FileScanner.getImageFilesSize()) + "%");
         strs.push_back("Image Rotation "+std::to_string(Images->getCurrentImageRotation()));
         strs.push_back("Image Loaded "+std::to_string(Images->getLoadedImages()));
         strs.push_back("Current image "+std::to_string(Images->getCurrentIndex()));
@@ -652,6 +649,54 @@ int main(int argc, char* argv[]) {
     SDL_Quit();
     TTF_CloseFont(font);
     TTF_Quit();
+    FileScanner.stopWatching();
 
     return 0;
 }
+
+
+
+#ifdef _WIN32
+int APIENTRY WinMain(HINSTANCE, HINSTANCE, LPSTR lpCmdLine, int) {
+    // Get the command line arguments
+    int argc = 1; // The first argument is always the program name
+    wchar_t** wargv = CommandLineToArgvW(GetCommandLineW(), &argc);
+
+    if (argc < 2) {
+        // Convert the wide string to a narrow string for MessageBox
+        const wchar_t* errorMsg = L"Usage: viewer <image_path>";
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, errorMsg, -1, NULL, 0, NULL, NULL);
+        char* errorMsgA = new char[size_needed];
+        WideCharToMultiByte(CP_UTF8, 0, errorMsg, -1, errorMsgA, size_needed, NULL, NULL);
+
+        MessageBoxA(NULL, errorMsgA, "Error", MB_OK | MB_ICONERROR);
+
+        delete[] errorMsgA;
+        return 1;
+    }
+
+    // Convert the command line arguments from wchar_t** to char**
+    char** argv = new char*[argc];
+    for (int i = 0; i < argc; ++i) {
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, NULL, 0, NULL, NULL);
+        argv[i] = new char[size_needed];
+        WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, argv[i], size_needed, NULL, NULL);
+    }
+
+    execDir_Windows=getExecutableDirectory();
+    // Call your original main function
+    int result = main(argc, argv);
+
+    // Free the argument list
+    for (int i = 0; i < argc; ++i) {
+        delete[] argv[i];
+    }
+    delete[] argv;
+
+    // Free the wide-char arguments
+    LocalFree(wargv);
+    //system("pause");
+    return result;
+
+}
+#endif

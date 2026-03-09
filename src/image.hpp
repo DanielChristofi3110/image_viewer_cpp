@@ -744,4 +744,13 @@ class CImages{
 
     }
 
+    void addImage(const std::string path){
+
+        imageFiles.push_back(path);
+        images.push_back(std::make_unique<CImage>(renderer));
+        size++;
+
+
+    }
+
 }; 

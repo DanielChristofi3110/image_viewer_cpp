@@ -21,7 +21,13 @@
 
 
 
+
+#ifdef _WIN32
 #define FIX_WINDOWS true
+#elif __unix__
+#define FIX_WINDOWS false
+#endif
+
 #define DEBUG true
 #define FULL_PRELOAD false
 #define ASYNCLOADING 1
@@ -44,8 +50,16 @@ bool debug_mode=false;
 bool Loadthumbnails=true;
 int fps=0;
 std::string execDir_Windows=".";
-std::string delim="/";
 
+
+
+
+
+#ifdef _WIN32
+std::string delim="\\";
+#elif __unix__
+std::string delim="/";
+#endif
 
 
 
