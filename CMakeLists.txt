@@ -16,6 +16,10 @@ endif()
 
 add_executable(viewer WIN32 ${SOURCES})
 
+set_target_properties(viewer PROPERTIES
+    OUTPUT_NAME_DEBUG debug_viewer
+)
+
 # -------------------------
 # Windows (MSVC build)
 # -------------------------
@@ -43,7 +47,14 @@ if(WIN32)
     )
 
     if(MSVC)
-        target_compile_options(viewer PRIVATE /O2)
+        target_compile_options(viewer PRIVATE
+            $<$<CONFIG:Release>:/O2>
+            $<$<CONFIG:Debug>:/Od /Zi>
+        )
+
+        target_link_options(viewer PRIVATE
+            $<$<CONFIG:Debug>:/DEBUG>
+        )
     endif()
 
     set(SDL_DLLS

@@ -17,6 +17,7 @@
 
 
 
+
 class CImage{
     private:
         Cordinates cords={0,0};
@@ -33,6 +34,7 @@ class CImage{
         std::atomic<bool> surfaceReady{false};
         std::atomic<bool> textureReady{false};
         std::mutex imageMutex;
+        std::string CreationTime="";
 
 
 
@@ -179,6 +181,20 @@ class CImage{
                 
             }
 
+    std::string getFileTime(const fs::path& p)
+    {
+        auto ftime = fs::last_write_time(p);
+
+        auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+            ftime - fs::file_time_type::clock::now()
+            + std::chrono::system_clock::now()
+        );
+
+        std::time_t cftime = std::chrono::system_clock::to_time_t(sctp);
+
+        return std::string(std::ctime(&cftime));
+    }
+
     public:
 
 
@@ -221,7 +237,7 @@ class CImage{
 
             cords.x=offsetX;
             cords.y=offsetY;
-            //std::cout << "Debug Center image cords : " << cords.x << " " << cords.y << std::endl;
+           // std::cout << "Debug Center image cords : " << cords.x << " " << cords.y << std::endl;
 
         }
        void LoadImage(const std::string& path,int winW,int winH){
@@ -233,7 +249,7 @@ class CImage{
 
     
 
-                
+            
             
     
 
@@ -338,6 +354,11 @@ class CImage{
         void LoadSurfaceOnly(const std::string& path,int wW,int wH)
             {
                 std::lock_guard<std::mutex> lock(imageMutex);
+                std::cout<<" Time: "<<  getFileTime(path)<<std::endl;
+                CreationTime=getFileTime(path);
+                
+                if (!CreationTime.empty())
+                CreationTime.pop_back();
 
                 if (surf) {
                     SDL_FreeSurface(surf);
@@ -421,6 +442,11 @@ class CImage{
         Cordinates getCords(){
 
             return cords;
+        }
+
+        const std::string getCreationTime()const {
+  
+            return CreationTime;
         }
 
         bool isLoaded(){return Loaded;}
@@ -736,6 +762,11 @@ class CImages{
 
 
         return images[i]->getSurface();
+    }
+
+    const std::string getCurrentImageTime() const{
+
+        return images[currentIndex]->getCreationTime();
     }
 
     bool IsSurfaceOfIndexReady(int i){

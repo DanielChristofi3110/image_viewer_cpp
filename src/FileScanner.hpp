@@ -13,6 +13,9 @@
 #include <atomic>
 #include <chrono>
 
+
+#define SINGLE_IMAGE_LOAD false
+
 class CFileScanner{
 private:
     std::vector<fs::path> imageFiles;
@@ -39,7 +42,9 @@ public:
         firstImagePath = fi;
         dir = firstImagePath.parent_path();
 
-        loadImages();
+       // loadImages();
+     if(SINGLE_IMAGE_LOAD)loadFirstImage();
+     else loadImages();
         sortImages();
     }
     ~CFileScanner(){
@@ -71,6 +76,23 @@ public:
         }
     }
 
+    void loadFirstImage() {
+
+        if (!fs::exists(firstImagePath) || !fs::is_regular_file(firstImagePath))
+            return;
+
+        std::string ext = firstImagePath.extension().string();
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+        if (std::find(exts.begin(), exts.end(), ext) != exts.end()) {
+
+            if (DEBUG)
+                std::cout << "Loaded initial image " << firstImagePath.string() << std::endl;
+
+            imageFiles.push_back(firstImagePath);
+            knownImages.insert(firstImagePath);
+        }
+    }
 
     void sortImages(){
 
@@ -122,7 +144,7 @@ public:
         while (running)
         {
 
-            std::cout<<"scan loop"<<std::endl;
+            //std::cout<<"scan loop"<<std::endl;
             for (const auto& entry : fs::directory_iterator(dir))
             {
                 if (!entry.is_regular_file()) continue;
@@ -153,6 +175,7 @@ public:
     }
 
     void startWatching(){
+        if(SINGLE_IMAGE_LOAD) return;
         running = true;
         scannerThread = std::thread(&CFileScanner::scanLoop, this);
          std::cout<<"File scanner loop started"<<std::endl;

@@ -51,6 +51,25 @@ std::string getExecutableDirectory() {
     std::string exePath(buffer);
     return exePath.substr(0, exePath.find_last_of("\\/")); // Get the directory
 }
+
+#ifdef _DEBUG
+void EnableDebugConsole()
+{
+    AllocConsole();
+
+    FILE* fp;
+    freopen_s(&fp, "CONOUT$", "w", stdout);
+    freopen_s(&fp, "CONOUT$", "w", stderr);
+    freopen_s(&fp, "CONIN$", "r", stdin);
+
+    std::cout.clear();
+    std::cerr.clear();
+    std::cin.clear();
+
+    std::cout << "Debug console enabled\n";
+}
+#endif
+
 #endif
 
 #ifdef __linux__
@@ -116,6 +135,9 @@ int main(int argc, char* argv[]) {
     std::cout<<"------------------Created window-----------------------"<<std::endl;
 
     #ifdef _WIN32
+    #ifdef _DEBUG
+    EnableDebugConsole();
+    #endif
     HWND hwnd = GetActiveWindow();
     BOOL dark = TRUE;
 
@@ -215,6 +237,11 @@ int main(int argc, char* argv[]) {
     ZoomLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/Zoom.svg").c_str(),0.03);
     ZoomLabel.setIconPositionLeft();
 
+    Clabel TimeLabel(renderer,{400,400},true,true,font);
+    TimeLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/File.svg").c_str(),0.03);
+    TimeLabel.setIconPositionLeft();
+
+
     Clabel FileLabel(renderer,{400,400},true,true,font);
     FileLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/File.svg").c_str(),0.03);
     FileLabel.setIconPositionLeft();
@@ -268,6 +295,11 @@ int main(int argc, char* argv[]) {
      CFrameControl FrameControl(2,true);
      FrameControl.ResetCoolDown(2);
      FileScanner.startWatching();
+
+
+     bool imageToCenter=false;
+
+     
     //main loop
     while (running) {
 
@@ -315,8 +347,12 @@ int main(int argc, char* argv[]) {
         background.Render();
 
 
+        //std::cout<<"c image cordy "<<Images->getCurrentImageCords().y<<std::endl;
+      if(imageToCenter){
+       // Images->CenterCurrentImage(1000,700);
+        imageToCenter=false;
 
-      
+      }
 
         Images->Render(winW,winH);
         currentIndex= Images->getCurrentIndex();
@@ -345,6 +381,7 @@ int main(int argc, char* argv[]) {
 
       
         FileLabel.setVisibility(!hide_ui);
+        TimeLabel.setVisibility(!hide_ui);
         ResolutionLabel.setVisibility(!hide_ui);
         ZoomLabel.setVisibility(!hide_ui);
         RotateRightLabel.setVisibility(!hide_ui);
@@ -361,7 +398,8 @@ int main(int argc, char* argv[]) {
         std::string DisplayFilePath = FileScanner.getImageFile(currentIndex).substr(FileScanner.getImageFile(currentIndex).find_last_of((delim),FileScanner.getImageFile(currentIndex).length()));
         
         FileLabel.Render({0,winH-FileLabel.getLabelH()}, "File: " + DisplayFilePath.substr(1,DisplayFilePath.length()));
-        ResolutionLabel.Render({0,FileLabel.getNexty()-FileLabel.getLabelH()*2}, "Size: "+std::to_string(Images->getCurrentImageW()) + "x" + std::to_string(Images->getCurrentImageH()));
+        TimeLabel.Render({0,FileLabel.getNexty()-FileLabel.getLabelH()*2}, Images->getCurrentImageTime());
+        ResolutionLabel.Render({0,TimeLabel.getNexty()-TimeLabel.getLabelH()*2}, "Size: "+std::to_string(Images->getCurrentImageW()) + "x" + std::to_string(Images->getCurrentImageH()));
         ZoomLabel.Render({0,ResolutionLabel.getNexty()-ResolutionLabel.getLabelH()*2}, "Zoom: " + std::to_string((int)(zoom*100)) + "%");
 
 
@@ -439,7 +477,7 @@ int main(int argc, char* argv[]) {
                 << newHeight << std::endl;
 
 
-                Images->CenterCurrentImage(winW,winH);
+               Images->CenterCurrentImage(winW,winH);
      
 
                 //thumbgroup.setThumbShowing(thumb_showing);
@@ -639,6 +677,7 @@ int main(int argc, char* argv[]) {
             }
 
             if(FullscreenButton->CheckIfClicked()){
+                dragging = false;
                 fullscreen = !fullscreen;
                     SDL_SetWindowFullscreen(
                         window,
@@ -648,7 +687,9 @@ int main(int argc, char* argv[]) {
 
                     FrameControl.ResetCoolDown();
                 SDL_GetRendererOutputSize(renderer, &winW, &winH);
-                Images->CenterCurrentImage(winW,winH);
+                //Centerhear
+                imageToCenter=true;
+                
 
             }
 

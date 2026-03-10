@@ -307,7 +307,7 @@ public:
           if (loaded || loading)
             return;
 
-         std::cout<<"Loading tumb"<<std::endl;    
+         std::cout<<"Loading tumb "<<imgPath<<std::endl;    
         loading = true;
 
         std::thread([this, imgPath]() {
@@ -384,7 +384,7 @@ public:
             
             if (!ready)
                 return;
-            std::cout<<"Updateing tumb "<<pendingPixels.size()<<std::endl;
+            //std::cout<<"Updateing tumb "<<pendingPixels.size()<<std::endl;
             std::lock_guard<std::mutex> lock(pixelMutex);
 
             SDL_Surface* surface =
