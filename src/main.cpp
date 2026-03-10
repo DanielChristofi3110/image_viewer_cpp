@@ -647,8 +647,8 @@ int main(int argc, char* argv[]) {
                     thumbgroup.UlnoanLoad();
 
                     FrameControl.ResetCoolDown();
-
-
+                SDL_GetRendererOutputSize(renderer, &winW, &winH);
+                Images->CenterCurrentImage(winW,winH);
 
             }
 
