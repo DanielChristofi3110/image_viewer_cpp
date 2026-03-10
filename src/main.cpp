@@ -238,7 +238,7 @@ int main(int argc, char* argv[]) {
     ZoomLabel.setIconPositionLeft();
 
     Clabel TimeLabel(renderer,{400,400},true,true,font);
-    TimeLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/File.svg").c_str(),0.03);
+    TimeLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/Date.svg").c_str(),0.03);
     TimeLabel.setIconPositionLeft();
 
 
@@ -255,6 +255,13 @@ int main(int argc, char* argv[]) {
 
     Clabel debugline(renderer,Cordinates{0,0},true,false,true,font,SDL_Color{255,255,255,255});
     debugline.setBackgroundColor({255,0,0,255});
+    Clabel debugline2(renderer,Cordinates{0,0},true,false,true,font,SDL_Color{255,255,255,255});
+    debugline2.setBackgroundColor({255,0,0,255});
+
+    Clabel debuglineimg(renderer,Cordinates{0,0},true,false,true,font,SDL_Color{0,255,255,255});
+    debuglineimg.setBackgroundColor({0,255,255,255});
+    Clabel debugline2img(renderer,Cordinates{0,0},true,false,true,font,SDL_Color{0,255,255,255});
+    debugline2img.setBackgroundColor({0,255,255,255});
 
     std::shared_ptr<CButton> NextImageRightButton =  std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
    // CButton NextImageRightButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
@@ -427,8 +434,19 @@ int main(int argc, char* argv[]) {
         DebugLabel.setCords(0, THUMB_WIDTH);
         DebugLabel.Render(strs);
         debugline.setVisibility(debug_mode);
+        debugline2.setVisibility(debug_mode);
+        debuglineimg.setVisibility(debug_mode);
+        debugline2img.setVisibility(debug_mode);
         debugline.Render(Cordinates{winW/2-4,winH},Cordinates{9,winH});
+        debugline2.Render(Cordinates{0,winH/2-4},Cordinates{winW,9});
+        {
 
+            int x=Images->getCurrentImageCords().x;
+            int y=Images->getCurrentImageCords().y;
+
+        debuglineimg.Render(Cordinates{winW/2-4+x,winH+y},Cordinates{9,winH});
+        debugline2img.Render(Cordinates{0+x,winH/2-4+y},Cordinates{winW,9});
+        }
 
 
            
