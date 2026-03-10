@@ -644,3 +644,57 @@ class CButton{
 
 };
 
+
+
+
+class CButtonHbox{
+    private:
+
+     std::vector<std::shared_ptr<CButton>> buttons;
+     float width=0;
+
+     public:
+
+
+
+
+
+     void addButton(std::shared_ptr<CButton> btn){
+
+        buttons.push_back(btn);
+
+
+       
+
+
+
+     }
+
+
+    void Render(int x, int y){
+        width=0;
+        for(int i=0; i<buttons.size();i++){
+
+            width+=buttons[i]->getW();
+        }
+
+        //std::cout<<"x "<<x<<" width x "<<x-width/2<<std::endl;
+        float startX = x - width/2;
+        float offset = 5;
+
+        for (auto &b : buttons) {
+               //std::cout<<"offset "<<offset<<std::endl;
+            b->Render(startX + offset, y-b->getH());
+            offset += b->getW();
+        }
+    }
+
+
+
+
+
+
+
+
+
+};

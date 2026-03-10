@@ -7,8 +7,10 @@
 #include "FrameControl.hpp"
 #include "FileScanner.hpp"
 #include <SDL2/SDL_keycode.h>
+#include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
 #include <iostream>
+#include <memory>
 #include <ostream>
 #include <string>
 #include <unordered_set>
@@ -17,8 +19,10 @@
 #include <dwmapi.h>
 #include<Windows.h>
 #endif
-
-
+#ifdef __linux__
+#include <unistd.h>
+#include <limits.h>
+#endif
 
 
 
@@ -49,6 +53,22 @@ std::string getExecutableDirectory() {
 }
 #endif
 
+#ifdef __linux__
+#include <unistd.h>
+#include <limits.h>
+
+
+std::string getExecutableDirectory() {
+    char buffer[PATH_MAX];
+    ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
+    if (len == -1) {
+        return ""; // failed
+    }
+    buffer[len] = '\0';
+    std::string exePath(buffer);
+    return exePath.substr(0, exePath.find_last_of("/")); // get directory
+}
+#endif
 
 
 int main(int argc, char* argv[]) {
@@ -70,6 +90,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    execDir_Windows=getExecutableDirectory();
     // image load f
     CFileScanner FileScanner(argv[1],1);
 
@@ -205,12 +226,33 @@ int main(int argc, char* argv[]) {
     Clabel InfoLabel(renderer,{400,400},true,false,font);
     CDebugLabels DebugLabel(renderer,{400,400},font);
 
-    CButton NextImageRightButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-    NextImageRightButton.setSvgIcon((execDir_Windows+"/resources/vector/ArrowRight.svg").c_str(),false,0.06);
+    Clabel debugline(renderer,Cordinates{0,0},true,false,true,font,SDL_Color{255,255,255,255});
+    debugline.setBackgroundColor({255,0,0,255});
 
-    CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-    NextImageLeftButton.setSvgIcon((execDir_Windows+"/resources/vector/ArrowLeft.svg").c_str(),false,0.06);
+    std::shared_ptr<CButton> NextImageRightButton =  std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
+   // CButton NextImageRightButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
+    NextImageRightButton->setSvgIcon((execDir_Windows+"/resources/vector/ArrowRight.svg").c_str(),false,0.06);
 
+
+
+    std::shared_ptr<CButton> NextImageLeftButton =  std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
+    //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
+    NextImageLeftButton->setSvgIcon((execDir_Windows+"/resources/vector/ArrowLeft.svg").c_str(),false,0.06);
+
+
+     std::shared_ptr<CButton> FullscreenButton = std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
+    //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
+     FullscreenButton->setSvgIcon((execDir_Windows+"/resources/vector/Fullscreen.svg").c_str(),false,0.06);
+
+
+
+    CButtonHbox ButtonsHbox;
+
+    
+    ButtonsHbox.addButton(NextImageLeftButton);
+    ButtonsHbox.addButton(FullscreenButton);
+    ButtonsHbox.addButton(NextImageRightButton);
+    
 
     SDL_Event event;
 
@@ -346,21 +388,25 @@ int main(int argc, char* argv[]) {
         DebugLabel.setVisibility(debug_mode);
         DebugLabel.setCords(0, THUMB_WIDTH);
         DebugLabel.Render(strs);
+        debugline.setVisibility(debug_mode);
+        debugline.Render(Cordinates{winW/2-4,winH},Cordinates{9,winH});
 
 
 
            
-        NextImageRightButton.setEnabled(!hide_ui);
-        NextImageLeftButton.setEnabled(!hide_ui);
+        NextImageRightButton->setEnabled(!hide_ui);
+        NextImageLeftButton->setEnabled(!hide_ui);
+        FullscreenButton->setEnabled(!hide_ui);
         {
 
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
             thumbgroup.Render(winH, winW,mouseX,mouseY,deltaTime);
-            FrameControl.setMouseOnButton(NextImageRightButton.CheckIfHover(mouseX,mouseY,deltaTime));
-            FrameControl.setMouseOnButton(NextImageLeftButton.CheckIfHover(mouseX,mouseY,deltaTime));
+            FrameControl.setMouseOnButton(NextImageRightButton->CheckIfHover(mouseX,mouseY,deltaTime));
+            FrameControl.setMouseOnButton(NextImageLeftButton->CheckIfHover(mouseX,mouseY,deltaTime));
             FrameControl.setMouseOnButton(RotateLeftButton.CheckIfHover(mouseX,mouseY,deltaTime));
             FrameControl.setMouseOnButton(RotateRightButton.CheckIfHover(mouseX,mouseY,deltaTime));
+            FrameControl.setMouseOnButton(FullscreenButton->CheckIfHover(mouseX,mouseY,deltaTime));
             //if(mouseY!=lastMouseY)
             FrameControl.setMouseOnThmbnails(mouseY<THUMB_WIDTH&&windowActive);
 
@@ -369,8 +415,9 @@ int main(int argc, char* argv[]) {
         RotateRightButton.Render(0,ZoomLabel.getNexty()-ZoomLabel.getLabelH()*2);
 
         RotateLeftButton.Render(0,RotateRightButton.getY()-RotateRightButton.getH());
-        NextImageRightButton.Render(winW/2,winH-NextImageRightButton.getH());
-        NextImageLeftButton.Render(winW/2-NextImageLeftButton.getW(),winH-NextImageLeftButton.getH());
+       // NextImageRightButton->Render(winW/2,winH-NextImageRightButton->getH());
+        //NextImageLeftButton->Render(winW/2-NextImageLeftButton->getW(),winH-NextImageLeftButton->getH());
+        ButtonsHbox.Render( winW/2, winH);
 
         SDL_RenderPresent(renderer);
 
@@ -421,7 +468,7 @@ int main(int argc, char* argv[]) {
                 if (event.key.keysym.sym == SDLK_ESCAPE)
                     running = false;
 
-                if (event.key.keysym.sym == SDLK_f) {
+                if (event.key.keysym.sym == SDLK_f ) {
                     fullscreen = !fullscreen;
                     SDL_SetWindowFullscreen(
                         window,
@@ -432,11 +479,14 @@ int main(int argc, char* argv[]) {
                     FrameControl.ResetCoolDown();
                     //FrameControl.ResetCoolDown(0.2f);
                 }
-                if (event.key.keysym.sym == SDLK_r) {
-                    Images->CurrentImageRotate90(winW,winH);
+                if (event.key.keysym.sym == SDLK_r && (event.key.keysym.mod & KMOD_LSHIFT)) {
+                    Images->CurrentImageRotate270(winW,winH);
+                }else if(event.key.keysym.sym == SDLK_r){
+
+                       Images->CurrentImageRotate90(winW,winH);
                 }
 
-                if (event.key.keysym.sym == SDLK_h &&event.key.keysym.sym & KMOD_CTRL) {
+                if (event.key.keysym.sym == SDLK_h &&(event.key.keysym.sym & KMOD_CTRL)) {
                     hide_ui=!hide_ui;
                 }
                 if (event.key.keysym.sym == SDLK_SPACE) {
@@ -563,8 +613,9 @@ int main(int argc, char* argv[]) {
       
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
-            NextImageRightButton.setMouseLocation(mouseX, mouseY);
-            NextImageLeftButton.setMouseLocation(mouseX, mouseY);
+            NextImageRightButton->setMouseLocation(mouseX, mouseY);
+            NextImageLeftButton->setMouseLocation(mouseX, mouseY);
+            FullscreenButton->setMouseLocation(mouseX, mouseY);
             RotateLeftButton.setMouseLocation(mouseX,mouseY);
             RotateRightButton.setMouseLocation(mouseX,mouseY);
             int nimg= thumbgroup.CheckIfThumbnaiClicked(0, -1, mouseX, mouseY);
@@ -587,12 +638,25 @@ int main(int argc, char* argv[]) {
 
             }
 
+            if(FullscreenButton->CheckIfClicked()){
+                fullscreen = !fullscreen;
+                    SDL_SetWindowFullscreen(
+                        window,
+                        fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0
+                    );
+                    thumbgroup.UlnoanLoad();
 
-            if(NextImageRightButton.CheckIfClicked()|| NextImageLeftButton.CheckIfClicked()){
+                    FrameControl.ResetCoolDown();
+
+
+
+            }
+
+            if(NextImageRightButton->CheckIfClicked()|| NextImageLeftButton->CheckIfClicked()){
                 dragging=false;
                 Loadthumbnails=true;
-                int ind=Images->NextImage(NextImageRightButton.CheckIfClicked()?1:-1,winW,winH);
-                thumbgroup.NextThumbnail(NextImageRightButton.CheckIfClicked()?1:-1,winW,winH);
+                int ind=Images->NextImage(NextImageRightButton->CheckIfClicked()?1:-1,winW,winH);
+                thumbgroup.NextThumbnail(NextImageRightButton->CheckIfClicked()?1:-1,winW,winH);
               
             }
 
@@ -683,7 +747,7 @@ int APIENTRY WinMain(HINSTANCE, HINSTANCE, LPSTR lpCmdLine, int) {
         WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, argv[i], size_needed, NULL, NULL);
     }
 
-    execDir_Windows=getExecutableDirectory();
+    
     // Call your original main function
     int result = main(argc, argv);
 

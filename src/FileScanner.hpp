@@ -42,6 +42,11 @@ public:
         loadImages();
         sortImages();
     }
+    ~CFileScanner(){
+
+
+        
+    }
 
 
     void loadImages(){
