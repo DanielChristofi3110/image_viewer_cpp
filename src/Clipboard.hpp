@@ -3,12 +3,11 @@
 #include <vector>
 #include <stdio.h>
 
-#ifdef _WIN32
 #include <windows.h>
-#else
+
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
-#endif
+
 
 class CClipboard {
 public:
@@ -27,50 +26,142 @@ public:
 private:
 
 #ifdef _WIN32
-    void copyToWindowsClipboard(SDL_Surface* surf)
+void copyToWindowsClipboard(SDL_Surface* surf)
+{
+    if (!surf) return;
+
+    SDL_Surface* converted =
+        SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0);
+
+    if (!converted) return;
+
+    int width = converted->w;
+    int height = converted->h;
+    int imageSize = converted->pitch * height;
+
+    // ---------- Encode PNG ----------
+    std::vector<unsigned char> pngData;
+
+    auto writeFunc = [](void* context, void* data, int size)
     {
-        if (!surf) return;
+        auto* vec = (std::vector<unsigned char>*)context;
+        unsigned char* bytes = (unsigned char*)data;
+        vec->insert(vec->end(), bytes, bytes + size);
+    };
 
-        SDL_Surface* converted = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_BGRA32, 0);
-        if (!converted) return;
+    stbi_write_png_to_func(
+        writeFunc,
+        &pngData,
+        width,
+        height,
+        4,
+        converted->pixels,
+        converted->pitch
+    );
 
-        int width = converted->w;
-        int height = converted->h;
-        int bytesPerPixel = 4;
-        int imageSize = width * height * bytesPerPixel;
+    UINT pngFormat = RegisterClipboardFormatA("PNG");
 
-        BITMAPINFOHEADER bi = {};
-        bi.biSize = sizeof(BITMAPINFOHEADER);
-        bi.biWidth = width;
-        bi.biHeight = -height; // negative for top-down bitmap
-        bi.biPlanes = 1;
-        bi.biBitCount = 32;
-        bi.biCompression = BI_RGB;
-        bi.biSizeImage = imageSize;
+    HGLOBAL hMemPNG = GlobalAlloc(GMEM_MOVEABLE, pngData.size());
+    void* ptrPNG = GlobalLock(hMemPNG);
+    memcpy(ptrPNG, pngData.data(), pngData.size());
+    GlobalUnlock(hMemPNG);
 
-        HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, sizeof(BITMAPINFOHEADER) + imageSize);
-        if (!hMem) {
-            SDL_FreeSurface(converted);
-            return;
-        }
+    // ---------- Create DIBV5 ----------
+    BITMAPV5HEADER bi = {};
+    bi.bV5Size = sizeof(BITMAPV5HEADER);
+    bi.bV5Width = width;
+    bi.bV5Height = -height;
+    bi.bV5Planes = 1;
+    bi.bV5BitCount = 32;
+    bi.bV5Compression = BI_BITFIELDS;
 
-        void* ptr = GlobalLock(hMem);
-        memcpy(ptr, &bi, sizeof(BITMAPINFOHEADER));
-        memcpy((char*)ptr + sizeof(BITMAPINFOHEADER), converted->pixels, imageSize);
-        GlobalUnlock(hMem);
+    bi.bV5RedMask   = 0x00FF0000;
+    bi.bV5GreenMask = 0x0000FF00;
+    bi.bV5BlueMask  = 0x000000FF;
+    bi.bV5AlphaMask = 0xFF000000;
 
-        if (OpenClipboard(NULL)) {
-            EmptyClipboard();
-            SetClipboardData(CF_DIB, hMem);
-            CloseClipboard();
-            std::cout << "Copied image to Windows clipboard\n";
-        } else {
-            std::cerr << "Failed to open Windows clipboard\n";
-            GlobalFree(hMem);
-        }
+    HGLOBAL hMemV5 = GlobalAlloc(
+        GMEM_MOVEABLE,
+        sizeof(BITMAPV5HEADER) + imageSize
+    );
 
-        SDL_FreeSurface(converted);
+    BYTE* ptrV5 = (BYTE*)GlobalLock(hMemV5);
+
+    memcpy(ptrV5, &bi, sizeof(BITMAPV5HEADER));
+    memcpy(ptrV5 + sizeof(BITMAPV5HEADER),
+           converted->pixels,
+           imageSize);
+
+    GlobalUnlock(hMemV5);
+
+    // ---------- Classic DIB ----------
+    BITMAPINFOHEADER bih = {};
+    bih.biSize = sizeof(BITMAPINFOHEADER);
+    bih.biWidth = width;
+    bih.biHeight = -height;
+    bih.biPlanes = 1;
+    bih.biBitCount = 32;
+    bih.biCompression = BI_RGB;
+
+    HGLOBAL hMemDIB = GlobalAlloc(
+        GMEM_MOVEABLE,
+        sizeof(BITMAPINFOHEADER) + imageSize
+    );
+
+    BYTE* ptrDIB = (BYTE*)GlobalLock(hMemDIB);
+
+    memcpy(ptrDIB, &bih, sizeof(BITMAPINFOHEADER));
+    memcpy(ptrDIB + sizeof(BITMAPINFOHEADER),
+           converted->pixels,
+           imageSize);
+
+    GlobalUnlock(hMemDIB);
+
+    // ---------- Bitmap ----------
+    HDC hdc = GetDC(NULL);
+
+    BITMAPINFO bmi = {};
+    bmi.bmiHeader = bih;
+
+    void* dibPixels = nullptr;
+
+    HBITMAP hBitmap = CreateDIBSection(
+        hdc,
+        &bmi,
+        DIB_RGB_COLORS,
+        &dibPixels,
+        NULL,
+        0
+    );
+
+    memcpy(dibPixels, converted->pixels, imageSize);
+
+    ReleaseDC(NULL, hdc);
+
+    // ---------- Clipboard ----------
+    if (OpenClipboard(NULL))
+    {
+        EmptyClipboard();
+
+        SetClipboardData(pngFormat, hMemPNG); // Discord / Chromium
+        SetClipboardData(CF_DIBV5, hMemV5);   // Modern apps
+        SetClipboardData(CF_DIB, hMemDIB);    // Office fallback
+        SetClipboardData(CF_BITMAP, hBitmap); // GDI apps
+
+        CloseClipboard();
+
+        std::cout << "Copied image to clipboard (PNG + DIB + BITMAP)\n";
     }
+    else
+    {
+        GlobalFree(hMemPNG);
+        GlobalFree(hMemV5);
+        GlobalFree(hMemDIB);
+        DeleteObject(hBitmap);
+    }
+
+    SDL_FreeSurface(converted);
+}
 #else
     void copyToWaylandClipboard(SDL_Surface* surf)
     {
