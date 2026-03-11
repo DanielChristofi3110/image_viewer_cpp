@@ -2,9 +2,9 @@
 #include <iostream>
 #include <vector>
 #include <stdio.h>
-
+#ifdef _WIN32
 #include <windows.h>
-
+#endif
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
