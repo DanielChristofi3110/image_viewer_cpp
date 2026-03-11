@@ -18,15 +18,49 @@ public:
 
 #ifdef _WIN32
         copyToWindowsClipboard(surface);
-#elif defined(__linux__)
-        if (getenv("WAYLAND_DISPLAY"))
-            copyToWaylandClipboard(surface);
-        else
-            copyToX11Clipboard(surface);
-#endif
+#elif __linux__
+
+    bool hasWlCopy = commandExists("wl-copy");
+    bool hasXclip  = commandExists("xclip");
+
+    if (getenv("WAYLAND_DISPLAY") && hasWlCopy)
+    {
+        copyToWaylandClipboard(surface);
+    }
+    else if (hasXclip)
+    {
+        copyToX11Clipboard(surface);
+    }
+    else
+    {
+        std::cerr << "No clipboard tool found (wl-copy or xclip)\n";
     }
 
+#endif
+    }
+#ifdef __linux__
+bool commandExists(const char* cmd)
+{
+    std::string check = "command -v ";
+    check += cmd;
+    check += " >/dev/null 2>&1";
+
+    int result = system(check.c_str());
+    return result == 0;
+}
+
+#endif
 private:
+
+bool commandExists(const char* cmd)
+{
+    std::string check = "command -v ";
+    check += cmd;
+    check += " >/dev/null 2>&1";
+
+    int result = system(check.c_str());
+    return result == 0;
+}
 
 #ifdef _WIN32
 void copyToWindowsClipboard(SDL_Surface* surf)

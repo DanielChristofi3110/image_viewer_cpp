@@ -748,13 +748,20 @@ class CAnimatedlabel{
         if(ctime<=0)return;
 
         label->Render({x,y},Text);
-        ctime-=dt;
+        
 
         SDL_Color tc= label->getTextColor();
+        SDL_Color bc= label->getBackgroundColor();
 
-        Uint8 na= LerpChannel(tc.a,0,ctime);
-
-        label->setTextColor({tc.r,tc.g,tc.b,Uint8(255*ctime)});
+        
+        
+        if(ctime>0){
+        label->setTextColor({tc.r,tc.g,tc.b,Uint8(255*(ctime/time))});
+        label->setBackgroundColor({0,0,0,Uint8(255*(ctime/time))});
+        }
+        if(dt<0.5){
+        ctime-=dt;
+        }
 
 
     }

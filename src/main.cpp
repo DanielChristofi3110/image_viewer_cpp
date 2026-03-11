@@ -280,7 +280,7 @@ int main(int argc, char* argv[]) {
      FullscreenButton->setSvgIcon((execDir+"/resources/vector/Fullscreen.svg").c_str(),false,0.06);
 
     //  Clabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
-    CAnimatedlabel AnimLabelOnCopy(renderer,{0,0},false,true,true,font,{0,255,0,255},1,"Copied to clipboard");
+    CAnimatedlabel AnimLabelOnCopy(renderer,{0,0},true,true,true,font,{0,255,0,255},2,"Copied to clipboard");
 
     CButtonHbox ButtonsHbox;
 
@@ -311,6 +311,7 @@ int main(int argc, char* argv[]) {
      
     //main loop
     CClipboard Clipboard;
+    
     while (running) {
 
 
@@ -411,7 +412,7 @@ int main(int argc, char* argv[]) {
         TimeLabel.Render({0,FileLabel.getNexty()-FileLabel.getLabelH()*2}, Images->getCurrentImageTime());
         ResolutionLabel.Render({0,TimeLabel.getNexty()-TimeLabel.getLabelH()*2}, "Size: "+std::to_string(Images->getCurrentImageW()) + "x" + std::to_string(Images->getCurrentImageH()));
         ZoomLabel.Render({0,ResolutionLabel.getNexty()-ResolutionLabel.getLabelH()*2}, "Zoom: " + std::to_string((int)(zoom*100)) + "%");
-        AnimLabelOnCopy.Render(winW/2, winH/2, deltaTime);
+        AnimLabelOnCopy.Render(0,THUMB_HEIGHT+4*THUMB_PADDING, deltaTime);
 
 
         int lthu=0;
@@ -550,7 +551,10 @@ int main(int argc, char* argv[]) {
                    // std::cout<<"good"<<std::endl;
                     
                     if(Images->getCurrentImageSurface()) {Clipboard.copyImageToClipboard(Images->getCurrentImageSurface());
-                    AnimLabelOnCopy.ResetTimer();}
+                    AnimLabelOnCopy.ResetTimer();
+                    FrameControl.ResetCoolDown(3);
+                
+                }
                 }
 
                 if (event.key.keysym.sym == SDLK_h &&(event.key.keysym.sym & KMOD_CTRL)) {
