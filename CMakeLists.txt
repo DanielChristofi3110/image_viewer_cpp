@@ -94,10 +94,11 @@ if(UNIX AND NOT APPLE)
         ${SDL2_GFX_LIBRARY}
     )
 
-    target_compile_options(viewer PRIVATE -O2)
+    target_compile_options(viewer PRIVATE
+        -O2
+    )
 
 endif()
-
 # -------------------------
 # Copy resources for build
 # -------------------------

@@ -764,6 +764,12 @@ class CImages{
         return images[i]->getSurface();
     }
 
+    SDL_Surface * getCurrentImageSurface(){
+
+
+        return images[currentIndex]->getSurface();
+    }
+
     const std::string getCurrentImageTime() const{
 
         return images[currentIndex]->getCreationTime();

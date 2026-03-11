@@ -1,5 +1,6 @@
 #pragma once
 #include "globals.hpp"
+#include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL2_rotozoom.h>
@@ -339,6 +340,23 @@ void setCords(int x,int y){
 
     cords.x=x;
     cords.y=y;
+}
+
+SDL_Color getTextColor(){
+
+
+    return textColor;
+}
+
+SDL_Color getBackgroundColor(){
+
+
+    return bg_color;
+}
+
+void setTextColor(SDL_Color c){
+
+    textColor=c;
 }
 
 void setIconPositionLeft()  { iconPosition = IconPosition::LEFT; }
@@ -698,3 +716,74 @@ class CButtonHbox{
 
 
 };
+
+
+
+
+class CAnimatedlabel{
+    private:
+    std::unique_ptr<Clabel> label;
+    float ctime=0,time=0;
+    std::string Text;
+
+    Uint8 LerpChannel(Uint8 a, Uint8 b, float t) {
+          return static_cast<Uint8>(a + (b - a) * t);
+        }
+
+
+    public:
+
+    CAnimatedlabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc,float anim_time, const std::string str){
+        Text=str;
+        label = std::make_unique<Clabel>(r,c,db,abs,v,f,tc);
+        time=anim_time;
+        ctime=0;
+
+
+
+    }
+
+
+    void Render(int x,int y,float dt){
+        if(ctime<=0)return;
+
+        label->Render({x,y},Text);
+        ctime-=dt;
+
+        SDL_Color tc= label->getTextColor();
+
+        Uint8 na= LerpChannel(tc.a,0,ctime);
+
+        label->setTextColor({tc.r,tc.g,tc.b,Uint8(255*ctime)});
+
+
+    }
+
+    void ResetTimer(){
+
+        ctime=time;
+
+    }
+
+    
+
+};
+
+
+
+
+
+//  Clabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
+
+//         renderer=r;
+//         cords=c;
+//         drawBackground=db;
+//         absoluteCordinates=abs;
+//         font=f;
+//         visible=v;
+//         textColor=tc;
+
+
+
+
+//     }

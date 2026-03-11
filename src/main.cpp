@@ -6,6 +6,7 @@
 #include "background.hpp"
 #include "FrameControl.hpp"
 #include "FileScanner.hpp"
+#include "Clipboard.hpp"
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
@@ -109,7 +110,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    execDir_Windows=getExecutableDirectory();
+    execDir=getExecutableDirectory();
     // image load f
     CFileScanner FileScanner(argv[1],1);
 
@@ -165,7 +166,7 @@ int main(int argc, char* argv[]) {
 
     //font
 
-    TTF_Font* font = TTF_OpenFont((execDir_Windows+"/fonts/SFUIDisplay-Light.ttf").c_str(), 18);
+    TTF_Font* font = TTF_OpenFont((execDir+"/fonts/SFUIDisplay-Light.ttf").c_str(), 18);
     if (!font) {
         std::cout << "Failed to load font: " << TTF_GetError() << "\n";
         return 1;
@@ -211,39 +212,39 @@ int main(int argc, char* argv[]) {
 
 
     Clabel RotateLeftLabel(renderer,{400,400},true,true,font);
-    RotateLeftLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/RotateLeft.svg").c_str(),0.03);
+    RotateLeftLabel.LoadSVGtoLabel((execDir+"/resources/vector/RotateLeft.svg").c_str(),0.03);
     RotateLeftLabel.setIconPositionLeft();
 
     CButton RotateLeftButton("R",renderer,{400,400},true,true,true,font,{255,255,255,255});
-    RotateLeftButton.setSvgIcon((execDir_Windows+"/resources/vector/RotateLeft.svg").c_str(), true,0.03f);
+    RotateLeftButton.setSvgIcon((execDir+"/resources/vector/RotateLeft.svg").c_str(), true,0.03f);
 
 
 
     CButton RotateRightButton("Shift+R",renderer,{400,400},true,true,true,font,{255,255,255,255});
-    RotateRightButton.setSvgIcon((execDir_Windows+"/resources/vector/RotateRight.svg").c_str(), true,0.03f);
+    RotateRightButton.setSvgIcon((execDir+"/resources/vector/RotateRight.svg").c_str(), true,0.03f);
 
 
     Clabel RotateRightLabel(renderer,{400,400},true,true,font);
-    RotateRightLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/RotateRight.svg").c_str(),0.03);
+    RotateRightLabel.LoadSVGtoLabel((execDir+"/resources/vector/RotateRight.svg").c_str(),0.03);
     RotateRightLabel.setIconPositionLeft();
 
 
 
     Clabel ResolutionLabel(renderer,{400,400},true,true,font);
-    ResolutionLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/Resolution.svg").c_str(),0.03);
+    ResolutionLabel.LoadSVGtoLabel((execDir+"/resources/vector/Resolution.svg").c_str(),0.03);
     ResolutionLabel.setIconPositionLeft();
 
     Clabel ZoomLabel(renderer,{400,400},true,true,font);
-    ZoomLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/Zoom.svg").c_str(),0.03);
+    ZoomLabel.LoadSVGtoLabel((execDir+"/resources/vector/Zoom.svg").c_str(),0.03);
     ZoomLabel.setIconPositionLeft();
 
     Clabel TimeLabel(renderer,{400,400},true,true,font);
-    TimeLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/Date.svg").c_str(),0.03);
+    TimeLabel.LoadSVGtoLabel((execDir+"/resources/vector/Date.svg").c_str(),0.03);
     TimeLabel.setIconPositionLeft();
 
 
     Clabel FileLabel(renderer,{400,400},true,true,font);
-    FileLabel.LoadSVGtoLabel((execDir_Windows+"/resources/vector/File.svg").c_str(),0.03);
+    FileLabel.LoadSVGtoLabel((execDir+"/resources/vector/File.svg").c_str(),0.03);
     FileLabel.setIconPositionLeft();
 
 
@@ -265,20 +266,21 @@ int main(int argc, char* argv[]) {
 
     std::shared_ptr<CButton> NextImageRightButton =  std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
    // CButton NextImageRightButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-    NextImageRightButton->setSvgIcon((execDir_Windows+"/resources/vector/ArrowRight.svg").c_str(),false,0.06);
+    NextImageRightButton->setSvgIcon((execDir+"/resources/vector/ArrowRight.svg").c_str(),false,0.06);
 
 
 
     std::shared_ptr<CButton> NextImageLeftButton =  std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
     //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-    NextImageLeftButton->setSvgIcon((execDir_Windows+"/resources/vector/ArrowLeft.svg").c_str(),false,0.06);
+    NextImageLeftButton->setSvgIcon((execDir+"/resources/vector/ArrowLeft.svg").c_str(),false,0.06);
 
 
      std::shared_ptr<CButton> FullscreenButton = std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
     //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-     FullscreenButton->setSvgIcon((execDir_Windows+"/resources/vector/Fullscreen.svg").c_str(),false,0.06);
+     FullscreenButton->setSvgIcon((execDir+"/resources/vector/Fullscreen.svg").c_str(),false,0.06);
 
-
+    //  Clabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
+    CAnimatedlabel AnimLabelOnCopy(renderer,{0,0},false,true,true,font,{0,255,0,255},1,"Copied to clipboard");
 
     CButtonHbox ButtonsHbox;
 
@@ -308,6 +310,7 @@ int main(int argc, char* argv[]) {
 
      
     //main loop
+    CClipboard Clipboard;
     while (running) {
 
 
@@ -408,7 +411,7 @@ int main(int argc, char* argv[]) {
         TimeLabel.Render({0,FileLabel.getNexty()-FileLabel.getLabelH()*2}, Images->getCurrentImageTime());
         ResolutionLabel.Render({0,TimeLabel.getNexty()-TimeLabel.getLabelH()*2}, "Size: "+std::to_string(Images->getCurrentImageW()) + "x" + std::to_string(Images->getCurrentImageH()));
         ZoomLabel.Render({0,ResolutionLabel.getNexty()-ResolutionLabel.getLabelH()*2}, "Zoom: " + std::to_string((int)(zoom*100)) + "%");
-
+        AnimLabelOnCopy.Render(winW/2, winH/2, deltaTime);
 
 
         int lthu=0;
@@ -541,6 +544,14 @@ int main(int argc, char* argv[]) {
 
                        Images->CurrentImageRotate90(winW,winH);
                 }
+                if (event.key.keysym.sym == SDLK_c && (event.key.keysym.mod & KMOD_CTRL)) {
+                    //std::cout<<"Copy to clipboard init"<<std::endl;
+               
+                   // std::cout<<"good"<<std::endl;
+                    
+                    if(Images->getCurrentImageSurface()) {Clipboard.copyImageToClipboard(Images->getCurrentImageSurface());
+                    AnimLabelOnCopy.ResetTimer();}
+                }
 
                 if (event.key.keysym.sym == SDLK_h &&(event.key.keysym.sym & KMOD_CTRL)) {
                     hide_ui=!hide_ui;
@@ -600,8 +611,8 @@ int main(int argc, char* argv[]) {
 
 
                 }
-                std::cout << "tmb " <<currentIndex-thumbgroup.getScrollOffset() <<" scroll:"<<thumbgroup.getScrollOffset()<<" ind:"<<currentIndex<<std::endl;
-                std::cout<<"winW over "<<thumb_showing<<std::endl;
+               // std::cout << "tmb " <<currentIndex-thumbgroup.getScrollOffset() <<" scroll:"<<thumbgroup.getScrollOffset()<<" ind:"<<currentIndex<<std::endl;
+                //std::cout<<"winW over "<<thumb_showing<<std::endl;
 
 
 
