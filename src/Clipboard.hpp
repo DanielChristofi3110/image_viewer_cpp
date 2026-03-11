@@ -31,7 +31,7 @@ private:
     {
         if (!surf) return;
 
-        SDL_Surface* converted = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0);
+        SDL_Surface* converted = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_BGRA32, 0);
         if (!converted) return;
 
         int width = converted->w;
