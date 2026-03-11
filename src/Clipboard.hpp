@@ -18,8 +18,11 @@ public:
 
 #ifdef _WIN32
         copyToWindowsClipboard(surface);
-#else
-        copyToWaylandClipboard(surface);
+#elif defined(__linux__)
+        if (getenv("WAYLAND_DISPLAY"))
+            copyToWaylandClipboard(surface);
+        else
+            copyToX11Clipboard(surface);
 #endif
     }
 
@@ -207,6 +210,61 @@ void copyToWindowsClipboard(SDL_Surface* surf)
         pclose(pipe);
 
         std::cout << "Copied image to Wayland clipboard (PNG)\n";
+    }
+
+
+    void copyToX11Clipboard(SDL_Surface* surf)
+    {
+        if (!surf) return;
+
+        SDL_Surface* converted =
+            SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0);
+
+        if (!converted) return;
+
+        std::vector<unsigned char> pngData;
+
+        auto writeFunc = [](void* context, void* data, int size)
+        {
+            auto* vec = (std::vector<unsigned char>*)context;
+            unsigned char* bytes = (unsigned char*)data;
+            vec->insert(vec->end(), bytes, bytes + size);
+        };
+
+        int result = stbi_write_png_to_func(
+            writeFunc,
+            &pngData,
+            converted->w,
+            converted->h,
+            4,
+            converted->pixels,
+            converted->pitch
+        );
+
+        SDL_FreeSurface(converted);
+
+        if (!result)
+        {
+            std::cerr << "Failed to encode PNG\n";
+            return;
+        }
+
+        // Pipe to xclip
+        FILE* pipe = popen(
+            "xclip -selection clipboard -t image/png -i",
+            "w"
+        );
+
+        if (!pipe)
+        {
+            std::cerr << "Failed to run xclip\n";
+            return;
+        }
+
+        fwrite(pngData.data(), 1, pngData.size(), pipe);
+        pclose(pipe);
+
+        std::cout << "Copied image to X11 clipboard (PNG)\n";
     }
 #endif
 };
