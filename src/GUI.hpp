@@ -778,7 +778,39 @@ class CAnimatedlabel{
 
 
 
+class CMouseLabel{
 
+private:
+
+Cordinates Offset {0,0};
+std::unique_ptr<Clabel> label;
+std::string Text="Test";
+public:
+
+CMouseLabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
+
+    label=std::make_unique<Clabel>(r,c,db,abs,v,f,tc);
+    label->setBackgroundColor({0,0,0,255});
+    label->setTextColor({255,255,255,255});
+
+
+
+
+}
+
+
+void Render(int mouseX,int mouseY,const std::string txt){
+
+
+    label->Render({mouseX+Offset.x,mouseY+Offset.y},txt);
+}
+
+
+
+
+
+
+};
 
 //  Clabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
 

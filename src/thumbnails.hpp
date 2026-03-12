@@ -852,7 +852,7 @@ class CThumbnailGroup{
 
                         //std::cout<<"press on bar "<<(float)mx/winW<<std::endl;
                         if(new_scrollOffset!=scrollOffset){
-                        scrollOffset=((float)mx/wW)*size;
+                        scrollOffset=new_scrollOffset;
                         ReplaceThumbnailsAround(scrollOffset,thumb_showing);
                     
                     

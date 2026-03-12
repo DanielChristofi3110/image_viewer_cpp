@@ -315,6 +315,8 @@ int main(int argc, char* argv[]) {
     CCursor Cursor;
 
     CCursor::cursorType CursorType ;
+
+    CMouseLabel MouseLable(renderer,{0,0},true,true,true,font,{0,255,0,255});
     
     while (running) {
 
@@ -479,7 +481,11 @@ int main(int argc, char* argv[]) {
 
             if(FrameControl.getMouseOnButton()) CursorType=CCursor::Hand;
              //if(FrameControl.getMouseOnButton()) CursorType=CCursor::Hand;
-            if(mouseY>=0 && mouseY<=10){CursorType=CCursor::SizeWE;}
+            if(mouseY>=0 && mouseY<=10){
+                MouseLable.Render(mouseX,mouseY,(std::to_string(1+int(((float)mouseX/winW)*thumbgroup.getSize()))+"/"+std::to_string(thumbgroup.getSize())));
+                CursorType=CCursor::SizeWE;
+                
+            }
             
 
         }
