@@ -1,4 +1,5 @@
 #pragma once
+#include "Cursor.hpp"
 #include "globals.hpp"
 #include "image.hpp"
 #include "GUI.hpp"
@@ -610,13 +611,17 @@ class CThumbnailGroup{
 
     }
 
-    void CheckThumbnailPress(float dt,int mx,int my){
+    void CheckThumbnailPress(float dt,int mx,int my,CCursor::cursorType & cursor){
          if(buttons.empty()) return;
 
          for(int i=0;i<buttons.size();i++){
             //int x=buttons[i]->getX();
             //int y=buttons[i]->getY();
-            buttons[i]->CheckIfHover(mx,my,dt);
+            if(buttons[i]->CheckIfHover(mx,my,dt)){
+
+
+                cursor=CCursor::Hand;
+            }
 
          }
 
@@ -744,7 +749,7 @@ class CThumbnailGroup{
     }
 
 
-    void Render(int &winH,int &winW,int mx,int my,float dt){
+    void Render(int &winH,int &winW,int mx,int my,float dt,CCursor::cursorType & cursor){
 
          // std::cout<<"Render call"<<std::endl;
         
@@ -764,7 +769,7 @@ class CThumbnailGroup{
       
        
         //std::cout<<"PRESS call"<<std::endl;
-        CheckThumbnailPress(dt,mx,my);
+        CheckThumbnailPress(dt,mx,my,cursor);
         //std::cout<<"PRESS exit"<<std::endl;
 
 
@@ -790,6 +795,8 @@ class CThumbnailGroup{
        //   std::cout<<"Render exit"<<std::endl;
 
     }
+
+   
     void drawProgress(std::unique_ptr<Clabel>& s,int c,int m){
 
 
@@ -838,6 +845,24 @@ class CThumbnailGroup{
     
     
     }
+    void MoveScrollBar(int mx,int my,int wW,int wH){
+
+          if(my<=10 &&(mx>=0 && mx<=wW)){
+                int new_scrollOffset=((float)mx/wW)*size;
+
+                        //std::cout<<"press on bar "<<(float)mx/winW<<std::endl;
+                        if(new_scrollOffset!=scrollOffset){
+                        scrollOffset=((float)mx/wW)*size;
+                        ReplaceThumbnailsAround(scrollOffset,thumb_showing);
+                    
+                    
+                    }
+                       
+                 }    
+
+
+    }
+
 
     void MoveScrollTo(int n,int wW,int wH){
        int est_showing=0;

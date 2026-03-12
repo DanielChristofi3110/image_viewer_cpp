@@ -7,6 +7,7 @@
 #include "FrameControl.hpp"
 #include "FileScanner.hpp"
 #include "Clipboard.hpp"
+#include "Cursor.hpp"
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
@@ -311,9 +312,15 @@ int main(int argc, char* argv[]) {
      
     //main loop
     CClipboard Clipboard;
+    CCursor Cursor;
+
+    CCursor::cursorType CursorType ;
     
     while (running) {
 
+        
+
+       CursorType=CCursor::Arrow;
 
         if(FileScanner.hasNewImages()){
 
@@ -461,7 +468,7 @@ int main(int argc, char* argv[]) {
 
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
-            thumbgroup.Render(winH, winW,mouseX,mouseY,deltaTime);
+            thumbgroup.Render(winH, winW,mouseX,mouseY,deltaTime,CursorType);
             FrameControl.setMouseOnButton(NextImageRightButton->CheckIfHover(mouseX,mouseY,deltaTime));
             FrameControl.setMouseOnButton(NextImageLeftButton->CheckIfHover(mouseX,mouseY,deltaTime));
             FrameControl.setMouseOnButton(RotateLeftButton.CheckIfHover(mouseX,mouseY,deltaTime));
@@ -469,6 +476,11 @@ int main(int argc, char* argv[]) {
             FrameControl.setMouseOnButton(FullscreenButton->CheckIfHover(mouseX,mouseY,deltaTime));
             //if(mouseY!=lastMouseY)
             FrameControl.setMouseOnThmbnails(mouseY<THUMB_WIDTH&&windowActive);
+
+            if(FrameControl.getMouseOnButton()) CursorType=CCursor::Hand;
+             //if(FrameControl.getMouseOnButton()) CursorType=CCursor::Hand;
+            if(mouseY>=0 && mouseY<=10){CursorType=CCursor::SizeWE;}
+            
 
         }
 
@@ -669,6 +681,8 @@ int main(int argc, char* argv[]) {
         
             }
           
+
+
             if (event.type == SDL_MOUSEBUTTONDOWN &&
                 event.button.button == SDL_BUTTON_LEFT) {
 
@@ -689,6 +703,11 @@ int main(int argc, char* argv[]) {
             FullscreenButton->setMouseLocation(mouseX, mouseY);
             RotateLeftButton.setMouseLocation(mouseX,mouseY);
             RotateRightButton.setMouseLocation(mouseX,mouseY);
+
+             
+
+
+
             int nimg= thumbgroup.CheckIfThumbnaiClicked(0, -1, mouseX, mouseY);
 
             if( RotateLeftButton.CheckIfClicked()){
@@ -735,6 +754,15 @@ int main(int argc, char* argv[]) {
             }
 
 
+                }else if (event.button.button == SDL_BUTTON_LEFT) {
+
+                  if(event.button.y<=10){
+
+
+                       thumbgroup.MoveScrollBar(event.button.x, event.button.y, winW, winH);
+                        dragging=false;
+                 }     
+
                 }
 
 
@@ -754,7 +782,9 @@ int main(int argc, char* argv[]) {
                         lastMouseY = event.motion.y;
                     }
         }
-       
+        if(dragging) CursorType=CCursor::SizeAll;
+
+       Cursor.setCursor( CursorType);
         Uint32 currentTime = SDL_GetTicks();
      
         Uint32 frameTime = SDL_GetTicks() - frameStart;

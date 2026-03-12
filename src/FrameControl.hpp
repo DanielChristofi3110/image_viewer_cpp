@@ -62,6 +62,12 @@ class CFrameControl{
 
     }
 
+
+    bool getMouseOnButton(){
+
+
+        return MouseOnButton;
+    }
     int estimateFrameDelat(int mfps){
         int dfps=mfps;
          //std::cout<<"sss\n";

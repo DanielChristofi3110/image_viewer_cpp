@@ -38,6 +38,9 @@ public:
 
 #endif
     }
+
+private:
+
 #ifdef __linux__
 bool commandExists(const char* cmd)
 {
@@ -50,17 +53,6 @@ bool commandExists(const char* cmd)
 }
 
 #endif
-private:
-
-bool commandExists(const char* cmd)
-{
-    std::string check = "command -v ";
-    check += cmd;
-    check += " >/dev/null 2>&1";
-
-    int result = system(check.c_str());
-    return result == 0;
-}
 
 #ifdef _WIN32
 void copyToWindowsClipboard(SDL_Surface* surf)
