@@ -181,6 +181,8 @@ int main(int argc, char* argv[]) {
             while (running) {
         // Handle events
         while (SDL_PollEvent(&event)) {
+
+            SDL_GetRendererOutputSize(renderer, &winW, &winH);
             if (event.type == SDL_QUIT) {
                 running = false;
             }
@@ -203,7 +205,8 @@ int main(int argc, char* argv[]) {
         
 
         SDL_RenderClear(renderer);
-        dropImageLabel.Render("Drop an Image file");
+        //SDL_GetRendererOutputSize(renderer, &winW, &winH);
+        dropImageLabel.Render({winW/2 -100,winH/2},"Drop an Image file");
         
         SDL_RenderPresent(renderer);
     }
@@ -368,27 +371,6 @@ int main(int argc, char* argv[]) {
     CCursor::cursorType CursorType ;
 
     CMouseLabel MouseLable(renderer,{0,0},true,true,true,font,{0,255,0,255});
-
-    //file drop test
-    // while (running) {
-    //     while (SDL_PollEvent(&event)) {
-
-    //         if (event.type == SDL_QUIT) {
-    //             running = false;
-    //         }
-
-    //         if (event.type == SDL_DROPFILE) {
-    //             char* droppedFile = event.drop.file;
-
-    //             std::cout << "File dropped: " << droppedFile << std::endl;
-
-    //             // Load your image here
-    //             // loadImage(droppedFile);
-
-    //             SDL_free(droppedFile); // IMPORTANT
-    //         }
-    //     }
-    // }
 
 
     //current

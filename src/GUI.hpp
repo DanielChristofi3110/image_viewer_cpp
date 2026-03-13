@@ -329,7 +329,7 @@ void LoadSVGtoLabel(const char* filename, float scale = 1.0f)
 
 
 int getNexty(){return Nexty;}
-int isVisible(){return visible;}
+bool  isVisible(){return visible;}
 int getLabelH(){return  labelH;}
 int getLabelW(){return  labelW;}
 
@@ -817,17 +817,3 @@ void Render(int mouseX,int mouseY,int winW,int winH,const std::string txt){
 
 };
 
-//  Clabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
-
-//         renderer=r;
-//         cords=c;
-//         drawBackground=db;
-//         absoluteCordinates=abs;
-//         font=f;
-//         visible=v;
-//         textColor=tc;
-
-
-
-
-//     }
