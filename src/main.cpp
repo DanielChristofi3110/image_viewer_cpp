@@ -98,6 +98,7 @@ int main(int argc, char* argv[]) {
     SetProcessDPIAware();
     #endif
 
+      execDir=getExecutableDirectory();
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG);
 
@@ -225,7 +226,7 @@ int main(int argc, char* argv[]) {
 
    running=true;
 
-    execDir=getExecutableDirectory();
+  
     // image load f
     //const char * p= droppedPath.string().c_str();
     CFileScanner FileScanner(std::move(droppedPath),1);
@@ -924,18 +925,18 @@ int APIENTRY WinMain(HINSTANCE, HINSTANCE, LPSTR lpCmdLine, int) {
     int argc = 1; // The first argument is always the program name
     wchar_t** wargv = CommandLineToArgvW(GetCommandLineW(), &argc);
 
-    if (argc < 2) {
-        // Convert the wide string to a narrow string for MessageBox
-        const wchar_t* errorMsg = L"Usage: viewer <image_path>";
-        int size_needed = WideCharToMultiByte(CP_UTF8, 0, errorMsg, -1, NULL, 0, NULL, NULL);
-        char* errorMsgA = new char[size_needed];
-        WideCharToMultiByte(CP_UTF8, 0, errorMsg, -1, errorMsgA, size_needed, NULL, NULL);
+    // if (argc < 2) {
+    //     // Convert the wide string to a narrow string for MessageBox
+    //     const wchar_t* errorMsg = L"Usage: viewer <image_path>";
+    //     int size_needed = WideCharToMultiByte(CP_UTF8, 0, errorMsg, -1, NULL, 0, NULL, NULL);
+    //     char* errorMsgA = new char[size_needed];
+    //     WideCharToMultiByte(CP_UTF8, 0, errorMsg, -1, errorMsgA, size_needed, NULL, NULL);
 
-        MessageBoxA(NULL, errorMsgA, "Error", MB_OK | MB_ICONERROR);
+    //     MessageBoxA(NULL, errorMsgA, "Error", MB_OK | MB_ICONERROR);
 
-        delete[] errorMsgA;
-        return 1;
-    }
+    //     delete[] errorMsgA;
+    //     return 1;
+    // }
 
     // Convert the command line arguments from wchar_t** to char**
     char** argv = new char*[argc];
@@ -957,7 +958,7 @@ int APIENTRY WinMain(HINSTANCE, HINSTANCE, LPSTR lpCmdLine, int) {
 
     // Free the wide-char arguments
     LocalFree(wargv);
-    //system("pause");
+   // system("pause");
     return result;
 
 }
