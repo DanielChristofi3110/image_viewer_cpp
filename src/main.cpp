@@ -11,6 +11,7 @@
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <ostream>
@@ -97,12 +98,6 @@ int main(int argc, char* argv[]) {
     SetProcessDPIAware();
     #endif
 
-
-    if (argc < 2) {
-        std::cout << "Usage: viewer <image_path>\n";
-        return 1;
-    }
-
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG);
 
@@ -110,20 +105,7 @@ int main(int argc, char* argv[]) {
         std::cout << "TTF Init Error: " << TTF_GetError() << "\n";
         return 1;
     }
-
-    execDir=getExecutableDirectory();
-    // image load f
-    CFileScanner FileScanner(argv[1],1);
-
-    // std::cout<<"------------------Images Loaded-----------------------"<<std::endl;
-  
-    // std::cout<<"------------------Images Sorted-----------------------"<<std::endl;
-
-    int currentIndex = 0;
-
-    int thumbcurrentIndex=0;
-
-    currentIndex=FileScanner.getInitCurrentIndex();
+    
     //AA
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
@@ -187,8 +169,76 @@ int main(int argc, char* argv[]) {
     bool dragging = false;
 
     int winW, winH;
-    
+    SDL_Event event;
     SDL_GetRendererOutputSize(renderer, &winW, &winH);
+
+    std::unique_ptr<std::filesystem::path> droppedPath;
+
+    Clabel dropImageLabel(renderer,{1000/2,700/2},false,true,font);
+    if (argc < 2) {
+        std::cout << "Usage: viewer <image_path>\n";
+            while (running) {
+        // Handle events
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                running = false;
+            }
+
+            if (event.type == SDL_DROPFILE) {
+            droppedPath = std::make_unique<std::filesystem::path>(event.drop.file);
+
+            //std::cout << "File dropped: " << droppedPath << std::endl;
+
+
+            
+            SDL_free(event.drop.file); 
+            running = false;
+        }
+            
+        }
+        
+
+        SDL_SetRenderDrawColor(renderer, 66, 66, 255, 255);
+        
+
+        SDL_RenderClear(renderer);
+        dropImageLabel.Render("Drop an Image file");
+        
+        SDL_RenderPresent(renderer);
+    }
+    
+    }else {
+    droppedPath=std::make_unique<std::filesystem::path>(argv[1]);
+    }
+
+    if(droppedPath==nullptr){ 
+        
+        
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        IMG_Quit();
+        SDL_Quit();
+        TTF_CloseFont(font);
+        TTF_Quit();
+        return 1;}
+
+   running=true;
+
+    execDir=getExecutableDirectory();
+    // image load f
+    //const char * p= droppedPath.string().c_str();
+    CFileScanner FileScanner(std::move(droppedPath),1);
+
+    // std::cout<<"------------------Images Loaded-----------------------"<<std::endl;
+  
+    // std::cout<<"------------------Images Sorted-----------------------"<<std::endl;
+
+    int currentIndex = 0;
+
+    int thumbcurrentIndex=0;
+
+    currentIndex=FileScanner.getInitCurrentIndex();
   
     //CImages Images(renderer,imageFiles,currentIndex,winW,winH);
     std::shared_ptr<CImages> Images = std::make_shared<CImages>(renderer,FileScanner.getImageFiles(),currentIndex,winW,winH);
@@ -291,7 +341,7 @@ int main(int argc, char* argv[]) {
     ButtonsHbox.addButton(NextImageRightButton);
     
 
-    SDL_Event event;
+ 
 
     CBackground background(renderer);
     //SDL_Texture* backgroundTexture = CreateRadialGradientTexture(renderer, winW, winH,{0,0,0,255});
@@ -317,6 +367,32 @@ int main(int argc, char* argv[]) {
     CCursor::cursorType CursorType ;
 
     CMouseLabel MouseLable(renderer,{0,0},true,true,true,font,{0,255,0,255});
+
+    //file drop test
+    // while (running) {
+    //     while (SDL_PollEvent(&event)) {
+
+    //         if (event.type == SDL_QUIT) {
+    //             running = false;
+    //         }
+
+    //         if (event.type == SDL_DROPFILE) {
+    //             char* droppedFile = event.drop.file;
+
+    //             std::cout << "File dropped: " << droppedFile << std::endl;
+
+    //             // Load your image here
+    //             // loadImage(droppedFile);
+
+    //             SDL_free(droppedFile); // IMPORTANT
+    //         }
+    //     }
+    // }
+
+
+    //current
+
+
     
     while (running) {
 
@@ -482,7 +558,7 @@ int main(int argc, char* argv[]) {
             if(FrameControl.getMouseOnButton()) CursorType=CCursor::Hand;
              //if(FrameControl.getMouseOnButton()) CursorType=CCursor::Hand;
             if(mouseY>=0 && mouseY<=10){
-                MouseLable.Render(mouseX,mouseY,(std::to_string(1+int(((float)mouseX/winW)*thumbgroup.getSize()))+"/"+std::to_string(thumbgroup.getSize())));
+                MouseLable.Render(mouseX,mouseY,winW,winH,(std::to_string(1+int(((float)mouseX/winW)*thumbgroup.getSize()))+"/"+std::to_string(thumbgroup.getSize())));
                 CursorType=CCursor::SizeWE;
                 
             }
@@ -506,6 +582,18 @@ int main(int argc, char* argv[]) {
             if (event.type == SDL_QUIT)
                 running = false;
 
+            if (event.type == SDL_DROPFILE) {
+                std::filesystem::path droppedPath(event.drop.file);
+
+                std::cout << "File dropped: " << droppedPath.string() << std::endl;
+
+                FileScanner.addPath(std::move(droppedPath));
+
+                thumbgroup.addThumbnail(FileScanner.getLastImageFile());
+                Images->addImage(FileScanner.getLastImageFile());
+
+                SDL_free(event.drop.file);
+            }
 
             if (event.window.event == SDL_WINDOWEVENT_RESIZED)
             {

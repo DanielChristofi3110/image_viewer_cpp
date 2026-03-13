@@ -5,3 +5,5 @@ build2.bat
 sync.ps1
 build/
 .cache
+src/test.cpp
+src/test_build

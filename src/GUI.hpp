@@ -799,8 +799,13 @@ CMouseLabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,S
 }
 
 
-void Render(int mouseX,int mouseY,const std::string txt){
+void Render(int mouseX,int mouseY,int winW,int winH,const std::string txt){
 
+    if(mouseX>winW-label->getLabelW()){
+        Offset.x=-label->getLabelW();
+    }else {
+         Offset.x=0;
+    }
 
     label->Render({mouseX+Offset.x,mouseY+Offset.y},txt);
 }

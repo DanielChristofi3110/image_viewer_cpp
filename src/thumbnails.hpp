@@ -726,6 +726,7 @@ class CThumbnailGroup{
     bool ReplaceThumbnailsAround(int ind
     ,int temp_thumb_showing) {
         //return false;
+        if(ind<0) return false;
         bool all_loaded=true;
         int around_size=temp_thumb_showing*2 ;
        std::cout << "Trying Replace Around "<<temp_thumb_showing*2 <<"  "<<ind<<"\n";

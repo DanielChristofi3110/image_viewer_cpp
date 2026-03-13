@@ -4,7 +4,9 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_ttf.h>
+#include <algorithm>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -38,7 +40,31 @@ public:
         updateTime = t;
         cupdateTime = t;
 
+        if (ar == nullptr) {
+        std::cerr << "Error: input path is null\n";
+        return;
+    }
+
+
         fs::path fi(ar);
+        firstImagePath = fi;
+        dir = firstImagePath.parent_path();
+
+       // loadImages();
+     if(SINGLE_IMAGE_LOAD)loadFirstImage();
+     else loadImages();
+        sortImages();
+    }
+
+
+
+    CFileScanner( std::unique_ptr<std::filesystem::path> p, float t){
+        updateTime = t;
+        cupdateTime = t;
+
+
+
+        fs::path fi=std::move(*p);
         firstImagePath = fi;
         dir = firstImagePath.parent_path();
 
@@ -234,5 +260,12 @@ public:
         std::lock_guard<std::mutex> lock(dataMutex);
         return imageFiles.back().string();
     }
+
+
+int addPath(std::filesystem::path&& p){
+    imageFiles.push_back(std::move(p));
+    knownImages.insert(imageFiles.back());
+    return imageFiles.size()-1;
+}
 
 };

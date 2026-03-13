@@ -591,6 +591,7 @@ class CImages{
     }
     void LoadAroundAsync(int aroundnum)
     {
+        if (size<=0) return;
         for (int i = -aroundnum; i <= aroundnum; i++)
         {
             int ind = (currentIndex + i + size) % size;
