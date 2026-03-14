@@ -259,6 +259,12 @@ class CImage{
              
               
         }
+        void LoadImage2(const std::string& path,int winW,int winH){
+
+
+            LoadImage(path,winW,winH);
+        }
+
 
         void calcZoom(int winW,int winH){
             

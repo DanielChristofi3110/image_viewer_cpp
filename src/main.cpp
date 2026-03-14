@@ -8,6 +8,7 @@
 #include "FileScanner.hpp"
 #include "Clipboard.hpp"
 #include "Cursor.hpp"
+#include "ConfigLoader.hpp"
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
@@ -98,14 +99,11 @@ int main(int argc, char* argv[]) {
     SetProcessDPIAware();
     #endif
 
-      execDir=getExecutableDirectory();
+    execDir=getExecutableDirectory();
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG);
 
-    if (TTF_Init() == -1) {
-        std::cout << "TTF Init Error: " << TTF_GetError() << "\n";
-        return 1;
-    }
+
     
     //AA
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
@@ -135,8 +133,23 @@ int main(int argc, char* argv[]) {
     );
     #endif
 
+    std::cout <<"HELLO"<<std::endl;
+    CConfigLoader ConfigLoader;
+    std::cout <<execDir+"/config/config.ini"<<std::endl;
+    if (ConfigLoader.load(execDir+"/config/config.ini"))
+    {
+        std::cout << "Font Name: " << ConfigLoader.getFontName() << std::endl;
+        std::cout << "Font Size: " << ConfigLoader.getFontSize() << std::endl;
+        std::cout << "Idle Fps: " << ConfigLoader.getidleFps() << std::endl;
+    }
+
+    if (TTF_Init() == -1) {
+        std::cout << "TTF Init Error: " << TTF_GetError() << "\n";
+        return 1;
+    }
 
 
+    int idleFps=ConfigLoader.getidleFps();
     SDL_Renderer* renderer = SDL_CreateRenderer(
         window, -1,
         SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_TARGETTEXTURE
@@ -150,10 +163,12 @@ int main(int argc, char* argv[]) {
 
     //font
 
-    TTF_Font* font = TTF_OpenFont((execDir+"/fonts/SFUIDisplay-Light.ttf").c_str(), 18);
+    TTF_Font* font = TTF_OpenFont((execDir+"/fonts/"+ConfigLoader.getFontName()).c_str(), ConfigLoader.getFontSize());
     if (!font) {
-        std::cout << "Failed to load font: " << TTF_GetError() << "\n";
-        return 1;
+        std::cout << "Failed to load font: " << TTF_GetError() <<"fallback"<< "\n";
+        font = TTF_OpenFont((execDir+"/fonts/InterVariable.ttf").c_str(), ConfigLoader.getFontSize());
+         if (!font)
+             return 1;
     }
 
     std::cout<<"------------------Loaded font-----------------------"<<std::endl;
@@ -175,28 +190,38 @@ int main(int argc, char* argv[]) {
 
     std::unique_ptr<std::filesystem::path> droppedPath;
 
-    Clabel dropImageLabel(renderer,{1000/2,700/2},false,true,font);
+    CFrameControl FrameControl(2,true,idleFps);
+
+    Clabel dropImageLabel("Drop an Image file",renderer,{1000/2,700/2},true,true,true,font,{255,255,255,255});
+    dropImageLabel.setBackgroundColor({0,0,0,255});
+
+    CImage initBackImage(renderer);
+    initBackImage.LoadImage2((execDir+"/resources/images/iconimage.png").c_str(),winW,winH);
+
+
     if (argc < 2) {
         std::cout << "Usage: viewer <image_path>\n";
-            while (running) {
+        while (running) {
         // Handle events
-        while (SDL_PollEvent(&event)) {
+        Uint32 frameStart = SDL_GetTicks();
+        auto start = std::chrono::high_resolution_clock::now();
+            while (SDL_PollEvent(&event)) {
 
-            SDL_GetRendererOutputSize(renderer, &winW, &winH);
-            if (event.type == SDL_QUIT) {
+                SDL_GetRendererOutputSize(renderer, &winW, &winH);
+                if (event.type == SDL_QUIT) {
+                    running = false;
+                }
+
+                if (event.type == SDL_DROPFILE) {
+                droppedPath = std::make_unique<std::filesystem::path>(event.drop.file);
+
+                //std::cout << "File dropped: " << droppedPath << std::endl;
+
+
+                
+                SDL_free(event.drop.file); 
                 running = false;
             }
-
-            if (event.type == SDL_DROPFILE) {
-            droppedPath = std::make_unique<std::filesystem::path>(event.drop.file);
-
-            //std::cout << "File dropped: " << droppedPath << std::endl;
-
-
-            
-            SDL_free(event.drop.file); 
-            running = false;
-        }
             
         }
         
@@ -206,9 +231,17 @@ int main(int argc, char* argv[]) {
 
         SDL_RenderClear(renderer);
         //SDL_GetRendererOutputSize(renderer, &winW, &winH);
-        dropImageLabel.Render({winW/2 -100,winH/2},"Drop an Image file");
+        initBackImage.Render(winW,winH);
+        dropImageLabel.Render(Cordinates{winW/2 -100,winH/2});
+        //dropImageLabel.Render(Cordinates{100,100});
         
         SDL_RenderPresent(renderer);
+         Uint32 frameTime = SDL_GetTicks() - frameStart;
+        //int frameDelay=estimateFrameDelat(DES_FPS);
+        int frameDelay=FrameControl.estimateFrameDelat(1);
+            if (frameDelay > frameTime) {
+                SDL_Delay(frameDelay - frameTime);
+            }
     }
     
     }else {
@@ -228,6 +261,7 @@ int main(int argc, char* argv[]) {
         return 1;}
 
    running=true;
+
 
   
     // image load f
@@ -303,7 +337,7 @@ int main(int argc, char* argv[]) {
     FileLabel.setIconPositionLeft();
 
 
-    Clabel UnhideTipLabel(renderer,{400,400},true,true,font);
+    Clabel UnhideTipLabel("Crl+H Unhide UI",renderer,{400,400},true,true,true,font,{255,255,255,255});
 
 
     Clabel InfoLabel(renderer,{400,400},true,false,font);
@@ -356,7 +390,7 @@ int main(int argc, char* argv[]) {
      int thumb_showing=0;
 
 
-     CFrameControl FrameControl(2,true);
+     
      FrameControl.ResetCoolDown(2);
      FileScanner.startWatching();
 
@@ -380,7 +414,8 @@ int main(int argc, char* argv[]) {
     while (running) {
 
         
-
+        Uint32 frameStart = SDL_GetTicks();
+        auto start = std::chrono::high_resolution_clock::now();
        CursorType=CCursor::Arrow;
 
         if(FileScanner.hasNewImages()){
@@ -413,8 +448,7 @@ int main(int argc, char* argv[]) {
         FrameControl.setScrolling(dragging);
        
     
-        Uint32 frameStart = SDL_GetTicks();
-        auto start = std::chrono::high_resolution_clock::now();
+        
 
         SDL_GetRendererOutputSize(renderer, &winW, &winH);
 
@@ -473,7 +507,7 @@ int main(int argc, char* argv[]) {
 
          
        
-        UnhideTipLabel.Render({0,winH-UnhideTipLabel.getLabelH()}, "Ctrl+H to unhide UI");
+        UnhideTipLabel.Render(Cordinates{0,winH-UnhideTipLabel.getLabelH()});
         std::string DisplayFilePath = FileScanner.getImageFile(currentIndex).substr(FileScanner.getImageFile(currentIndex).find_last_of((delim),FileScanner.getImageFile(currentIndex).length()));
         
         FileLabel.Render({0,winH-FileLabel.getLabelH()}, "File: " + DisplayFilePath.substr(1,DisplayFilePath.length()));
@@ -940,7 +974,9 @@ int APIENTRY WinMain(HINSTANCE, HINSTANCE, LPSTR lpCmdLine, int) {
 
     // Free the wide-char arguments
     LocalFree(wargv);
-   // system("pause");
+    #ifdef _DEBUG
+    system("pause");
+    #endif
     return result;
 
 }

@@ -35,8 +35,11 @@ class Clabel{
     SDL_Color textColor{255,255,255,255},bg_color{76, 76, 76, 150};
     TTF_Font* font=nullptr;
     SDL_Texture* texture=nullptr;
+    SDL_Texture* textTexture=nullptr;
+    std::string Text;
     int Nexty;
     int labelH=0,labelW=0;
+    int textH=0,textW=0;
     
     enum class IconPosition {
     LEFT,
@@ -113,7 +116,7 @@ class Clabel{
 
 
 
-
+        //setText("test");
 
     }
 
@@ -126,56 +129,77 @@ class Clabel{
         font=f;
         visible=v;
         textColor=tc;
-
+        //setText("test");
 
 
 
     }
+    Clabel(const std::string txt, SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
+
+        renderer=r;
+        cords=c;
+        drawBackground=db;
+        absoluteCordinates=abs;
+        font=f;
+        visible=v;
+        textColor=tc;
+        setText(txt);
+
+
+
+    }
+
     ~Clabel(){
         if(texture) SDL_DestroyTexture(texture);
+        if (textTexture)SDL_DestroyTexture(textTexture);
         std::cout<<"Destroy Label "<<std::endl;
     }
 
     Clabel(const Clabel&) = delete;
     Clabel& operator=(const Clabel&) = delete;
 
-void RenderText(const std::string& text)
+void setText(const std::string& text){
+
+    textW = 0;
+    textH = 0;
+    SDL_Surface* textSurface = nullptr;
+    if(textTexture!=nullptr) SDL_DestroyTexture(textTexture);
+
+
+    if (!text.empty())
+        {
+            Text=text;
+            textSurface = TTF_RenderText_Blended(font, text.c_str(), textColor);
+            if (textSurface)
+            {
+                textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+                textW = textSurface->w;
+                textH = textSurface->h;
+                SDL_FreeSurface(textSurface);
+                //std::cout<<"Set text"<<textW<<std::endl;
+                if (!textTexture)
+                    return;
+            }
+        }
+
+
+}
+
+
+void Render()
 {
     if (!visible) return;
     if (!font || !renderer) return;
 
-    SDL_Surface* textSurface = nullptr;
-    SDL_Texture* textTexture = nullptr;
 
-    int textW = 0;
-    int textH = 0;
+    //std::cout<<"Render"<<textW<<std::endl;
 
-    // -------- Render Text Surface (only if not empty) --------
-    if (!text.empty())
-    {
-        textSurface = TTF_RenderText_Blended(font, text.c_str(), textColor);
-        if (textSurface)
-        {
-            textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-            textW = textSurface->w;
-            textH = textSurface->h;
-            SDL_FreeSurface(textSurface);
-
-            if (!textTexture)
-                return;
-        }
-    }
-
-    // Base Y position
-    //int baseY = absoluteCordinates ? cords.y : cords.y - textH;
-
-    // Calculate total width
 // Calculate total width
     int totalWidth = textW;
 
     if (texture)
     {
-        if (text.empty())
+        if (Text.empty())
             totalWidth += iconWidth;
         else
             totalWidth += iconWidth + spacing;
@@ -217,12 +241,13 @@ void RenderText(const std::string& text)
 
         SDL_RenderCopy(renderer, texture, nullptr, &iconRect);
 
-        currentX += iconWidth + (text.empty() ? 0 : spacing);
+        currentX += iconWidth + (Text.empty()? 0 : spacing);
     }
 
     // -------- Render Text --------
     if (textTexture)
     {
+        
         SDL_Rect textRect;
         textRect.x = currentX;
         textRect.y = baseY;
@@ -248,9 +273,11 @@ void RenderText(const std::string& text)
 
     Nexty = baseY + contentHeight + 10;
 
-    if (textTexture)
-        SDL_DestroyTexture(textTexture);
+
 }
+
+
+
 
 
 void RenderBackground(int width, int height)
@@ -282,7 +309,20 @@ void Render(Cordinates c,const std::string& text){
     if(!visible) return;
     cords.x=c.x;
     cords.y=c.y;
-    RenderText(text);
+    setText(text);
+    Render();
+    //std::cout<<"Render label "<<cords.x<<" "<<text<<std::endl;
+
+
+
+
+}
+
+void Render(Cordinates c){
+    if(!visible) return;
+    cords.x=c.x;
+    cords.y=c.y;
+    Render();
     //std::cout<<"Render label "<<cords.x<<" "<<text<<std::endl;
 
 
@@ -304,7 +344,8 @@ void Render(Cordinates c,Cordinates b){
 
 void Render(const std::string& text){
     if(!visible) return;
-    RenderText(text);
+    setText(text);
+    Render();
     //std::cout<<"Render label "<<cords.x<<" "<<text<<std::endl;
 
 
@@ -422,7 +463,8 @@ class CDebugLabels{
 
        
         labels[0]->setCords(cords.x, cords.y);
-        labels[0]->RenderText(strs[0]);
+        labels[0]->setText(strs[0]);
+        labels[0]->Render();
 
         for(int i=1; i<strs.size();i++){
 
@@ -495,6 +537,7 @@ class CButton{
         label->setBackgroundColor({64,64,64,64});
         cColor=nColor;
         Text=text;
+        label->setText(Text);
 
     }
 
@@ -505,7 +548,7 @@ class CButton{
     void Render(){
         if(!enabled) return;
         //std::cout<<"----renderButton"<<std::endl;
-        label->Render(cords,Text);
+        label->Render(cords);
 
 
     }

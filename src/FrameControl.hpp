@@ -17,15 +17,17 @@ class CFrameControl{
         bool Scrolling=false;
         float time=2;
         float cctime=2;
+        int idleFps=0;
         bool enabled=false;
     
     
     public:
 
-    CFrameControl(int t,bool e){
+    CFrameControl(int t,bool e,int ifps){
         enabled =e;
         time=t;
         cctime=-1;
+        idleFps=ifps;
     }
 
     void setWindowActive(bool b){
@@ -88,7 +90,7 @@ class CFrameControl{
            
         }else{
 
-            dfps=10;
+            dfps=idleFps;
         }
 
 
