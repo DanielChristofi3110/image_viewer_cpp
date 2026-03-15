@@ -49,7 +49,7 @@ if(WIN32)
     if(MSVC)
         target_compile_options(viewer PRIVATE
             $<$<CONFIG:Release>:/O2>
-            $<$<CONFIG:Debug>:/Od /Zi>
+            $<$<CONFIG:Debug>:/Od /Zi /Wall>
         )
 
         target_link_options(viewer PRIVATE

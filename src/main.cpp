@@ -172,7 +172,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout<<"------------------Loaded font-----------------------"<<std::endl;
-    int thumb_proc_ind = 0;
+    //int thumb_proc_ind = 0;
     //const int imageFiles_size = imageFiles.size();
 
 
@@ -277,7 +277,7 @@ int main(int argc, char* argv[]) {
 
     int currentIndex = 0;
 
-    int thumbcurrentIndex=0;
+    //int thumbcurrentIndex=0;
 
     currentIndex=FileScanner.getInitCurrentIndex();
   
@@ -304,7 +304,7 @@ int main(int argc, char* argv[]) {
 
 
     Clabel RotateLeftLabel(renderer,{400,400},true,true,font);
-    RotateLeftLabel.LoadSVGtoLabel((execDir+"/resources/vector/RotateLeft.svg").c_str(),0.03);
+    RotateLeftLabel.LoadSVGtoLabel((execDir+"/resources/vector/RotateLeft.svg").c_str(),0.03f);
     RotateLeftLabel.setIconPositionLeft();
 
     CButton RotateLeftButton("R",renderer,{400,400},true,true,true,font,{255,255,255,255});
@@ -317,26 +317,26 @@ int main(int argc, char* argv[]) {
 
 
     Clabel RotateRightLabel(renderer,{400,400},true,true,font);
-    RotateRightLabel.LoadSVGtoLabel((execDir+"/resources/vector/RotateRight.svg").c_str(),0.03);
+    RotateRightLabel.LoadSVGtoLabel((execDir+"/resources/vector/RotateRight.svg").c_str(),0.03f);
     RotateRightLabel.setIconPositionLeft();
 
 
 
     Clabel ResolutionLabel(renderer,{400,400},true,true,font);
-    ResolutionLabel.LoadSVGtoLabel((execDir+"/resources/vector/Resolution.svg").c_str(),0.03);
+    ResolutionLabel.LoadSVGtoLabel((execDir+"/resources/vector/Resolution.svg").c_str(),0.03f);
     ResolutionLabel.setIconPositionLeft();
 
     Clabel ZoomLabel(renderer,{400,400},true,true,font);
-    ZoomLabel.LoadSVGtoLabel((execDir+"/resources/vector/Zoom.svg").c_str(),0.03);
+    ZoomLabel.LoadSVGtoLabel((execDir+"/resources/vector/Zoom.svg").c_str(),0.03f);
     ZoomLabel.setIconPositionLeft();
 
     Clabel TimeLabel(renderer,{400,400},true,true,font);
-    TimeLabel.LoadSVGtoLabel((execDir+"/resources/vector/Date.svg").c_str(),0.03);
+    TimeLabel.LoadSVGtoLabel((execDir+"/resources/vector/Date.svg").c_str(),0.03f);
     TimeLabel.setIconPositionLeft();
 
 
     Clabel FileLabel(renderer,{400,400},true,true,font);
-    FileLabel.LoadSVGtoLabel((execDir+"/resources/vector/File.svg").c_str(),0.03);
+    FileLabel.LoadSVGtoLabel((execDir+"/resources/vector/File.svg").c_str(),0.03f);
     FileLabel.setIconPositionLeft();
 
 
@@ -358,18 +358,18 @@ int main(int argc, char* argv[]) {
 
     std::shared_ptr<CButton> NextImageRightButton =  std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
    // CButton NextImageRightButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-    NextImageRightButton->setSvgIcon((execDir+"/resources/vector/ArrowRight.svg").c_str(),false,0.06);
+    NextImageRightButton->setSvgIcon((execDir+"/resources/vector/ArrowRight.svg").c_str(),false,0.06f);
 
 
 
     std::shared_ptr<CButton> NextImageLeftButton =  std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
     //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-    NextImageLeftButton->setSvgIcon((execDir+"/resources/vector/ArrowLeft.svg").c_str(),false,0.06);
+    NextImageLeftButton->setSvgIcon((execDir+"/resources/vector/ArrowLeft.svg").c_str(),false,0.06f);
 
 
      std::shared_ptr<CButton> FullscreenButton = std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
     //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-     FullscreenButton->setSvgIcon((execDir+"/resources/vector/Fullscreen.svg").c_str(),false,0.06);
+     FullscreenButton->setSvgIcon((execDir+"/resources/vector/Fullscreen.svg").c_str(),false,0.06f);
 
     //  Clabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
     CAnimatedlabel AnimLabelOnCopy(renderer,{0,0},true,true,true,font,{0,255,0,255},2,"Copied to clipboard");
@@ -474,8 +474,8 @@ int main(int argc, char* argv[]) {
         currentIndex= Images->getCurrentIndex();
         zoom=Images->getCurrentImageZoom();
         Cordinates c=Images->getCurrentImageCords();
-        offsetX=c.x;
-        offsetY=c.y;
+        offsetX=static_cast<float>(c.x);
+        offsetY=static_cast<float>(c.y);
 
  
 
@@ -492,7 +492,7 @@ int main(int argc, char* argv[]) {
         // ---- Render info text (with black background)
         std::string info = "File: " + std::string(FileScanner.getImageFile(currentIndex)) +
         "  Size: " + std::to_string(Images->getCurrentImageW()) + "x" + std::to_string(Images->getCurrentImageH()) +
-        "  Zoom: " + std::to_string((int)(zoom*100)) + "%";
+        "  Zoom: " + std::to_string(static_cast<int>(std::floor(zoom*100))) + "%";
 
 
       
@@ -516,7 +516,7 @@ int main(int argc, char* argv[]) {
         FileLabel.Render({0,winH-FileLabel.getLabelH()}, "File: " + DisplayFilePath.substr(1,DisplayFilePath.length()));
         TimeLabel.Render({0,FileLabel.getNexty()-FileLabel.getLabelH()*2}, Images->getCurrentImageTime());
         ResolutionLabel.Render({0,TimeLabel.getNexty()-TimeLabel.getLabelH()*2}, "Size: "+std::to_string(Images->getCurrentImageW()) + "x" + std::to_string(Images->getCurrentImageH()));
-        ZoomLabel.Render({0,ResolutionLabel.getNexty()-ResolutionLabel.getLabelH()*2}, "Zoom: " + std::to_string((int)(zoom*100)) + "%");
+        ZoomLabel.Render({0,ResolutionLabel.getNexty()-ResolutionLabel.getLabelH()*2}, "Zoom: " + std::to_string(static_cast<int>(std::floor(zoom*100))) + "%");
         AnimLabelOnCopy.Render(0,THUMB_HEIGHT+4*THUMB_PADDING, deltaTime);
 
 
@@ -577,8 +577,8 @@ int main(int argc, char* argv[]) {
 
             if(FrameControl.getMouseOnButton()) CursorType=CCursor::Hand;
              //if(FrameControl.getMouseOnButton()) CursorType=CCursor::Hand;
-            if(mouseY>=0 && mouseY<=10){
-                MouseLable.Render(mouseX,mouseY,winW,winH,(std::to_string(1+int(((float)mouseX/winW)*thumbgroup.getSize()))+"/"+std::to_string(thumbgroup.getSize())));
+            if(mouseY>=0 && mouseY<=thumbgroup.getDrawProgressH()){
+                MouseLable.Render(mouseX,mouseY,winW,winH,(std::to_string(1+static_cast<int>(std::floor((static_cast<float>(mouseX)/static_cast<float>(winW))*static_cast<float>(thumbgroup.getSize()))))+"/"+std::to_string(thumbgroup.getSize())));
                 CursorType=CCursor::SizeWE;
                 
             }
@@ -694,7 +694,8 @@ int main(int argc, char* argv[]) {
                 }
                 if (event.key.keysym.sym == SDLK_RIGHT) {
                     Loadthumbnails=true;
-                    int ind=Images->NextImage(1,winW,winH);
+                    //int ind=
+                    Images->NextImage(1,winW,winH);
                     thumbgroup.NextThumbnail(1,winW,winH);
                     FrameControl.ResetCoolDown();
 
@@ -704,7 +705,8 @@ int main(int argc, char* argv[]) {
                 }
                 if (event.key.keysym.sym == SDLK_LEFT) {
                     Loadthumbnails=true;
-                    int ind=Images->NextImage(-1,winW,winH);
+                    //int ind=
+                    Images->NextImage(-1,winW,winH);
 
                     thumbgroup.NextThumbnail(-1,winW,winH);
                     FrameControl.ResetCoolDown();
@@ -778,11 +780,11 @@ int main(int argc, char* argv[]) {
 
                 
                 
-                    offsetX = mouseX - scaleChange * (mouseX - offsetX);
-                    offsetY = mouseY - scaleChange * (mouseY - offsetY);
+                    offsetX = static_cast<float>(mouseX) - scaleChange * (static_cast<float>(mouseX) - offsetX);
+                    offsetY = static_cast<float>(mouseY) - scaleChange * (static_cast<float>(mouseY) - offsetY);
 
                     Images->setCurrentImageZoom(zoom);
-                    Images->setCurrentImageCords({(int)offsetX,(int)offsetY});
+                    Images->setCurrentImageCords({static_cast<int>(std::floor(offsetX)),static_cast<int>(std::floor(offsetY))});
 
                 }else {
 
@@ -837,7 +839,8 @@ int main(int argc, char* argv[]) {
             if(nimg!=-1){
                 dragging=false;
                 Loadthumbnails=true;
-                int ind=Images->NextImage(nimg-currentIndex,winW,winH);
+                //int ind=
+                Images->NextImage(nimg-currentIndex,winW,winH);
                
 
             }
@@ -862,7 +865,8 @@ int main(int argc, char* argv[]) {
             if(NextImageRightButton->CheckIfClicked()|| NextImageLeftButton->CheckIfClicked()){
                 dragging=false;
                 Loadthumbnails=true;
-                int ind=Images->NextImage(NextImageRightButton->CheckIfClicked()?1:-1,winW,winH);
+                //int ind=
+                Images->NextImage(NextImageRightButton->CheckIfClicked()?1:-1,winW,winH);
                 thumbgroup.NextThumbnail(NextImageRightButton->CheckIfClicked()?1:-1,winW,winH);
               
             }
@@ -870,7 +874,7 @@ int main(int argc, char* argv[]) {
 
                 }else if (event.button.button == SDL_BUTTON_LEFT) {
 
-                  if(event.button.y<=10){
+                  if(event.button.y<=thumbgroup.getDrawProgressH()){
 
 
                        thumbgroup.MoveScrollBar(event.button.x, event.button.y, winW, winH);
@@ -903,7 +907,7 @@ int main(int argc, char* argv[]) {
      
         Uint32 frameTime = SDL_GetTicks() - frameStart;
         //int frameDelay=estimateFrameDelat(DES_FPS);
-        int frameDelay=FrameControl.estimateFrameDelat(refreshRate);
+        Uint32 frameDelay=static_cast<Uint32>(FrameControl.estimateFrameDelat(refreshRate));
             if (frameDelay > frameTime) {
                 SDL_Delay(frameDelay - frameTime);
             }
@@ -913,8 +917,8 @@ int main(int argc, char* argv[]) {
   
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
-        fps=round((float)1000/(duration.count()/1000));
-        deltaTime = (currentTime - lastTime) / 1000.0f; 
+        fps=static_cast<int>(round((float)1000/(static_cast<float>(duration.count())/1000)));
+        deltaTime = static_cast<float>(currentTime - lastTime) / 1000.0f; 
         lastTime = currentTime;
         FrameControl.UpdateCoolDown(deltaTime);
 

@@ -506,6 +506,9 @@ class CThumbnailGroup{
          SDL_Renderer* renderer;
          std::shared_ptr<CImages> Images;
          bool visible=true;
+         
+         
+         const int drawProgressH=10;
 
     public:
 
@@ -806,7 +809,7 @@ class CThumbnailGroup{
 
         if (scWidth<5) scWidth=5;
        // std::cout<<"---------------- scCordx    "<<scCordx<<std::endl;
-        s->Render(Cordinates{(int)scCordx,10},Cordinates{(int)scWidth,10,});
+        s->Render(Cordinates{(int)scCordx,drawProgressH},Cordinates{(int)scWidth,drawProgressH});
 
 
     }
@@ -817,7 +820,7 @@ class CThumbnailGroup{
          float scCordx=m*float(c+thumb_showing)/size;
         float scWidth=(float(1)/size)*m;
        
-        s->Render(Cordinates{0,10},Cordinates{(int)scCordx,10,});
+        s->Render(Cordinates{0,drawProgressH},Cordinates{(int)scCordx,drawProgressH});
 
 
     }
@@ -979,7 +982,11 @@ class CThumbnailGroup{
 
     }
 
- 
+    const int getDrawProgressH(){
+
+        return drawProgressH;
+
+    }
 
 
 };
