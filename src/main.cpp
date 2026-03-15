@@ -192,11 +192,12 @@ int main(int argc, char* argv[]) {
 
     CFrameControl FrameControl(2,true,idleFps);
 
+    {
     Clabel dropImageLabel("Drop an Image file",renderer,{1000/2,700/2},true,true,true,font,{255,255,255,255});
     dropImageLabel.setBackgroundColor({0,0,0,255});
 
-    CImage initBackImage(renderer);
-    initBackImage.LoadImage2((execDir+"/resources/images/iconimage.png").c_str(),winW,winH);
+    std::unique_ptr<CImage> initBackImage=std::make_unique<CImage>(renderer);
+    initBackImage->LoadImage2((execDir+"/resources/images/iconimage.png").c_str(),winW,winH);
 
 
     if (argc < 2) {
@@ -231,7 +232,7 @@ int main(int argc, char* argv[]) {
 
         SDL_RenderClear(renderer);
         //SDL_GetRendererOutputSize(renderer, &winW, &winH);
-        initBackImage.Render(winW,winH);
+        initBackImage->Render(winW,winH);
         dropImageLabel.Render(Cordinates{winW/2 -100,winH/2});
         //dropImageLabel.Render(Cordinates{100,100});
         
@@ -260,9 +261,11 @@ int main(int argc, char* argv[]) {
         TTF_Quit();
         return 1;}
 
+    }
    running=true;
-
-
+ 
+    //initBackImage.release();
+    //std::cout<<"AAAA"<<std::endl;
   
     // image load f
     //const char * p= droppedPath.string().c_str();
