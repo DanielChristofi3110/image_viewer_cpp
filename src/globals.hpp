@@ -31,7 +31,7 @@
 #define DEBUG true
 #define FULL_PRELOAD false
 #define ASYNCLOADING 1
-#define UNLOADAT 3
+#define UNLOADAT 2
 #define THUMBNAIL_ASYNCLOADING true
 
 const int THUMB_WIDTH = 100;
