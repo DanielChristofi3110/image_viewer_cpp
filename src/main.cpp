@@ -197,7 +197,7 @@ int main(int argc, char* argv[]) {
     dropImageLabel.setBackgroundColor({0,0,0,255});
 
     std::unique_ptr<CImage> initBackImage=std::make_unique<CImage>(renderer);
-    initBackImage->LoadImage2((execDir+"/resources/images/iconimage.png").c_str(),winW,winH);
+    initBackImage->LoadImage_((execDir+"/resources/images/iconimage.png").c_str(),winW,winH);
 
 
     if (argc < 2) {

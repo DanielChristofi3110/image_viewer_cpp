@@ -84,18 +84,30 @@ class CImage{
         }
 
         SDL_Texture* loadImageFile(const std::string& path, SDL_Renderer* renderer) {
-            surf = IMG_Load(path.c_str());
-            if (!surf) {
-                std::cout << "Failed to load: " << path << "\n";
-                return nullptr;
-            }
-            imgW = surf->w;
-            imgH = surf->h;
+             // Free the old surface and texture if they exist
+                if (surf) {
+                    SDL_FreeSurface(surf);
+                    surf = nullptr;  // Nullify the pointer after freeing
+                }
 
-           
-            SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
-           // SDL_FreeSurface(surf);
-            return tex;
+                if (texture) {
+                    SDL_DestroyTexture(texture);
+                    texture = nullptr;  // Nullify the pointer after destroying
+                }
+
+                // Load the new surface
+                surf = IMG_Load(path.c_str());
+                if (!surf) {
+                    std::cout << "Failed to load: " << path << "\n";
+                    return nullptr;
+                }
+                
+                imgW = surf->w;
+                imgH = surf->h;
+
+                // Create a new texture from the surface
+                SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
+                return tex;  // Return the newly created texture
             }
 
         SDL_Texture* rotatedTexture(int rot){
@@ -240,7 +252,7 @@ class CImage{
            // std::cout << "Debug Center image cords : " << cords.x << " " << cords.y << std::endl;
 
         }
-       void LoadImage(const std::string& path,int winW,int winH){
+       void LoadImage_(const std::string& path,int winW,int winH){
 
             if (texture) {
                 SDL_DestroyTexture(texture);
@@ -262,7 +274,7 @@ class CImage{
         void LoadImage2(const std::string& path,int winW,int winH){
 
 
-            LoadImage(path,winW,winH);
+           // LoadImage(path,winW,winH);
         }
 
 
@@ -588,7 +600,7 @@ class CImages{
 
            
             if(images[ind]->isLoaded()) continue;
-            images[ind]->LoadImage(imageFiles[ind],winW,winH);
+            images[ind]->LoadImage_(imageFiles[ind],winW,winH);
             
 
         }
