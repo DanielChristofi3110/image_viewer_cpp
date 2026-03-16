@@ -547,7 +547,7 @@ class CImages{
                     if (!images[index]->IsSurfaceReady())
                     {
                          std::cout<<"Loading async Surface "<<index<<std::endl;
-                        images[index]->LoadSurfaceOnly(imageFiles[index],1000,700);
+                        images[index]->LoadSurfaceOnly(imageFiles[index],winW,winH);
                         std::cout<<"Loaded async Surface "<<index<<std::endl;
                     }
                 }

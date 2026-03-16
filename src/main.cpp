@@ -155,7 +155,14 @@ int main(int argc, char* argv[]) {
         SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_TARGETTEXTURE
     );
 
+    
+        ASYNCLOADING= ConfigLoader.getASYNCLOADING();
+        UNLOADAT= ConfigLoader.getUNLOADAT();
+        MAXIMAGE_QUEUE=ConfigLoader.getMAXIMAGE_QUEUE();
 
+        std::cout<<"ASYNCLOADING  "<<ASYNCLOADING<<std::endl; 
+        std::cout<<"UNLOADAT "<<UNLOADAT<<std::endl;
+        std::cout<<"MQ "<<MAXIMAGE_QUEUE<<std::endl;
 
 
     std::cout<<"------------------Created  render-----------------------"<<std::endl;
@@ -455,7 +462,7 @@ int main(int argc, char* argv[]) {
 
         SDL_GetRendererOutputSize(renderer, &winW, &winH);
 
-
+        Images->set_window(winW,winH);
 
        
         background.StartLerp({thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().r,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().g,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().b,255}, 0.5f);
@@ -695,10 +702,12 @@ int main(int argc, char* argv[]) {
                 if (event.key.keysym.sym == SDLK_RIGHT) {
                     Loadthumbnails=true;
                     //int ind=
+                    std::cout<<"MQ "<<MAXIMAGE_QUEUE<<std::endl;
+                    if(!(Images->getQueueSize()>MAXIMAGE_QUEUE)) {
                     Images->NextImage(1,winW,winH);
                     thumbgroup.NextThumbnail(1,winW,winH);
                     FrameControl.ResetCoolDown();
-
+                    }
                     
 
 
@@ -706,10 +715,11 @@ int main(int argc, char* argv[]) {
                 if (event.key.keysym.sym == SDLK_LEFT) {
                     Loadthumbnails=true;
                     //int ind=
+                    if(!(Images->getQueueSize()>MAXIMAGE_QUEUE)) {
                     Images->NextImage(-1,winW,winH);
 
                     thumbgroup.NextThumbnail(-1,winW,winH);
-                    FrameControl.ResetCoolDown();
+                    FrameControl.ResetCoolDown();}
                     
                 }
                 if (event.key.keysym.sym == SDLK_UP) {

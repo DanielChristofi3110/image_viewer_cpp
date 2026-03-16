@@ -30,8 +30,7 @@
 
 #define DEBUG true
 #define FULL_PRELOAD false
-#define ASYNCLOADING 1
-#define UNLOADAT 2
+
 #define THUMBNAIL_ASYNCLOADING true
 
 const int THUMB_WIDTH = 100;
@@ -50,6 +49,10 @@ bool debug_mode=false;
 bool Loadthumbnails=true;
 int fps=0;
 std::string execDir=".";
+
+int ASYNCLOADING= 1;
+int UNLOADAT= 2;
+int MAXIMAGE_QUEUE=10;
 
 
 
