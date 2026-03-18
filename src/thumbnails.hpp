@@ -7,6 +7,7 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_ttf.h>
+#include <cstdint>
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -715,8 +716,8 @@ class CThumbnailGroup{
             }else{
             //ReplaceThumbnailWithImage(i,imageFiles[i],renderer,thumbnails,Loadedthumbnails);
             
-            if(!Images->IsSurfaceOfIndexReady(static_cast<uint64_t>(i))) all_loaded=false;
-            if(!Images->IsSurfaceOfIndexReady(static_cast<uint64_t>(i)) || thumbnails[static_cast<uint64_t>(i)]->isLoaded())continue;
+            if(!Images->IsSurfaceOfIndexReady(static_cast<uint64_t>(i))&&!Images->getQueuedImage(i)) all_loaded=false;
+            if((!Images->IsSurfaceOfIndexReady(static_cast<uint64_t>(i))&&Images->getQueuedImage(i)) || thumbnails[static_cast<uint64_t>(i)]->isLoaded())continue;
             thumbnails[static_cast<uint64_t>(i)]->setSurface(Images->getSurfaceByIndex(static_cast<uint64_t>(i)));
             thumbnails[static_cast<uint64_t>(i)]->loadThumbnailImageFromSurface(renderer);
             
@@ -907,23 +908,26 @@ class CThumbnailGroup{
 
     void NextThumbnail(int n,int wW,int wH){
 
-        
+        int64_t temp_index=static_cast<int64_t>(currentIndex)+n;
 
-         currentIndex+=n;
+      std::cout<<"NextThumbnail call "<<size<<std::endl;
+        // currentIndex+=n;
 
-         if(currentIndex<0) {
-            currentIndex=size-1;
+         if(temp_index<0) {
+            temp_index=size-1;
              UpdateScrollOffset(size-thumb_showing,wW,wH);
         
         }
-        if(currentIndex>=size){
+        if(temp_index>=size){
 
             UpdateScrollOffset(-(size-thumb_showing)-1,wW,wH);
 
         }
-         currentIndex=currentIndex%size;
+         temp_index=temp_index%size;
 
-
+        std::cout<<"NextThumbnail call ce "<<temp_index<<std::endl;
+        //scrollOffset=currentIndex;
+        //MoveScrollTo(currentIndex,wW,wH);
          if(CindCords.x>wW-THUMB_WIDTH*2 && n>0){
                 //scrollOffset+=n;
                 UpdateScrollOffset(n,wW,wH);
@@ -933,6 +937,8 @@ class CThumbnailGroup{
           if(CindCords.x<THUMB_WIDTH*2 && n<0){
                 UpdateScrollOffset(n,wW,wH);
          }
+
+         currentIndex = static_cast<uint64_t>(temp_index);
 
     }
 

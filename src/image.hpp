@@ -508,6 +508,7 @@ class CImages{
     std::condition_variable cv;
     std::queue<int> loadQueue;
     std::atomic<bool> running{true};
+    std::vector<std::atomic<bool>> queued;
     
     public:
    
@@ -523,6 +524,12 @@ class CImages{
         for(int i=0; i<size; i++){
             images.push_back(std::make_unique<CImage>(renderer));
         }
+
+        queued = std::vector<std::atomic<bool>>(size);
+        for (int i = 0; i < size; i++) {
+            queued[i] = false;
+        }   
+
         //std::vector<std::unique_ptr<CImage>> images(size);
         loaderThread = std::thread([this]() {
 
@@ -615,7 +622,7 @@ class CImages{
             int ind = (currentIndex + i + size) % size;
             //std::cout<<"last index "<<ind<<std::endl;
             if(ind<0 || ind>=size) continue;
-            if (!images[ind]->IsSurfaceReady())
+            if (!images[ind]->IsSurfaceReady() && !queued[ind].exchange(true))
             {
                 std::lock_guard<std::mutex> lock(queueMutex);
                 loadQueue.push(ind);
@@ -637,6 +644,7 @@ class CImages{
                     if (images[i]->isLoaded()|| images[i]->IsSurfaceReady()) {
                
                         images[i]->UnloadImage();
+                        queued[i].exchange(false);
                     }
                 }
             }
@@ -807,6 +815,12 @@ class CImages{
         size++;
 
 
+    }
+
+    const bool getQueuedImage(int i){
+
+
+        return queued[i].load();
     }
 
 }; 
