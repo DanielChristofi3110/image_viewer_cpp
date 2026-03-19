@@ -415,12 +415,16 @@ int main(int argc, char* argv[]) {
     CCursor::cursorType CursorType ;
 
     CMouseLabel MouseLable(renderer,{0,0},true,true,true,font,{0,255,0,255});
+ //    CTextBox(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
+    CTextBox TextTextBox(renderer,{400,400},true,true,true,font,{0,0,0,0});
 
 
     //current
 
-
+   
     
+
+    bool Typing=false;
     while (running) {
 
         
@@ -589,6 +593,9 @@ int main(int argc, char* argv[]) {
                 CursorType=CCursor::SizeWE;
                 
             }
+
+            TextTextBox.setVisible(debug_mode);
+            TextTextBox.Render(winW,winH,mouseX,mouseY,deltaTime,CursorType);
             
 
         }
@@ -600,6 +607,8 @@ int main(int argc, char* argv[]) {
         //NextImageLeftButton->Render(winW/2-NextImageLeftButton->getW(),winH-NextImageLeftButton->getH());
         ButtonsHbox.Render( winW/2, winH);
 
+        
+
         SDL_RenderPresent(renderer);
 
         
@@ -609,6 +618,13 @@ int main(int argc, char* argv[]) {
             if (event.type == SDL_QUIT)
                 running = false;
 
+             if (event.type == SDL_TEXTINPUT) {
+                if(Typing){
+                //ttext += event.text.text;
+               // std::cout<<"Tiped "<<ttext<<std::endl;
+                TextTextBox.appendtText(event.text.text);
+                }
+        }
             if (event.type == SDL_DROPFILE) {
                 std::filesystem::path droppedPath(event.drop.file);
 
@@ -661,6 +677,9 @@ int main(int argc, char* argv[]) {
                 if (event.key.keysym.sym == SDLK_ESCAPE)
                     running = false;
 
+                //disable on typing
+                if(!Typing){
+                    SDL_StopTextInput();
                 if (event.key.keysym.sym == SDLK_f ) {
                     fullscreen = !fullscreen;
                     SDL_SetWindowFullscreen(
@@ -672,6 +691,7 @@ int main(int argc, char* argv[]) {
                     FrameControl.ResetCoolDown();
                     //FrameControl.ResetCoolDown(0.2f);
                 }
+
                 if (event.key.keysym.sym == SDLK_r && (event.key.keysym.mod & KMOD_LSHIFT)) {
                     Images->CurrentImageRotate270(winW,winH);
                 }else if(event.key.keysym.sym == SDLK_r){
@@ -699,6 +719,26 @@ int main(int argc, char* argv[]) {
 
 
                 }
+                 
+                if (event.key.keysym.sym == SDLK_d) {
+
+                    if(DEBUG) debug_mode=!debug_mode;
+
+
+                }
+
+
+                //end Type
+                }else{
+                   
+                    if (event.key.keysym.sym == SDLK_BACKSPACE) {
+                        TextTextBox.popText();
+
+                    }
+
+                }
+
+                
                 if (event.key.keysym.sym == SDLK_RIGHT) {
                     Loadthumbnails=true;
                     //int ind=
@@ -747,12 +787,7 @@ int main(int argc, char* argv[]) {
 
                 }
 
-                if (event.key.keysym.sym == SDLK_d) {
-
-                    if(DEBUG) debug_mode=!debug_mode;
-
-
-                }
+               
                // std::cout << "tmb " <<currentIndex-thumbgroup.getScrollOffset() <<" scroll:"<<thumbgroup.getScrollOffset()<<" ind:"<<currentIndex<<std::endl;
                 //std::cout<<"winW over "<<thumb_showing<<std::endl;
 
@@ -824,6 +859,15 @@ int main(int argc, char* argv[]) {
       
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
+            Typing=false;
+            TextTextBox.CheckIfPressed(mouseX,mouseY,Typing);
+
+            if(Typing) SDL_StartTextInput();
+
+
+
+
+
             NextImageRightButton->setMouseLocation(mouseX, mouseY);
             NextImageLeftButton->setMouseLocation(mouseX, mouseY);
             FullscreenButton->setMouseLocation(mouseX, mouseY);

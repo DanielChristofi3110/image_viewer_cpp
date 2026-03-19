@@ -1,5 +1,6 @@
 #pragma once
 #include "globals.hpp"
+#include "Cursor.hpp"
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
@@ -855,6 +856,165 @@ void Render(int mouseX,int mouseY,int winW,int winH,const std::string txt){
 
 
 
+
+
+
+};
+
+
+class CTextBox{
+    private:
+    std::unique_ptr<Clabel> label_back;
+    std::unique_ptr<Clabel> label_text;
+    std::unique_ptr<Clabel> label_blink;
+    Cordinates cords{100,100};
+    bool clickable=true,enabled =true,visible=true,focused=false,blink_phase=false;
+    float blink=0.3,cblink=0;
+    std::string Text="";
+    public:
+
+
+
+    CTextBox(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
+
+
+
+    cords =c;
+
+    label_back=std::make_unique<Clabel>(r,c,db,abs,v,f,tc);
+    label_back->setBackgroundColor({128,128,128,255});
+    label_back->setTextColor({255,255,255,0});
+
+
+    label_blink=std::make_unique<Clabel>(r,c,db,abs,v,f,tc);
+    label_blink->setBackgroundColor({255,255,255,255});
+    label_blink->setTextColor({255,255,255,0});
+
+    label_text=std::make_unique<Clabel>(r,c,true,abs,v,f,tc);
+    label_text->setBackgroundColor({128,128,128,0});
+    label_text->setTextColor({255,255,255,0});
+
+
+
+
+}
+
+    void Render(int wW,int wH,int mx,int my ,float dt,CCursor::cursorType & cursor){
+        //cords =Cordinates{}
+        if (!visible) return;
+
+        //label_back->Render(cords,Cordinates{100,20});
+        label_back->Render(cords,Cordinates{label_text->getLabelW()<100?100:label_text->getLabelW(),20});
+        if(CheckIfHover(mx,my,0.f)) cursor =CCursor::IBeam;
+        
+        label_text->Render(cords,Text);
+     
+        UpdateBlink(label_text->getLabelW(),dt);
+
+        
+
+
+
+
+    }
+    void setText(std::string s){
+
+
+        Text=s;
+    }
+
+    void appendtText(const std::string s){
+        if(!visible || !enabled || !clickable) return;
+
+        Text+=s;
+    }
+    void popText(){
+
+         if (!Text.empty()) Text.pop_back();
+    }
+    void UpdateBlink(int offx,float dt){
+
+        if(!focused) return;
+         cblink-=dt;
+
+        if(cblink<=0){
+        cblink=blink;
+        blink_phase=!blink_phase;
+
+        }
+
+        if(blink_phase) label_blink->Render(Cordinates{offx>10?cords.x+offx-10:cords.x,cords.y},Cordinates{3,20});
+
+
+    }
+    
+    bool CheckIfHover(int x,int y,float dt){
+
+        if(!clickable || !enabled) return false ;
+        bool b=false;
+        
+       if((((cords.x+label_back->getLabelW())>x) && ((cords.x)<x)) &&  (((cords.y+label_back->getLabelH())>y) && ((cords.y)<y))){
+        //label->setBackgroundColor(hColor);
+        // Update(dt);
+        // StartLerp(hColor,0.15f);
+         b=true;
+        
+       // std::cout<<"----renderButton Click"<<std::endl;
+       
+       }else {
+        // Update(dt);
+        //  StartLerp(nColor,0.15f);
+        //label->setBackgroundColor(nColor);
+       }
+    
+
+
+       return b;
+    }
+
+
+     void CheckIfPressed(int x,int y,bool & lock){
+        
+        if(!clickable || !enabled || !visible) {
+            
+            
+            return ;}
+       
+        focused=false;
+       if((((cords.x+label_back->getLabelW())>x) && ((cords.x)<x)) &&  (((cords.y+label_back->getLabelH())>y) && ((cords.y)<y))){
+        //label->setBackgroundColor(hColor);
+        // Update(dt);
+        // StartLerp(hColor,0.15f);
+         lock=true;
+         focused=true;
+        
+       // std::cout<<"----renderButton Click"<<std::endl;
+       
+       }
+    }
+
+    void setVisible(bool b){
+
+        visible=b;
+    }
+
+
+    //  bool CheckIfClicked(){
+
+    //     if(!clickable || !enabled) return false;
+
+    //    if((((cords.x+label->getLabelW())>mouseLoaction.x) && ((cords.x)<mouseLoaction.x)) &&  (((cords.y+label->getLabelH())>mouseLoaction.y) && ((cords.y)<mouseLoaction.y))){
+    //     label->setBackgroundColor({128,128,128,128+64});
+
+    //     //std::cout<<"----renderButton Click"<<std::endl;
+    //     return true;
+    //    }
+    
+
+
+
+    //    return false;
+    // }
 
 
 
