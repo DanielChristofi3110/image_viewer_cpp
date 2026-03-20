@@ -149,6 +149,7 @@ int main(int argc, char* argv[]) {
     }
 
 
+
     int idleFps=ConfigLoader.getidleFps();
     SDL_Renderer* renderer = SDL_CreateRenderer(
         window, -1,
@@ -159,12 +160,15 @@ int main(int argc, char* argv[]) {
         ASYNCLOADING= ConfigLoader.getASYNCLOADING();
         UNLOADAT= ConfigLoader.getUNLOADAT();
         MAXIMAGE_QUEUE=ConfigLoader.getMAXIMAGE_QUEUE();
+        hide_ui=ConfigLoader.getHIDE_UI();
 
         std::cout<<"ASYNCLOADING  "<<ASYNCLOADING<<std::endl; 
         std::cout<<"UNLOADAT "<<UNLOADAT<<std::endl;
         std::cout<<"MQ "<<MAXIMAGE_QUEUE<<std::endl;
 
 
+
+    
     std::cout<<"------------------Created  render-----------------------"<<std::endl;
 
 
@@ -178,6 +182,9 @@ int main(int argc, char* argv[]) {
              return 1;
     }
 
+     CConfigEditorGUI ConfigEditorGUI(renderer,font,&ConfigLoader);
+     ConfigEditorGUI.loadFromConfig();
+     ConfigEditorGUI.setEnabled(false);
     std::cout<<"------------------Loaded font-----------------------"<<std::endl;
     //int thumb_proc_ind = 0;
     //const int imageFiles_size = imageFiles.size();
@@ -417,6 +424,8 @@ int main(int argc, char* argv[]) {
     CMouseLabel MouseLable(renderer,{0,0},true,true,true,font,{0,255,0,255});
  //    CTextBox(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
     CTextBox TextTextBox(renderer,{400,400},true,true,true,font,{0,0,0,0});
+    
+   
 
 
     //current
@@ -606,7 +615,14 @@ int main(int argc, char* argv[]) {
        // NextImageRightButton->Render(winW/2,winH-NextImageRightButton->getH());
         //NextImageLeftButton->Render(winW/2-NextImageLeftButton->getW(),winH-NextImageLeftButton->getH());
         ButtonsHbox.Render( winW/2, winH);
+        {
 
+            int mouseX, mouseY;
+            SDL_GetMouseState(&mouseX, &mouseY);
+            //ConfigEditorGUI.setEnabled(ConfEdit)
+            ConfigEditorGUI.Render(winW, winH, mouseX, mouseY,deltaTime,CursorType);
+        }
+       
         
 
         SDL_RenderPresent(renderer);
@@ -622,7 +638,8 @@ int main(int argc, char* argv[]) {
                 if(Typing){
                 //ttext += event.text.text;
                // std::cout<<"Tiped "<<ttext<<std::endl;
-                TextTextBox.appendtText(event.text.text);
+                //TextTextBox.appendtText(event.text.text);
+                ConfigEditorGUI.AddTextToTyping(event.text.text);
                 }
         }
             if (event.type == SDL_DROPFILE) {
@@ -732,12 +749,17 @@ int main(int argc, char* argv[]) {
                 }else{
                    
                     if (event.key.keysym.sym == SDLK_BACKSPACE) {
-                        TextTextBox.popText();
+                        //TextTextBox.popText();
+                        ConfigEditorGUI.POPTextToTyping();
 
                     }
 
                 }
+                if (event.key.keysym.sym == SDLK_o) {
+                        //TextTextBox.popText();
+                        ConfigEditorGUI.setEnabled(! ConfigEditorGUI.isEnabled());
 
+                }
                 
                 if (event.key.keysym.sym == SDLK_RIGHT) {
                     Loadthumbnails=true;
@@ -859,8 +881,11 @@ int main(int argc, char* argv[]) {
       
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
-            Typing=false;
-            TextTextBox.CheckIfPressed(mouseX,mouseY,Typing);
+            Typing=ConfigEditorGUI.isEnabled();
+            //TextTextBox.CheckIfPressed(mouseX,mouseY,Typing);
+            ConfigEditorGUI.checkIfAnyTyping(mouseX, mouseY);
+            ConfigEditorGUI.checkIfSave(mouseX, mouseY,execDir+"/config/config.ini");
+
 
             if(Typing) SDL_StartTextInput();
 

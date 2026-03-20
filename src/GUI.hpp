@@ -872,7 +872,13 @@ class CTextBox{
     float blink=0.3,cblink=0;
     std::string Text="";
     public:
-
+    enum TextType {
+        String,
+        TextOnly,
+        NumOnly
+    };
+    
+    TextType textType=TextType::String;
 
 
     CTextBox(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
@@ -922,11 +928,34 @@ class CTextBox{
 
         Text=s;
     }
+    void setCords(int x,int y){
 
+        cords={x,y};
+    }
     void appendtText(const std::string s){
         if(!visible || !enabled || !clickable) return;
 
-        Text+=s;
+        switch (textType) {
+
+            case String:
+            Text+=s;
+
+            break;
+
+            case TextOnly:
+            for (char c : s) if (!isdigit(c)) Text+=c;
+
+            
+
+            break;
+
+
+            case NumOnly: for (char c : s) if (isdigit(c)) Text+=c;
+
+            break;
+        
+        }
+       
     }
     void popText(){
 
@@ -992,10 +1021,23 @@ class CTextBox{
        
        }
     }
+    const std::string getText(){
 
+        return Text;
+    }
+    const int getInt(){
+
+        return  std::stoi(Text);
+    }
+   
     void setVisible(bool b){
 
         visible=b;
+    }
+
+    bool isFocused(){
+
+        return focused;
     }
 
 
