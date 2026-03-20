@@ -138,7 +138,7 @@ class CConfigEditorGUI{
         };
     bool AnyTyping=false;
     Cordinates cords{100,100};
-    CConfigLoader *cfg;
+    std::shared_ptr<CConfigLoader> cfg;
 
     
 
@@ -150,7 +150,7 @@ class CConfigEditorGUI{
     // Clabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,TTF_Font * f){
     // CTextBox(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
     // CButton(const std::string& text,SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
-    CConfigEditorGUI(SDL_Renderer *r,TTF_Font * f, CConfigLoader* _cfg){
+    CConfigEditorGUI(SDL_Renderer *r,TTF_Font * f,  std::shared_ptr<CConfigLoader> _cfg){
 
         renderer=r;
 

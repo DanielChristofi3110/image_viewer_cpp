@@ -134,13 +134,14 @@ int main(int argc, char* argv[]) {
     #endif
 
     std::cout <<"HELLO"<<std::endl;
-    CConfigLoader ConfigLoader;
+    std::shared_ptr<CConfigLoader> ConfigLoader;
+    ConfigLoader=std::make_shared<CConfigLoader>();
     std::cout <<execDir+"/config/config.ini"<<std::endl;
-    if (ConfigLoader.load(execDir+"/config/config.ini"))
+    if (ConfigLoader->load(execDir+"/config/config.ini"))
     {
-        std::cout << "Font Name: " << ConfigLoader.getFontName() << std::endl;
-        std::cout << "Font Size: " << ConfigLoader.getFontSize() << std::endl;
-        std::cout << "Idle Fps: " << ConfigLoader.getidleFps() << std::endl;
+        std::cout << "Font Name: " << ConfigLoader->getFontName() << std::endl;
+        std::cout << "Font Size: " << ConfigLoader->getFontSize() << std::endl;
+        std::cout << "Idle Fps: " << ConfigLoader->getidleFps() << std::endl;
     }
 
     if (TTF_Init() == -1) {
@@ -150,17 +151,17 @@ int main(int argc, char* argv[]) {
 
 
 
-    int idleFps=ConfigLoader.getidleFps();
+    int idleFps=ConfigLoader->getidleFps();
     SDL_Renderer* renderer = SDL_CreateRenderer(
         window, -1,
         SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_TARGETTEXTURE
     );
 
     
-        ASYNCLOADING= ConfigLoader.getASYNCLOADING();
-        UNLOADAT= ConfigLoader.getUNLOADAT();
-        MAXIMAGE_QUEUE=ConfigLoader.getMAXIMAGE_QUEUE();
-        hide_ui=ConfigLoader.getHIDE_UI();
+        ASYNCLOADING= ConfigLoader->getASYNCLOADING();
+        UNLOADAT= ConfigLoader->getUNLOADAT();
+        MAXIMAGE_QUEUE=ConfigLoader->getMAXIMAGE_QUEUE();
+        hide_ui=ConfigLoader->getHIDE_UI();
 
         std::cout<<"ASYNCLOADING  "<<ASYNCLOADING<<std::endl; 
         std::cout<<"UNLOADAT "<<UNLOADAT<<std::endl;
@@ -174,15 +175,15 @@ int main(int argc, char* argv[]) {
 
     //font
 
-    TTF_Font* font = TTF_OpenFont((execDir+"/fonts/"+ConfigLoader.getFontName()).c_str(), ConfigLoader.getFontSize());
+    TTF_Font* font = TTF_OpenFont((execDir+"/fonts/"+ConfigLoader->getFontName()).c_str(), ConfigLoader->getFontSize());
     if (!font) {
         std::cout << "Failed to load font: " << TTF_GetError() <<"fallback"<< "\n";
-        font = TTF_OpenFont((execDir+"/fonts/InterVariable.ttf").c_str(), ConfigLoader.getFontSize());
+        font = TTF_OpenFont((execDir+"/fonts/InterVariable.ttf").c_str(), ConfigLoader->getFontSize());
          if (!font)
              return 1;
     }
 
-     CConfigEditorGUI ConfigEditorGUI(renderer,font,&ConfigLoader);
+    CConfigEditorGUI ConfigEditorGUI(renderer,font,std::move(ConfigLoader));
      ConfigEditorGUI.loadFromConfig();
      ConfigEditorGUI.setEnabled(false);
     std::cout<<"------------------Loaded font-----------------------"<<std::endl;
