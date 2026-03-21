@@ -183,7 +183,7 @@ int main(int argc, char* argv[]) {
              return 1;
     }
 
-    CConfigEditorGUI ConfigEditorGUI(renderer,font,std::move(ConfigLoader));
+    CConfigEditorGUI ConfigEditorGUI(renderer,font,ConfigLoader);
      ConfigEditorGUI.loadFromConfig();
      ConfigEditorGUI.setEnabled(false);
     std::cout<<"------------------Loaded font-----------------------"<<std::endl;
@@ -386,6 +386,12 @@ int main(int argc, char* argv[]) {
     //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
      FullscreenButton->setSvgIcon((execDir+"/resources/vector/Fullscreen.svg").c_str(),false,0.06f);
 
+
+
+    std::shared_ptr<CButton> OptionsButton = std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
+    //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
+     OptionsButton->setSvgIcon((execDir+"/resources/vector/Options.svg").c_str(),false,0.06f);
+
     //  Clabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
     CAnimatedlabel AnimLabelOnCopy(renderer,{0,0},true,true,true,font,{0,255,0,255},2,"Copied to clipboard");
 
@@ -516,7 +522,11 @@ int main(int argc, char* argv[]) {
         "  Zoom: " + std::to_string(static_cast<int>(std::floor(zoom*100))) + "%";
 
 
-      
+        if(ConfigEditorGUI.isEnabled()){
+
+            hide_ui=true;
+        }
+        //hide_ui=ConfigLoader->getHIDE_UI();
         FileLabel.setVisibility(!hide_ui);
         TimeLabel.setVisibility(!hide_ui);
         ResolutionLabel.setVisibility(!hide_ui);
@@ -583,6 +593,7 @@ int main(int argc, char* argv[]) {
         NextImageRightButton->setEnabled(!hide_ui);
         NextImageLeftButton->setEnabled(!hide_ui);
         FullscreenButton->setEnabled(!hide_ui);
+        OptionsButton->setEnabled(!hide_ui);
         {
 
             int mouseX, mouseY;
@@ -593,6 +604,7 @@ int main(int argc, char* argv[]) {
             FrameControl.setMouseOnButton(RotateLeftButton.CheckIfHover(mouseX,mouseY,deltaTime));
             FrameControl.setMouseOnButton(RotateRightButton.CheckIfHover(mouseX,mouseY,deltaTime));
             FrameControl.setMouseOnButton(FullscreenButton->CheckIfHover(mouseX,mouseY,deltaTime));
+            FrameControl.setMouseOnButton(OptionsButton->CheckIfHover(mouseX,mouseY,deltaTime));
             //if(mouseY!=lastMouseY)
             FrameControl.setMouseOnThmbnails(mouseY<THUMB_WIDTH&&windowActive);
 
@@ -616,6 +628,7 @@ int main(int argc, char* argv[]) {
        // NextImageRightButton->Render(winW/2,winH-NextImageRightButton->getH());
         //NextImageLeftButton->Render(winW/2-NextImageLeftButton->getW(),winH-NextImageLeftButton->getH());
         ButtonsHbox.Render( winW/2, winH);
+        OptionsButton->Render(winW-OptionsButton->getW(),winH-OptionsButton->getH());
         {
 
             int mouseX, mouseY;
@@ -756,11 +769,11 @@ int main(int argc, char* argv[]) {
                     }
 
                 }
-                if (event.key.keysym.sym == SDLK_o) {
-                        //TextTextBox.popText();
-                        ConfigEditorGUI.setEnabled(! ConfigEditorGUI.isEnabled());
+                // if (event.key.keysym.sym == SDLK_o) {
+                //         //TextTextBox.popText();
+                //         ConfigEditorGUI.setEnabled(! ConfigEditorGUI.isEnabled());
 
-                }
+                // }
                 
                 if (event.key.keysym.sym == SDLK_RIGHT) {
                     Loadthumbnails=true;
@@ -870,7 +883,7 @@ int main(int argc, char* argv[]) {
             if (event.type == SDL_MOUSEBUTTONDOWN &&
                 event.button.button == SDL_BUTTON_LEFT) {
 
-                dragging = true;
+             dragging = true&&!ConfigEditorGUI.isEnabled();
                 
             lastMouseX = event.button.x;
 
@@ -885,18 +898,19 @@ int main(int argc, char* argv[]) {
             Typing=ConfigEditorGUI.isEnabled();
             //TextTextBox.CheckIfPressed(mouseX,mouseY,Typing);
             ConfigEditorGUI.checkIfAnyTyping(mouseX, mouseY);
-            ConfigEditorGUI.checkIfSave(mouseX, mouseY,execDir+"/config/config.ini");
+            ConfigEditorGUI.checkIfButtonClick(mouseX, mouseY,execDir+"/config/config.ini");
 
 
             if(Typing) SDL_StartTextInput();
 
-
+            
 
 
 
             NextImageRightButton->setMouseLocation(mouseX, mouseY);
             NextImageLeftButton->setMouseLocation(mouseX, mouseY);
             FullscreenButton->setMouseLocation(mouseX, mouseY);
+            OptionsButton->setMouseLocation(mouseX, mouseY);
             RotateLeftButton.setMouseLocation(mouseX,mouseY);
             RotateRightButton.setMouseLocation(mouseX,mouseY);
 
@@ -904,7 +918,9 @@ int main(int argc, char* argv[]) {
 
 
 
-            int nimg= thumbgroup.CheckIfThumbnaiClicked(0, -1, mouseX, mouseY);
+            int nimg=-1;
+            
+            nimg= thumbgroup.CheckIfThumbnaiClicked(0, -1, mouseX, mouseY);
 
             if( RotateLeftButton.CheckIfClicked()){
                 dragging=false;
@@ -939,6 +955,12 @@ int main(int argc, char* argv[]) {
                 //Centerhear
                 imageToCenter=true;
                 
+
+            }
+
+            if(OptionsButton->CheckIfClicked()){
+                
+                ConfigEditorGUI.setEnabled(true);
 
             }
 

@@ -18,6 +18,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <vector>
 
 #define NANOSVG_IMPLEMENTATION
 #include "nanosvg.h"
@@ -575,6 +576,13 @@ class CButton{
         label->Render(cords,Cordinates{w,h});
     }
 
+    void UpdateText(){
+
+
+        label->setText(Text);
+
+   
+    }
 
 
 
@@ -923,6 +931,25 @@ class CTextBox{
 
 
     }
+
+    void Render(int wW,int wH,int mx,int my ,float dt){
+        //cords =Cordinates{}
+        if (!visible) return;
+
+        //label_back->Render(cords,Cordinates{100,20});
+        label_back->Render(cords,Cordinates{label_text->getLabelW()<100?100:label_text->getLabelW(),20});
+        CheckIfHover(mx,my,0.f);
+        
+        label_text->Render(cords,Text);
+     
+        UpdateBlink(label_text->getLabelW(),dt);
+
+        
+
+
+
+
+    }
     void setText(std::string s){
 
 
@@ -1061,4 +1088,137 @@ class CTextBox{
 
 
 };
+
+class CDropDown{
+
+
+    private:
+
+    std::unique_ptr<CButton> CurrentSelectionButton;
+    std::unique_ptr<Clabel> back_lable;
+    std::vector<std::unique_ptr<CButton>> SelectionOptionsButtons;
+    uint64_t CurrentSelection=0;
+    Cordinates cords;
+    SDL_Renderer * renderer;
+
+    bool colapsed=true;
+    int Xspace=50;
+
+   // int lastSelx=100,
+    std::vector<std::string> SelectionName;
+
+    public:
+    //CButton(const std::string& text,SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
+    CDropDown(Cordinates c,SDL_Renderer* r,bool db, bool abs,bool v,TTF_Font * f,std::vector<std::string> &s,uint64_t ci){
+        cords=c;
+        renderer=r;
+
+        SelectionName=s;
+        CurrentSelection=ci;
+        CurrentSelectionButton = std::make_unique<CButton>(SelectionName[CurrentSelection],r,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255});
+         back_lable=std::make_unique<Clabel>(r,Cordinates{300,300},true,true,f);
+         back_lable->setBackgroundColor(SDL_Color{0,0,0,255});
+
+        for(uint64_t i=0;i<SelectionName.size();i++ ){
+
+            SelectionOptionsButtons.push_back((std::make_unique<CButton>(SelectionName[i],r,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255})));
+        }
+
+        
+    }
+
+    void Render(int x,int y,int mx,int my,float dt,CCursor::cursorType &cursor){
+
+
+         if(!colapsed) back_lable->Render(Cordinates{x,y},Cordinates{ SelectionOptionsButtons.back()->getX()-x+SelectionOptionsButtons.back()->getW(),SelectionOptionsButtons.back()->getY()-y+SelectionOptionsButtons.back()->getH()});
+        CurrentSelectionButton->setText("Font: "+SelectionName[CurrentSelection]);      
+        CurrentSelectionButton->UpdateText();  
+        CurrentSelectionButton->Render(x,y);
+        if(CurrentSelectionButton->CheckIfHover(mx,my,dt)) cursor =CCursor::Hand;
+
+
+       
+        if(!colapsed){
+        SelectionOptionsButtons[0]->Render(x+Xspace,y+CurrentSelectionButton->getH());
+        
+        for(uint64_t i=1;i<SelectionOptionsButtons.size();i++ ){
+            
+             SelectionOptionsButtons[i]->Render(x+Xspace,SelectionOptionsButtons[i-1]->getY()+SelectionOptionsButtons[i-1]->getH());
+
+
+        }
+
+        if(CheckIfHoverOptions(mx, my,dt)) cursor =CCursor::Hand;
+
+      }
+
+
+    }
+
+    void setCurrentSelection(uint64_t n){
+
+        CurrentSelection=n;
+    }
+    bool CheckIfHoverOptions(int mx,int my,float dt){
+        bool b=false;
+         for(uint64_t i=0;i<SelectionOptionsButtons.size();i++ ){
+
+            if(SelectionOptionsButtons[i]->CheckIfHover(mx, my, dt)) b=true;
+         }
+         return b;
+    }
+
+    void setCurrentSelectionByString (const std::string &s){
+
+         for(uint64_t i=0;i<SelectionName.size();i++ ){
+
+            std::cout<<"comp |"<<s<<"| to |"<<SelectionName[i]<<"|"<<std::endl;
+            if(s==SelectionName[i]) {
+
+
+                CurrentSelection=i;
+                return;
+            }
+
+         }
+
+
+    }
+
+    const std::string getCurrentSelectionString (){
+
+        return SelectionName[CurrentSelection];
+    }
+
+    int CheckIfClickedOption(int mx,int my){
+
+        //int out=-1;
+        for(uint64_t i=0;i<SelectionOptionsButtons.size();i++ ){
+
+            SelectionOptionsButtons[i]->setMouseLocation(mx,my);
+            if(SelectionOptionsButtons[i]->CheckIfClicked()) return i;
+
+        }
+
+        return -1;
+    }
+
+
+    void CheckIfClickedCurrentSelection(int mx,int my){
+
+
+        CurrentSelectionButton->setMouseLocation(mx,my);
+        if(CurrentSelectionButton->CheckIfClicked()){
+
+            colapsed=!colapsed;
+        }
+    }
+
+
+    bool isColapsed(){
+
+        return colapsed;
+    }
+};
+
 

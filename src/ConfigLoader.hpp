@@ -1,6 +1,7 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_stdinc.h>
 #include <cstdint>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <iostream>
@@ -126,9 +127,10 @@ class CConfigEditorGUI{
     std::unique_ptr<Clabel> back_lable;
     std::vector<std::unique_ptr<Clabel>> labels;
     std::vector<std::unique_ptr<CTextBox>> TextBoxes;
+    std::unique_ptr<CDropDown> FontSelectorDropDown;
     std::unique_ptr<CButton> SaveButton;
+    std::unique_ptr<CButton> ExitButton;
     std::vector<std::string> FieldName = {
-    "Font Name",
     "Font Size",
     "Idle FPS",
     "Async Loading",
@@ -139,6 +141,9 @@ class CConfigEditorGUI{
     bool AnyTyping=false;
     Cordinates cords{100,100};
     std::shared_ptr<CConfigLoader> cfg;
+    int Yspace=40;
+    int Xspace=40;
+
 
     
 
@@ -150,18 +155,31 @@ class CConfigEditorGUI{
     // Clabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,TTF_Font * f){
     // CTextBox(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
     // CButton(const std::string& text,SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
+    //CDropDown(Cordinates c,SDL_Renderer* r,bool db, bool abs,bool v,TTF_Font * f){
     CConfigEditorGUI(SDL_Renderer *r,TTF_Font * f,  std::shared_ptr<CConfigLoader> _cfg){
 
         renderer=r;
 
         cfg=_cfg;
         
+
+        std::vector<std::string> DropDownItems={
+            "InterVariable.ttf",
+            "SFUIDisplay-Light.ttf",
+            "LeagueScriptNumberOne-webfont.ttf"
+            
+
+        };
+        FontSelectorDropDown = std::make_unique<CDropDown>(Cordinates{0,0},renderer,true,true,true,f,DropDownItems,0);
+
+
         back_lable=std::make_unique<Clabel>(r,Cordinates{300,300},true,true,f);
 
         back_lable->setTextColor({0,0,0,0});
         back_lable->setBackgroundColor({128,128,128,128});
 
         SaveButton = std::make_unique<CButton>("Save",renderer,Cordinates{500,500},true,true,true,f,SDL_Color{255,255,255,255});
+        ExitButton = std::make_unique<CButton>("Exit",renderer,Cordinates{500,500},true,true,true,f,SDL_Color{255,255,255,255});
 
 
 
@@ -170,24 +188,27 @@ class CConfigEditorGUI{
     // FieldName.push_back(("Test3")); 
 
 
+    //labels.push_back((std::make_unique<Clabel>(r,Cordinates{300,300},true,true,f)));
+    //labels[0]->setText("Font Type:");
     for(uint64_t i=0;i<FieldName.size() ;i++){
         labels.push_back((std::make_unique<Clabel>(r,Cordinates{300,300},true,true,f)));
         TextBoxes.push_back((std::make_unique<CTextBox>(r,Cordinates{200,200},true,true,true,f,SDL_Color{255,255,255,255})));
         //TextBoxes[i]->setText("std::string s");
-        TextBoxes[i]->textType=CTextBox::NumOnly;
+        TextBoxes.back()->textType=CTextBox::NumOnly;
     }
 
-    TextBoxes[0]->textType=CTextBox::TextOnly;
+   // TextBoxes[0]->textType=CTextBox::TextOnly;
 
     }
     void loadFromConfig(){
-            TextBoxes[0]->setText(cfg->getFontName());
-            TextBoxes[1]->setText(std::to_string(cfg->getFontSize()));
-            TextBoxes[2]->setText(std::to_string(cfg->getidleFps()));
-            TextBoxes[3]->setText(std::to_string(cfg->getASYNCLOADING()));
-            TextBoxes[4]->setText(std::to_string(cfg->getUNLOADAT()));
-            TextBoxes[5]->setText(std::to_string(cfg->getMAXIMAGE_QUEUE()));
-            TextBoxes[6]->setText(std::to_string(cfg->getHIDE_UI()));
+           // TextBoxes[0]->setText(cfg->getFontName());
+            FontSelectorDropDown->setCurrentSelectionByString(cfg->getFontName());
+            TextBoxes[0]->setText(std::to_string(cfg->getFontSize()));
+            TextBoxes[1]->setText(std::to_string(cfg->getidleFps()));
+            TextBoxes[2]->setText(std::to_string(cfg->getASYNCLOADING()));
+            TextBoxes[3]->setText(std::to_string(cfg->getUNLOADAT()));
+            TextBoxes[4]->setText(std::to_string(cfg->getMAXIMAGE_QUEUE()));
+            TextBoxes[5]->setText(std::to_string(cfg->getHIDE_UI()));
         }
 
     void Render(int wW,int wH,int mx,int my,float dt,CCursor::cursorType &cursor){
@@ -197,24 +218,32 @@ class CConfigEditorGUI{
 
         int inity=cords.y;
         int initx=cords.x;
+
+      
+
+        inity+=Yspace;
         for(uint64_t i=0; i<TextBoxes.size(); i++){
 
         labels[i]->Render({initx,inity},FieldName[i]);
         TextBoxes[i]->setCords(initx+labels[i]->getLabelW(), inity);
-        TextBoxes[i]->Render(wW, wH, mx, my,dt, cursor);
+        if(FontSelectorDropDown->isColapsed())TextBoxes[i]->Render(wW, wH, mx, my,dt, cursor);
+        else TextBoxes[i]->Render(wW, wH, mx, my,dt);
 
-        inity+=40;
+        inity+=Yspace;
         }
         if(SaveButton->CheckIfHover(mx, my, dt)) cursor=CCursor::Hand;
-        SaveButton->Render(initx,inity);
+        if(ExitButton->CheckIfHover(mx, my, dt)) cursor=CCursor::Hand;
         
+        SaveButton->Render(initx,inity);
+        ExitButton->Render(initx+Xspace+SaveButton->getW(),inity);
+        FontSelectorDropDown->Render(cords.x, cords.y, mx,my, dt,cursor);
 
 
     }
 
     void checkIfAnyTyping(int mx,int my){
 
-        if(TextBoxes.empty()) return;
+        if(TextBoxes.empty() || !FontSelectorDropDown->isColapsed()) return;
         AnyTyping=false;
 
         for(uint64_t i=0; i<TextBoxes.size(); i++){
@@ -230,22 +259,42 @@ class CConfigEditorGUI{
     // "Async Loading", 3
     // "Unload At", 4
     // "Max Image Queue" 5
-    void checkIfSave(int mx,int my,const std::string& filename){
+    void checkIfButtonClick(int mx,int my,const std::string& filename){
+
+        FontSelectorDropDown->CheckIfClickedCurrentSelection(mx, my);
+        if(!FontSelectorDropDown->isColapsed()){
+        std::cout<<FontSelectorDropDown->CheckIfClickedOption(mx, my)<<std::endl;
+         int ci=FontSelectorDropDown->CheckIfClickedOption(mx, my);
+
+         if(ci!=-1){
+            FontSelectorDropDown->setCurrentSelection(static_cast<uint64_t>(ci));
+        
+        }
+    }
 
        SaveButton->setMouseLocation(mx, my); 
        if( SaveButton->CheckIfClicked()){
         std::cout<<"SavePressConf"<<std::endl;
 
-        cfg->setFontName(TextBoxes[0]->getText());
-        cfg->setFontSize(TextBoxes[1]->getInt());
-        cfg->setIdleFps(TextBoxes[2]->getInt());
-        cfg->setASYNCLOADING(TextBoxes[3]->getInt());
-        cfg->setUNLOADAT(TextBoxes[4]->getInt());
-        cfg->setMAXIMAGE_QUEUE(TextBoxes[5]->getInt());
-        cfg->setHIDE_UI(static_cast<bool>(TextBoxes[6]->getInt()));
+        cfg->setFontName(FontSelectorDropDown->getCurrentSelectionString());
+        cfg->setFontSize(TextBoxes[0]->getInt());
+        cfg->setIdleFps(TextBoxes[1]->getInt());
+        cfg->setASYNCLOADING(TextBoxes[2]->getInt());
+        cfg->setUNLOADAT(TextBoxes[3]->getInt());
+        cfg->setMAXIMAGE_QUEUE(TextBoxes[4]->getInt());
+        cfg->setHIDE_UI(static_cast<bool>(TextBoxes[5]->getInt()));
 
          cfg->save(filename);
     }
+
+       ExitButton->setMouseLocation(mx, my); 
+       if( ExitButton->CheckIfClicked()){
+        std::cout<<"ExitPressConf"<<std::endl;
+        //visible=false;
+        enabled=false;
+    }
+
+
        return;
     }
 
