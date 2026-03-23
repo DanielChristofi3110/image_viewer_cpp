@@ -24,11 +24,9 @@ Install dependencies using your package manager:
 ```bash
 sudo apt install libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev libsdl2-gfx-dev
 ```
-
 ### Windows (MSVC)
 -  **Visual Studio (recommended)**
 Prebuilt SDL2 libraries placed in:
-
 ```bash
 libs/
 ├── include
@@ -68,5 +66,38 @@ Executable will be in:
 build/Release/viewer.exe
 
 DLLs will be copied automatically after build.
+
+## Resources
+
+All files in the res/ directory are automatically copied to the output directory after build.
+Place your images there to ensure they are available at runtime.
+
+Output Naming
+**Debug build: debug_viewer**
+**Release build: viewer**
+
+## Packaging (Linux)
+
+This project supports packaging via CPack:
+
+```bash
+cd build
+cpack
+```
+
+Generated packages:
+
+.deb (Debian/Ubuntu)
+.rpm (Fedora/RHEL)
+.tar.gz
+
+## Notes
+On Windows, ensure all required .dll files are present in libs/bin. They will be copied automatically.
+On Linux, SDL2 dependencies are resolved via system packages.
+SDL2_gfx is linked manually and must be available on your system.
+## License
+
+--
+
 
 
