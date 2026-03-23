@@ -3,6 +3,18 @@
 A simple cross-platform image viewer built with SDL2 and related libraries.
 This project demonstrates a minimal setup for loading and displaying images using SDL2 with CMake.
 
+## Screenshot
+
+
+![prev1](previews/prev1.png)
+
+
+![prev2](previews/prev2.png)
+
+
+![prev3](previews/prev3.png)
+
+
 ## Features
 
 -  **Load and display common image formats (PNG, JPG, etc.)** -
