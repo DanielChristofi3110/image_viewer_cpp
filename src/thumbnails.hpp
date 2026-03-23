@@ -7,6 +7,7 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_ttf.h>
+#include <cmath>
 #include <cstdint>
 #include <iostream>
 #include <iterator>
@@ -507,6 +508,7 @@ class CThumbnailGroup{
          SDL_Renderer* renderer;
          std::shared_ptr<CImages> Images;
          bool visible=true;
+         float Yelevation=0;
          
          
          const int drawProgressH=10;
@@ -571,7 +573,7 @@ class CThumbnailGroup{
 
 
          for (uint64_t i = 0; i < size; i++) {
-            SDL_Rect rect = {thumbX, thumbY, THUMB_WIDTH, THUMB_HEIGHT};
+            SDL_Rect rect = {thumbX, thumbY-static_cast<int>(Yelevation), THUMB_WIDTH, THUMB_HEIGHT};
 
             // highlight current image
             if(visible){
@@ -608,11 +610,22 @@ class CThumbnailGroup{
             //cordtemp.x-=THUMB_WIDTH;
             //labels[i]->Render({cordtemp.x,cordtemp.y+20},std::to_string(i+1)+"/"+std::to_string(size));
             //buttons[i]->setText(std::to_string(i+1)+"/"+std::to_string(size));
-            buttons[i]->Render(cordtemp.x-THUMB_WIDTH-THUMB_PADDING,cordtemp.y,THUMB_WIDTH,THUMB_HEIGHT);
+            buttons[i]->Render(cordtemp.x-THUMB_WIDTH-THUMB_PADDING,cordtemp.y-static_cast<int>(Yelevation),THUMB_WIDTH,THUMB_HEIGHT);
 
         }
 
 
+    }
+
+    void UpdateYelevation(float target,float speed, float dt)
+    {
+        //float speed = 5.0f; // higher = faster interpolation
+        float t = dt * speed;
+
+        // Clamp t so it doesn't overshoot
+        if (t > 1.0f) t = 1.0f;
+
+        Yelevation = Yelevation + (target - Yelevation) * t;
     }
 
     void CheckThumbnailPress(float dt,int mx,int my,CCursor::cursorType & cursor){
@@ -658,7 +671,7 @@ class CThumbnailGroup{
 
         SDL_Rect bgThumBox;
         bgThumBox.x = thumbnails[0]->getX()-INIT_THUMB_X/2-THUMB_WIDTH-THUMB_PADDING; // small padding
-        bgThumBox.y = 0;
+        bgThumBox.y = -static_cast<int>(Yelevation);
 
         bgThumBox.w = ((static_cast<int>(thumbnails.size())*(THUMB_WIDTH+INIT_THUMB_X))-INIT_THUMB_X)+(INIT_THUMB_X/2)*2;
         //bgThumBox.w = thumbnails[thumbnails.size()-1].getX()+THUMB_WIDTH;//
@@ -680,7 +693,7 @@ class CThumbnailGroup{
         SDL_Rect bgThumSel;
         //bgThumSel.x = (THUMB_PADDING+THUMB_WIDTH)*(thumbcurrentIndex)+INIT_THUMB_X/2; // sel start
         bgThumSel.x =  thumbnails[currentIndex]->getX()-THUMB_WIDTH-THUMB_PADDING*2;
-        bgThumSel.y = 0;
+        bgThumSel.y = -static_cast<int>(Yelevation);
         CindCords.x=bgThumSel.x;
         CindCords.y=bgThumSel.y;
 

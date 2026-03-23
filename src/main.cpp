@@ -310,6 +310,7 @@ int main(int argc, char* argv[]) {
     int lastMouseX = 0;
     int lastMouseY = 0;
 
+    float Thumbnail_ANIM_SPEED=ConfigLoader->getTHUMBNAIL_ANIMATION_SPEED();
    
     Images->LoadAroundAsync(ASYNCLOADING);
     CThumbnailGroup thumbgroup(FileScanner.getImageFilesSize(),renderer,Images,font,true,FileScanner.getImageFiles());
@@ -522,9 +523,11 @@ int main(int argc, char* argv[]) {
         "  Zoom: " + std::to_string(static_cast<int>(std::floor(zoom*100))) + "%";
 
 
+        thumbgroup.setVisibility(true);
         if(ConfigEditorGUI.isEnabled()){
 
             hide_ui=true;
+            thumbgroup.setVisibility(false);
         }
         //hide_ui=ConfigLoader->getHIDE_UI();
         FileLabel.setVisibility(!hide_ui);
@@ -536,7 +539,7 @@ int main(int argc, char* argv[]) {
         RotateRightButton.setEnabled(!hide_ui);
         RotateLeftButton.setEnabled(!hide_ui);
         UnhideTipLabel.setVisibility(hide_ui);
-        thumbgroup.setVisibility(!hide_ui);
+        //thumbgroup.setVisibility(!hide_ui);
 
 
          
@@ -607,6 +610,14 @@ int main(int argc, char* argv[]) {
             FrameControl.setMouseOnButton(OptionsButton->CheckIfHover(mouseX,mouseY,deltaTime));
             //if(mouseY!=lastMouseY)
             FrameControl.setMouseOnThmbnails(mouseY<THUMB_WIDTH&&windowActive);
+
+            if(mouseY<THUMB_WIDTH&&windowActive){
+
+                thumbgroup.UpdateYelevation(0,Thumbnail_ANIM_SPEED, deltaTime);
+            }else if(hide_ui){
+                thumbgroup.UpdateYelevation(THUMB_HEIGHT+THUMB_PADDING*2+5,Thumbnail_ANIM_SPEED, deltaTime);
+
+            }
 
             if(FrameControl.getMouseOnButton()) CursorType=CCursor::Hand;
              //if(FrameControl.getMouseOnButton()) CursorType=CCursor::Hand;
@@ -845,7 +856,7 @@ int main(int argc, char* argv[]) {
                 SDL_GetMouseState(&mouseX, &mouseY);
 
                  FrameControl.setMouseOnScroll(true);
-                if(mouseY>THUMB_HEIGHT+2*THUMB_PADDING || hide_ui){
+                if(mouseY>THUMB_HEIGHT+2*THUMB_PADDING){ //|| hide_ui){
 
 
                     float oldZoom = Images->getCurrentImageZoom();

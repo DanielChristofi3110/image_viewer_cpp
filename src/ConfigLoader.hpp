@@ -21,6 +21,7 @@ private:
     int aSYNCLOADING= 1;
     int uNLOADAT= 2;
     int mAXIMAGE_QUEUE=10;
+    int tHUMBNAIL_ANIMATION_SPEED;
     bool hIDE_UI;
 
 public:
@@ -43,6 +44,7 @@ public:
         long un = ini.GetLongValue("settings", "UNLOADAT", 2);
         long ma = ini.GetLongValue("settings", "MAXIMAGE_QUEUE", 10);
         long hu = ini.GetLongValue("settings", "HIDE_UI", 0);
+        long ta = ini.GetLongValue("settings", "THUMBNAIL_ANIMATION_SPEED", 5);
 
         fontName = name;
         fontSize = static_cast<int>(size);
@@ -51,6 +53,7 @@ public:
         uNLOADAT= static_cast<int>(un);
         mAXIMAGE_QUEUE=static_cast<int>(ma);
         hIDE_UI=static_cast<bool>(hu);
+        tHUMBNAIL_ANIMATION_SPEED=static_cast<float>(ta);
 
         return true;
     }
@@ -69,6 +72,7 @@ public:
         ini.SetLongValue("settings", "UNLOADAT", uNLOADAT);
         ini.SetLongValue("settings", "MAXIMAGE_QUEUE", mAXIMAGE_QUEUE);
          ini.SetLongValue("settings", "HIDE_UI", hIDE_UI);
+         ini.SetLongValue("settings", "THUMBNAIL_ANIMATION_SPEED", tHUMBNAIL_ANIMATION_SPEED);
 
         SI_Error rc = ini.SaveFile(filename.c_str());
         return rc >= 0;
@@ -108,6 +112,11 @@ public:
     {
         return hIDE_UI;
     }
+    float getTHUMBNAIL_ANIMATION_SPEED() const{
+
+
+        return  tHUMBNAIL_ANIMATION_SPEED;
+    }
 
     void setFontName(const std::string& v) { fontName = v; }
     void setFontSize(int v) { fontSize = v; }
@@ -116,6 +125,7 @@ public:
     void setUNLOADAT(int v) { uNLOADAT = v; }
     void setMAXIMAGE_QUEUE(int v) { mAXIMAGE_QUEUE = v; }
      void setHIDE_UI(bool v) { hIDE_UI = v; }
+    void setTHUMBNAIL_ANIMATION_SPEED(float v) { tHUMBNAIL_ANIMATION_SPEED = v; }
 
 };
 
@@ -136,7 +146,8 @@ class CConfigEditorGUI{
     "Async Loading",
     "Unload At",
     "Max Image Queue",
-    "HIDE_UI"
+    "HIDE_UI",
+    "THUMBNAIL_ANIMATION_SPEED"
         };
     bool AnyTyping=false;
     Cordinates cords{100,100};
@@ -209,6 +220,7 @@ class CConfigEditorGUI{
             TextBoxes[3]->setText(std::to_string(cfg->getUNLOADAT()));
             TextBoxes[4]->setText(std::to_string(cfg->getMAXIMAGE_QUEUE()));
             TextBoxes[5]->setText(std::to_string(cfg->getHIDE_UI()));
+            TextBoxes[6]->setText(std::to_string(static_cast<int>(cfg->getTHUMBNAIL_ANIMATION_SPEED())));
         }
 
     void Render(int wW,int wH,int mx,int my,float dt,CCursor::cursorType &cursor){
@@ -283,8 +295,8 @@ class CConfigEditorGUI{
         cfg->setUNLOADAT(TextBoxes[3]->getInt());
         cfg->setMAXIMAGE_QUEUE(TextBoxes[4]->getInt());
         cfg->setHIDE_UI(static_cast<bool>(TextBoxes[5]->getInt()));
-
-         cfg->save(filename);
+        cfg->setTHUMBNAIL_ANIMATION_SPEED(static_cast<int>(TextBoxes[6]->getInt()));
+        cfg->save(filename);
     }
 
        ExitButton->setMouseLocation(mx, my); 
