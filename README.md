@@ -24,9 +24,11 @@ Install dependencies using your package manager:
 ```bash
 sudo apt install libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev libsdl2-gfx-dev
 ```
+
 ### Windows (MSVC)
 -  **Visual Studio (recommended)**
 Prebuilt SDL2 libraries placed in:
+
 ```bash
 libs/
 ├── include
