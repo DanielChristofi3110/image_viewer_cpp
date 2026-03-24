@@ -11,124 +11,121 @@
 #include "Cursor.hpp"
 #include "globals.hpp"
 
+
 class CConfigLoader
 {
 private:
     std::string fontName;
-    int fontSize = 0;
-    int idleFps = 0;
-    
-    int aSYNCLOADING= 1;
-    int uNLOADAT= 2;
-    int mAXIMAGE_QUEUE=10;
-    int tHUMBNAIL_ANIMATION_SPEED;
-    bool hIDE_UI;
+    int fontSize = 18;
+    int idleFps = 24;
+
+    int aSYNCLOADING = 4;
+    int uNLOADAT = 4;
+    int mAXIMAGE_QUEUE = 10;
+    int tHUMBNAIL_ANIMATION_SPEED = 5;
+    bool hIDE_UI = false;
 
 public:
+    void setDefaults()
+    {
+        fontName = "InterVariable.ttf";
+        fontSize = 18;
+        idleFps = 24;
+        aSYNCLOADING = 4;
+        uNLOADAT = 4;
+        mAXIMAGE_QUEUE = 10;
+        hIDE_UI = false;
+        tHUMBNAIL_ANIMATION_SPEED = 5;
+    }
+
     bool load(const std::string& filename)
     {
         CSimpleIniA ini;
         ini.SetUnicode();
 
+
+         std::cout <<filename.c_str()<< "\n";
+        // If file doesn't exist → create default
+        if (!std::filesystem::exists(filename))
+        {
+            std::cout << "Config not found. Creating default config...\n";
+            setDefaults();
+            return save(filename);
+        }
+
         SI_Error rc = ini.LoadFile(filename.c_str());
         if (rc < 0)
         {
-            std::cerr << "Failed to load config file\n";
-            return false;
+            std::cerr << "Failed to load config. Recreating default..."<<filename.c_str()<<"\n";
+            setDefaults();
+            return save(filename);
         }
 
         const char* name = ini.GetValue("font", "name", "InterVariable.ttf");
         long size = ini.GetLongValue("font", "size", 18);
-        long fps = ini.GetLongValue("settings", "idleFps", 10);
-        long as = ini.GetLongValue("settings", "ASYNCLOADING", 1);
-        long un = ini.GetLongValue("settings", "UNLOADAT", 2);
+        long fps = ini.GetLongValue("settings", "idleFps", 24);
+        long as = ini.GetLongValue("settings", "ASYNCLOADING", 4);
+        long un = ini.GetLongValue("settings", "UNLOADAT", 4);
         long ma = ini.GetLongValue("settings", "MAXIMAGE_QUEUE", 10);
         long hu = ini.GetLongValue("settings", "HIDE_UI", 0);
         long ta = ini.GetLongValue("settings", "THUMBNAIL_ANIMATION_SPEED", 5);
 
         fontName = name;
         fontSize = static_cast<int>(size);
-        idleFps =static_cast<int>(fps);
-        aSYNCLOADING= static_cast<int>(as);
-        uNLOADAT= static_cast<int>(un);
-        mAXIMAGE_QUEUE=static_cast<int>(ma);
-        hIDE_UI=static_cast<bool>(hu);
-        tHUMBNAIL_ANIMATION_SPEED=static_cast<float>(ta);
+        idleFps = static_cast<int>(fps);
+        aSYNCLOADING = static_cast<int>(as);
+        uNLOADAT = static_cast<int>(un);
+        mAXIMAGE_QUEUE = static_cast<int>(ma);
+        hIDE_UI = static_cast<bool>(hu);
+        tHUMBNAIL_ANIMATION_SPEED = static_cast<int>(ta);
 
         return true;
     }
 
-    bool save(const std::string& filename){
+    bool save(const std::string& filename)
+    {
         CSimpleIniA ini;
         ini.SetUnicode();
 
-        // Load existing file (optional but recommended)
-        ini.LoadFile(filename.c_str());
+        // Ensure directory exists
+        std::filesystem::create_directories(
+            std::filesystem::path(filename).parent_path()
+        );
 
         ini.SetValue("font", "name", fontName.c_str());
         ini.SetLongValue("font", "size", fontSize);
+
         ini.SetLongValue("settings", "idleFps", idleFps);
         ini.SetLongValue("settings", "ASYNCLOADING", aSYNCLOADING);
         ini.SetLongValue("settings", "UNLOADAT", uNLOADAT);
         ini.SetLongValue("settings", "MAXIMAGE_QUEUE", mAXIMAGE_QUEUE);
-         ini.SetLongValue("settings", "HIDE_UI", hIDE_UI);
-         ini.SetLongValue("settings", "THUMBNAIL_ANIMATION_SPEED", tHUMBNAIL_ANIMATION_SPEED);
+        ini.SetLongValue("settings", "HIDE_UI", hIDE_UI);
+        ini.SetLongValue("settings", "THUMBNAIL_ANIMATION_SPEED", tHUMBNAIL_ANIMATION_SPEED);
 
         SI_Error rc = ini.SaveFile(filename.c_str());
         return rc >= 0;
     }
 
+    // --- getters ---
+    const std::string& getFontName() const { return fontName; }
+    int getFontSize() const { return fontSize; }
+    int getidleFps() const { return idleFps; }
+    int getASYNCLOADING() const { return aSYNCLOADING; }
+    int getUNLOADAT() const { return uNLOADAT; }
+    int getMAXIMAGE_QUEUE() const { return mAXIMAGE_QUEUE; }
+    bool getHIDE_UI() const { return hIDE_UI; }
+    float getTHUMBNAIL_ANIMATION_SPEED() const { return tHUMBNAIL_ANIMATION_SPEED; }
 
-
-    const std::string& getFontName() const
-    {
-        return fontName;
-    }
-
-    int getFontSize() const
-    {
-        return fontSize;
-    }
-     int getidleFps() const
-    {
-        return idleFps;
-    }
-
-     int getASYNCLOADING() const
-    {
-        return aSYNCLOADING;
-    }
-
-      int getUNLOADAT() const
-    {
-        return uNLOADAT;
-    }
-       int getMAXIMAGE_QUEUE() const
-    {
-        return mAXIMAGE_QUEUE;
-    }
-
-    bool getHIDE_UI() const
-    {
-        return hIDE_UI;
-    }
-    float getTHUMBNAIL_ANIMATION_SPEED() const{
-
-
-        return  tHUMBNAIL_ANIMATION_SPEED;
-    }
-
+    // --- setters ---
     void setFontName(const std::string& v) { fontName = v; }
     void setFontSize(int v) { fontSize = v; }
     void setIdleFps(int v) { idleFps = v; }
     void setASYNCLOADING(int v) { aSYNCLOADING = v; }
     void setUNLOADAT(int v) { uNLOADAT = v; }
     void setMAXIMAGE_QUEUE(int v) { mAXIMAGE_QUEUE = v; }
-     void setHIDE_UI(bool v) { hIDE_UI = v; }
+    void setHIDE_UI(bool v) { hIDE_UI = v; }
     void setTHUMBNAIL_ANIMATION_SPEED(float v) { tHUMBNAIL_ANIMATION_SPEED = v; }
-
 };
-
 
 class CConfigEditorGUI{
     private:

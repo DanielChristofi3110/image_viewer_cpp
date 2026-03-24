@@ -91,6 +91,18 @@ std::string getExecutableDirectory() {
     std::string exePath(buffer);
     return exePath.substr(0, exePath.find_last_of("/")); // get directory
 }
+
+std::string getConfigPath()
+{
+    const char* home = std::getenv("HOME");
+    if (!home)
+    {
+        throw std::runtime_error("HOME environment variable not set");
+    }
+
+    std::string base = std::string(home) + "/.config/imageviewer/";
+    return base + "config.ini";
+}
 #endif
 
 
@@ -101,14 +113,18 @@ int main(int argc, char* argv[]) {
 
     execDir=getExecutableDirectory();
     #ifdef _WIN32
-    resDir=execDir
+    resDir=execDir;
+    confDir=execDir;
     #endif
 
+    confDir=execDir+"/config/config.ini";
     #ifdef __linux
     resDir=execDir+"/../share/imageviewer/";
+    confDir=getConfigPath();
     #ifndef NDEBUG
     std::cout << "Debug mode\n";
     resDir=execDir;
+    confDir=execDir+"/config/config.ini";
   
     #endif
     #endif
@@ -150,8 +166,8 @@ int main(int argc, char* argv[]) {
     std::cout <<"HELLO"<<std::endl;
     std::shared_ptr<CConfigLoader> ConfigLoader;
     ConfigLoader=std::make_shared<CConfigLoader>();
-    std::cout <<resDir+"/config/config.ini"<<std::endl;
-    if (ConfigLoader->load(resDir+"/config/config.ini"))
+    std::cout <<confDir<<std::endl;
+    if (ConfigLoader->load(confDir))
     {
         std::cout << "Font Name: " << ConfigLoader->getFontName() << std::endl;
         std::cout << "Font Size: " << ConfigLoader->getFontSize() << std::endl;
@@ -923,7 +939,7 @@ int main(int argc, char* argv[]) {
             Typing=ConfigEditorGUI.isEnabled();
             //TextTextBox.CheckIfPressed(mouseX,mouseY,Typing);
             ConfigEditorGUI.checkIfAnyTyping(mouseX, mouseY);
-            ConfigEditorGUI.checkIfButtonClick(mouseX, mouseY,resDir+"/config/config.ini");
+            ConfigEditorGUI.checkIfButtonClick(mouseX, mouseY,confDir);
 
 
             if(Typing) SDL_StartTextInput();
