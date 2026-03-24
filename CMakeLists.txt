@@ -95,8 +95,9 @@ if(UNIX AND NOT APPLE)
     )
 
     target_compile_options(viewer PRIVATE
-        -O2
-    )
+        $<$<CONFIG:Release>:-O2>
+        $<$<CONFIG:Debug>:-O0 -g>
+        )
 
 endif()
 # -------------------------
@@ -117,7 +118,7 @@ install(TARGETS viewer
 
 # Install resources next to the executable
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/res/
-    DESTINATION bin/
+    DESTINATION share/imageviewer
 )
 
 # -------------------------

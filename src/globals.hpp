@@ -51,6 +51,7 @@ bool debug_mode=false;
 bool Loadthumbnails=true;
 int fps=0;
 std::string execDir=".";
+std::string resDir=".";
 
 int ASYNCLOADING= 1;
 int UNLOADAT= 2;

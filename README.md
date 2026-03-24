@@ -58,7 +58,8 @@ Required libraries:
 ```bash
 mkdir build
 cd build
-cmake ..
+cmake ..  -DCMAKE_BUILD_TYPE=Debug
+cmake ..  -DCMAKE_BUILD_TYPE=Release
 cmake --build .
 ```
 

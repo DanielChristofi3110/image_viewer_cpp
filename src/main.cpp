@@ -100,6 +100,20 @@ int main(int argc, char* argv[]) {
     #endif
 
     execDir=getExecutableDirectory();
+    #ifdef _WIN32
+    resDir=execDir
+    #endif
+
+    #ifdef __linux
+    resDir=execDir+"/../share/imageviewer/";
+    #ifndef NDEBUG
+    std::cout << "Debug mode\n";
+    resDir=execDir;
+  
+    #endif
+    #endif
+
+
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG);
 
@@ -136,8 +150,8 @@ int main(int argc, char* argv[]) {
     std::cout <<"HELLO"<<std::endl;
     std::shared_ptr<CConfigLoader> ConfigLoader;
     ConfigLoader=std::make_shared<CConfigLoader>();
-    std::cout <<execDir+"/config/config.ini"<<std::endl;
-    if (ConfigLoader->load(execDir+"/config/config.ini"))
+    std::cout <<resDir+"/config/config.ini"<<std::endl;
+    if (ConfigLoader->load(resDir+"/config/config.ini"))
     {
         std::cout << "Font Name: " << ConfigLoader->getFontName() << std::endl;
         std::cout << "Font Size: " << ConfigLoader->getFontSize() << std::endl;
@@ -175,10 +189,10 @@ int main(int argc, char* argv[]) {
 
     //font
 
-    TTF_Font* font = TTF_OpenFont((execDir+"/fonts/"+ConfigLoader->getFontName()).c_str(), ConfigLoader->getFontSize());
+    TTF_Font* font = TTF_OpenFont((resDir+"/fonts/"+ConfigLoader->getFontName()).c_str(), ConfigLoader->getFontSize());
     if (!font) {
         std::cout << "Failed to load font: " << TTF_GetError() <<"fallback"<< "\n";
-        font = TTF_OpenFont((execDir+"/fonts/InterVariable.ttf").c_str(), ConfigLoader->getFontSize());
+        font = TTF_OpenFont((resDir+"/fonts/InterVariable.ttf").c_str(), ConfigLoader->getFontSize());
          if (!font)
              return 1;
     }
@@ -212,7 +226,7 @@ int main(int argc, char* argv[]) {
     dropImageLabel.setBackgroundColor({0,0,0,255});
 
     std::unique_ptr<CImage> initBackImage=std::make_unique<CImage>(renderer);
-    initBackImage->LoadImage_((execDir+"/resources/images/iconimage.png").c_str(),winW,winH);
+    initBackImage->LoadImage_((resDir+"/resources/images/iconimage.png").c_str(),winW,winH);
 
 
     if (argc < 2) {
@@ -320,39 +334,39 @@ int main(int argc, char* argv[]) {
 
 
     Clabel RotateLeftLabel(renderer,{400,400},true,true,font);
-    RotateLeftLabel.LoadSVGtoLabel((execDir+"/resources/vector/RotateLeft.svg").c_str(),0.03f);
+    RotateLeftLabel.LoadSVGtoLabel((resDir+"/resources/vector/RotateLeft.svg").c_str(),0.03f);
     RotateLeftLabel.setIconPositionLeft();
 
     CButton RotateLeftButton("R",renderer,{400,400},true,true,true,font,{255,255,255,255});
-    RotateLeftButton.setSvgIcon((execDir+"/resources/vector/RotateLeft.svg").c_str(), true,0.03f);
+    RotateLeftButton.setSvgIcon((resDir+"/resources/vector/RotateLeft.svg").c_str(), true,0.03f);
 
 
 
     CButton RotateRightButton("Shift+R",renderer,{400,400},true,true,true,font,{255,255,255,255});
-    RotateRightButton.setSvgIcon((execDir+"/resources/vector/RotateRight.svg").c_str(), true,0.03f);
+    RotateRightButton.setSvgIcon((resDir+"/resources/vector/RotateRight.svg").c_str(), true,0.03f);
 
 
     Clabel RotateRightLabel(renderer,{400,400},true,true,font);
-    RotateRightLabel.LoadSVGtoLabel((execDir+"/resources/vector/RotateRight.svg").c_str(),0.03f);
+    RotateRightLabel.LoadSVGtoLabel((resDir+"/resources/vector/RotateRight.svg").c_str(),0.03f);
     RotateRightLabel.setIconPositionLeft();
 
 
 
     Clabel ResolutionLabel(renderer,{400,400},true,true,font);
-    ResolutionLabel.LoadSVGtoLabel((execDir+"/resources/vector/Resolution.svg").c_str(),0.03f);
+    ResolutionLabel.LoadSVGtoLabel((resDir+"/resources/vector/Resolution.svg").c_str(),0.03f);
     ResolutionLabel.setIconPositionLeft();
 
     Clabel ZoomLabel(renderer,{400,400},true,true,font);
-    ZoomLabel.LoadSVGtoLabel((execDir+"/resources/vector/Zoom.svg").c_str(),0.03f);
+    ZoomLabel.LoadSVGtoLabel((resDir+"/resources/vector/Zoom.svg").c_str(),0.03f);
     ZoomLabel.setIconPositionLeft();
 
     Clabel TimeLabel(renderer,{400,400},true,true,font);
-    TimeLabel.LoadSVGtoLabel((execDir+"/resources/vector/Date.svg").c_str(),0.03f);
+    TimeLabel.LoadSVGtoLabel((resDir+"/resources/vector/Date.svg").c_str(),0.03f);
     TimeLabel.setIconPositionLeft();
 
 
     Clabel FileLabel(renderer,{400,400},true,true,font);
-    FileLabel.LoadSVGtoLabel((execDir+"/resources/vector/File.svg").c_str(),0.03f);
+    FileLabel.LoadSVGtoLabel((resDir+"/resources/vector/File.svg").c_str(),0.03f);
     FileLabel.setIconPositionLeft();
 
 
@@ -374,24 +388,24 @@ int main(int argc, char* argv[]) {
 
     std::shared_ptr<CButton> NextImageRightButton =  std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
    // CButton NextImageRightButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-    NextImageRightButton->setSvgIcon((execDir+"/resources/vector/ArrowRight.svg").c_str(),false,0.06f);
+    NextImageRightButton->setSvgIcon((resDir+"/resources/vector/ArrowRight.svg").c_str(),false,0.06f);
 
 
 
     std::shared_ptr<CButton> NextImageLeftButton =  std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
     //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-    NextImageLeftButton->setSvgIcon((execDir+"/resources/vector/ArrowLeft.svg").c_str(),false,0.06f);
+    NextImageLeftButton->setSvgIcon((resDir+"/resources/vector/ArrowLeft.svg").c_str(),false,0.06f);
 
 
      std::shared_ptr<CButton> FullscreenButton = std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
     //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-     FullscreenButton->setSvgIcon((execDir+"/resources/vector/Fullscreen.svg").c_str(),false,0.06f);
+     FullscreenButton->setSvgIcon((resDir+"/resources/vector/Fullscreen.svg").c_str(),false,0.06f);
 
 
 
     std::shared_ptr<CButton> OptionsButton = std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
     //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-     OptionsButton->setSvgIcon((execDir+"/resources/vector/Options.svg").c_str(),false,0.06f);
+     OptionsButton->setSvgIcon((resDir+"/resources/vector/Options.svg").c_str(),false,0.06f);
 
     //  Clabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
     CAnimatedlabel AnimLabelOnCopy(renderer,{0,0},true,true,true,font,{0,255,0,255},2,"Copied to clipboard");
@@ -909,7 +923,7 @@ int main(int argc, char* argv[]) {
             Typing=ConfigEditorGUI.isEnabled();
             //TextTextBox.CheckIfPressed(mouseX,mouseY,Typing);
             ConfigEditorGUI.checkIfAnyTyping(mouseX, mouseY);
-            ConfigEditorGUI.checkIfButtonClick(mouseX, mouseY,execDir+"/config/config.ini");
+            ConfigEditorGUI.checkIfButtonClick(mouseX, mouseY,resDir+"/config/config.ini");
 
 
             if(Typing) SDL_StartTextInput();
