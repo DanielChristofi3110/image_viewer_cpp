@@ -9,9 +9,11 @@
 #include "Clipboard.hpp"
 #include "Cursor.hpp"
 #include "ConfigLoader.hpp"
+#include "Canvas.hpp"
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
+#include <SDL2/SDL_events.h>
 #include <algorithm>
 #include <iostream>
 #include <memory>
@@ -203,6 +205,7 @@ int main(int argc, char* argv[]) {
     std::cout<<"------------------Created  render-----------------------"<<std::endl;
 
 
+   
     //font
 
     TTF_Font* font = TTF_OpenFont((resDir+"/fonts/"+ConfigLoader->getFontName()).c_str(), ConfigLoader->getFontSize());
@@ -220,7 +223,9 @@ int main(int argc, char* argv[]) {
     //int thumb_proc_ind = 0;
     //const int imageFiles_size = imageFiles.size();
 
+ //Canvas
 
+    CCanvas Canvas(renderer,font,(resDir+"/resources/vector/Pen.svg").c_str());
     std::cout<<"------------------Loaded Thumbnails-----------------------"<<std::endl;
 
     
@@ -472,6 +477,8 @@ int main(int argc, char* argv[]) {
     
 
     bool Typing=false;
+    bool DrawingMode=false;
+    //Canvas.setPenInvertedColor({255,255,255,255});
     while (running) {
 
         
@@ -490,7 +497,7 @@ int main(int argc, char* argv[]) {
 
         //DES_FPS=10;
         FrameControl.makeAllFalse();
-        
+        FrameControl.setDrawingMode(Canvas.isDrawing());
         int displayIndex = SDL_GetWindowDisplayIndex(window);
         
         
@@ -519,6 +526,9 @@ int main(int argc, char* argv[]) {
         background.StartLerp({thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().r,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().g,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().b,255}, 0.5f);
         background.Update(deltaTime);
         background.Render();
+        Canvas.setPenInvertedColor({thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().r,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().g,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().b,255});
+
+        
 
 
         //std::cout<<"c image cordy "<<Images->getCurrentImageCords().y<<std::endl;
@@ -535,6 +545,7 @@ int main(int argc, char* argv[]) {
         offsetX=static_cast<float>(c.x);
         offsetY=static_cast<float>(c.y);
 
+        Canvas.Render(static_cast<int>(offsetX),static_cast<int>(offsetY),zoom,Images->getCurrentImageRotation());
  
 
         
@@ -659,6 +670,7 @@ int main(int argc, char* argv[]) {
 
             TextTextBox.setVisible(debug_mode);
             TextTextBox.Render(winW,winH,mouseX,mouseY,deltaTime,CursorType);
+            if(DrawingMode) Canvas.RenderPen(mouseX, mouseY);
             
 
         }
@@ -766,9 +778,11 @@ int main(int argc, char* argv[]) {
 
                 if (event.key.keysym.sym == SDLK_r && (event.key.keysym.mod & KMOD_LSHIFT)) {
                     Images->CurrentImageRotate270(winW,winH);
+                    Canvas.clear();
                 }else if(event.key.keysym.sym == SDLK_r){
 
                        Images->CurrentImageRotate90(winW,winH);
+                       Canvas.clear();
                 }
                 if (event.key.keysym.sym == SDLK_c && (event.key.keysym.mod & KMOD_CTRL)) {
                     //std::cout<<"Copy to clipboard init"<<std::endl;
@@ -791,13 +805,17 @@ int main(int argc, char* argv[]) {
 
 
                 }
-                 
-                if (event.key.keysym.sym == SDLK_d) {
+                if(event.key.keysym.sym == SDLK_d && (event.key.keysym.mod & KMOD_CTRL)){
+                      if(DEBUG) debug_mode=!debug_mode;
 
-                    if(DEBUG) debug_mode=!debug_mode;
+                }else if (event.key.keysym.sym == SDLK_d) {
+
+                  
+                    DrawingMode=!DrawingMode;
 
 
                 }
+                
 
 
                 //end Type
@@ -822,6 +840,8 @@ int main(int argc, char* argv[]) {
                     std::cout<<"MQ "<<MAXIMAGE_QUEUE<<std::endl;
                     if(!(Images->getQueueSize()>MAXIMAGE_QUEUE)) {
                     Images->NextImage(1,winW,winH);
+                    
+                    Canvas.clear();
                     thumbgroup.NextThumbnail(1,winW,winH);
                     FrameControl.ResetCoolDown();
                     }
@@ -834,6 +854,8 @@ int main(int argc, char* argv[]) {
                     //int ind=
                     if(!(Images->getQueueSize()>MAXIMAGE_QUEUE)) {
                     Images->NextImage(-1,winW,winH);
+                    Canvas.clear();
+                    
 
                     thumbgroup.NextThumbnail(-1,winW,winH);
                     FrameControl.ResetCoolDown();}
@@ -924,7 +946,9 @@ int main(int argc, char* argv[]) {
             if (event.type == SDL_MOUSEBUTTONDOWN &&
                 event.button.button == SDL_BUTTON_LEFT) {
 
-             dragging = true&&!ConfigEditorGUI.isEnabled();
+
+           
+            dragging = true&&!ConfigEditorGUI.isEnabled()&&!DrawingMode;
                 
             lastMouseX = event.button.x;
 
@@ -936,6 +960,9 @@ int main(int argc, char* argv[]) {
       
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
+
+            if(DrawingMode)Canvas.StartStroke(static_cast<int>((mouseX - offsetX) / zoom), static_cast<int>((mouseY - offsetY) / zoom));
+
             Typing=ConfigEditorGUI.isEnabled();
             //TextTextBox.CheckIfPressed(mouseX,mouseY,Typing);
             ConfigEditorGUI.checkIfAnyTyping(mouseX, mouseY);
@@ -966,11 +993,13 @@ int main(int argc, char* argv[]) {
             if( RotateLeftButton.CheckIfClicked()){
                 dragging=false;
                 Images->CurrentImageRotate90(winW,winH);
+                Canvas.clear();
             }
 
             if( RotateRightButton.CheckIfClicked()){
                 dragging=false;
                 Images->CurrentImageRotate270(winW,winH);
+                Canvas.clear();
             }
 
             if(nimg!=-1){
@@ -978,6 +1007,7 @@ int main(int argc, char* argv[]) {
                 Loadthumbnails=true;
                 //int ind=
                 Images->NextImage(nimg-currentIndex,winW,winH);
+                Canvas.clear();
                
 
             }
@@ -1010,6 +1040,7 @@ int main(int argc, char* argv[]) {
                 Loadthumbnails=true;
                 //int ind=
                 Images->NextImage(NextImageRightButton->CheckIfClicked()?1:-1,winW,winH);
+                Canvas.clear();
                 thumbgroup.NextThumbnail(NextImageRightButton->CheckIfClicked()?1:-1,winW,winH);
               
             }
@@ -1029,6 +1060,9 @@ int main(int argc, char* argv[]) {
 
                 if (event.type == SDL_MOUSEBUTTONUP &&
                     event.button.button == SDL_BUTTON_LEFT) {
+
+                    Canvas.EndStroke();
+                   // DrawingMode=false;   
                     dragging = false;
                     }
 
@@ -1042,8 +1076,15 @@ int main(int argc, char* argv[]) {
                         lastMouseX = event.motion.x;
                         lastMouseY = event.motion.y;
                     }
+
+                if(event.type==SDL_MOUSEMOTION){
+
+                    if(DrawingMode)Canvas.DrawOn(static_cast<int>(( event.motion.x - offsetX) / zoom), static_cast<int>(( event.motion.y - offsetY) / zoom));
+                    //(mouseX-static_cast<int>(offsetX), mouseY-static_cast<int>(offsetY))
+                }
         }
         if(dragging) CursorType=CCursor::SizeAll;
+        if(DrawingMode) CursorType=CCursor::Hide;
 
        Cursor.setCursor( CursorType);
         Uint32 currentTime = SDL_GetTicks();

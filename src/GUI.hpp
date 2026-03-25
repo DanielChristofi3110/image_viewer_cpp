@@ -58,7 +58,7 @@ class Clabel{
             
             NSVGimage* image = nsvgParseFromFile(filename, "px", 96.0f);
             if (!image) {
-                std::cout << "Failed to load SVG\n";
+                std::cout << "Failed to load SVG "<<filename<<"\n";
                 return nullptr;
             }
 
@@ -99,6 +99,60 @@ class Clabel{
 
             return texture;
         }
+
+    SDL_Texture* LoadSVG(SDL_Renderer* renderer, const char* filename, float scale, SDL_Color color)
+    {
+        NSVGimage* image = nsvgParseFromFile(filename, "px", 96.0f);
+        if (!image) {
+            std::cout << "Failed to load SVG " << filename << "\n";
+            return nullptr;
+        }
+
+        int width  = std::round(image->width * scale);
+        int height = std::round(image->height * scale);
+
+        NSVGrasterizer* rast = nsvgCreateRasterizer();
+
+        std::vector<unsigned char> img(width * height * 4, 0);
+
+        nsvgRasterize(rast, image, 0, 0, scale, img.data(), width, height, width * 4);
+
+        // --- Overwrite pixels with solid color ---
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int idx = (y * width + x) * 4;
+
+                // Keep alpha from the rasterized image (so shape transparency remains)
+                unsigned char alpha = img[idx + 3];
+
+                img[idx + 0] = color.r; // Red
+                img[idx + 1] = color.g; // Green
+                img[idx + 2] = color.b; // Blue
+                img[idx + 3] = alpha;   // Preserve alpha
+            }
+        }
+        // --- Done overwriting ---
+
+        SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
+            img.data(),
+            width,
+            height,
+            32,
+            width * 4,
+            0x000000ff,
+            0x0000ff00,
+            0x00ff0000,
+            0xff000000
+        );
+
+        SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+        SDL_FreeSurface(surface);
+        nsvgDeleteRasterizer(rast);
+        nsvgDelete(image);
+
+        return texture;
+    }
 
     public:
 
@@ -361,6 +415,19 @@ void LoadSVGtoLabel(const char* filename, float scale = 1.0f)
         SDL_DestroyTexture(texture);
 
     texture = LoadSVG(renderer, filename, scale);
+
+    if (texture)
+    {
+        SDL_QueryTexture(texture, nullptr, nullptr, &iconWidth, &iconHeight);
+    }
+}
+
+void LoadSVGtoLabel(const char* filename,SDL_Color color, float scale = 1.0f)
+{
+    if (texture)
+        SDL_DestroyTexture(texture);
+
+    texture = LoadSVG(renderer, filename, scale,color);
 
     if (texture)
     {

@@ -47,7 +47,8 @@ public:
         SizeNS,
         SizeAll,
         No,
-        Hand
+        Hand,
+        Hide
     };
 
     cursorType currentCursor = Arrow;
@@ -89,7 +90,7 @@ public:
     void setCursor(cursorType ct)
     {
         if (ct == currentCursor) return;
-
+        SDL_ShowCursor(SDL_ENABLE);
         currentCursor = ct;
 
         switch (ct)
@@ -106,6 +107,7 @@ public:
             case SizeAll:   SDL_SetCursor(cursorSizeAll); break;
             case No:        SDL_SetCursor(cursorNo); break;
             case Hand:      SDL_SetCursor(cursorHand); break;
+            case Hide:      SDL_ShowCursor(SDL_DISABLE);    break;
         }
     }
 };

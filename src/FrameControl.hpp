@@ -15,6 +15,7 @@ class CFrameControl{
         bool MouseOnScroll=false;
         bool MouseOnThmbnails=false;
         bool Scrolling=false;
+        bool DrawingMode=false;
         float time=2;
         float cctime=2;
         int idleFps=0;
@@ -53,6 +54,10 @@ class CFrameControl{
       if(b)  ResetCoolDown();
         Scrolling=b;}
 
+     void setDrawingMode(bool b){
+      if(b)  ResetCoolDown();
+        DrawingMode=b;}
+
 
     void makeAllFalse(){
 
@@ -88,7 +93,11 @@ class CFrameControl{
 
             dfps=mfps;
            
-        }else{
+        }else if(DrawingMode){
+
+            dfps=mfps;
+        }
+        else{
 
             dfps=idleFps;
         }
