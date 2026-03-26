@@ -9,6 +9,35 @@ set(SOURCES
     src/main.cpp
 )
 
+
+string(TIMESTAMP YEAR "%Y")
+string(TIMESTAMP MONTH "%m")
+string(TIMESTAMP DAY "%d")
+string(TIMESTAMP HOUR "%H")
+
+# Convert hour (00–23) to decimal
+math(EXPR HOUR_DEC "${HOUR}")
+
+# Manual hex conversion (0–15 only needed realistically)
+set(HEX_DIGITS "0;1;2;3;4;5;6;7;8;9;A;B;C;D;E;F")
+
+if(HOUR_DEC LESS 16)
+    list(GET HEX_DIGITS ${HOUR_DEC} HOUR_HASH)
+else()
+    # fallback for 16–23 (optional, simple version)
+    math(EXPR HIGH "${HOUR_DEC} / 16")
+    math(EXPR LOW "${HOUR_DEC} % 16")
+    list(GET HEX_DIGITS ${HIGH} HIGH_HEX)
+    list(GET HEX_DIGITS ${LOW} LOW_HEX)
+    set(HOUR_HASH "${HIGH_HEX}${LOW_HEX}")
+endif()
+
+set(APP_VERSION "${YEAR}.${MONTH}.${DAY}.${HOUR_HASH}")
+
+message(STATUS "App version: ${APP_VERSION}")
+
+
+
 # Windows resource file
 if(WIN32)
     list(APPEND SOURCES app.rc)
@@ -100,6 +129,7 @@ if(UNIX AND NOT APPLE)
         )
 
 endif()
+target_compile_definitions(viewer PRIVATE APP_VERSION="${APP_VERSION}")
 # -------------------------
 # Copy resources for build
 # -------------------------

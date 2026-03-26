@@ -10,6 +10,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <condition_variable>
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -40,6 +41,17 @@ private:
     std::vector<std::unique_ptr<Clabel>> PenIcons;
     const char * SvgIconPath=nullptr; 
     uint64_t currentPen=0;
+    bool reset_flag=true;
+
+    const uint64_t Pallet_size=3;
+    SDL_Color ColorPallet[3] ={
+        {255,0,0,255},
+        {0,255,0,255},
+        {0,0,255,255}
+    
+    };
+
+
 
     SDL_Point RotateAroundCenter(int x, int y, int cx, int cy, int rotation) {
             // move to center
@@ -60,6 +72,15 @@ private:
                 default:  return {  x,  y }; // 0 or 360
             }
         }
+    int leastColorIndex(const SDL_Color& color) {
+        if (color.r <= color.g && color.r <= color.b) {
+            return 0; // Red is least present
+        } else if (color.g <= color.r && color.g <= color.b) {
+            return 1; // Green is least present
+        } else {
+            return 2; // Blue is least present
+        }
+    }
 
     SDL_Color InvertColor(const SDL_Color& color){
             SDL_Color inverted;
@@ -88,14 +109,26 @@ public:
 
         //PenIcons.reserve(2);
         // Clabel(const std::string txt, SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
-        PenIcons.push_back((std::make_unique<Clabel>("",r,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255})));
-        PenIcons[0]->LoadSVGtoLabel(SvgIconPath,{255,255,255,255},0.03f);
-        PenIcons[0]->setBackgroundColor({0,0,0,0});
+        // PenIcons.push_back((std::make_unique<Clabel>("",r,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255})));
+        // //172, 171, 196
+        // PenIcons[0]->LoadSVGtoLabel(SvgIconPath,{172,171,196,255},0.03f);
+        // PenIcons[0]->setBackgroundColor({0,0,0,0});
 
 
+        // PenIcons.push_back((std::make_unique<Clabel>("",r,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255})));
+        // //7, 4, 89
+        // PenIcons[1]->LoadSVGtoLabel(SvgIconPath,{7,4,89,255},0.03f);
+        // PenIcons[1]->setBackgroundColor({0,0,0,0});
+
+        for(uint64_t i=0; i<Pallet_size; i++){
+            // Clabel(const std::string txt, SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
         PenIcons.push_back((std::make_unique<Clabel>("",r,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255})));
-        PenIcons[1]->LoadSVGtoLabel(SvgIconPath,{0,0,0,255},0.03f);
-        PenIcons[1]->setBackgroundColor({0,0,0,0});
+        //172, 171, 196
+        PenIcons.back()->LoadSVGtoLabel(SvgIconPath,ColorPallet[i],0.03f);
+        PenIcons.back()->setBackgroundColor({0,0,0,0});
+
+
+        }
     }
 
     // Call when mouse button is pressed
@@ -200,13 +233,28 @@ void Render(int offX, int offY, float zoom, int rotation) {
         strokes.clear();
         currentStroke.points.clear();
         drawing = false;
+        reset_flag=true;
     }
 
     bool isDrawing()const {return drawing;}
 
     void setPenInvertedColor(SDL_Color c){
 
+        if(!reset_flag) return;
        // PenIcon->LoadSVGtoLabel(SvgIconPath,InvertColor(c),0.03f);
-       currentPen=IsColorDark(c);
+       currentPen=leastColorIndex(c);
+       Current_color=ColorPallet[currentPen];
+       
+
     }
+
+    void nextColor(){
+        
+        currentPen++;
+        currentPen=currentPen%Pallet_size;
+         std::cout<<"Next color "<<currentPen<<std::endl;
+        Current_color=ColorPallet[currentPen];
+        reset_flag=false;
+    }
+    SDL_Color getCurrentPenColor(){return Current_color;}
 };

@@ -11,6 +11,7 @@
 #include "ConfigLoader.hpp"
 #include "Canvas.hpp"
 #include <SDL2/SDL_keycode.h>
+#include <SDL2/SDL_mouse.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_events.h>
@@ -109,6 +110,7 @@ std::string getConfigPath()
 
 
 int main(int argc, char* argv[]) {
+   // std::cout << "Version: " << APP_VERSION << std::endl;
     #ifdef _WIN32
     SetProcessDPIAware();
     #endif
@@ -366,6 +368,13 @@ int main(int argc, char* argv[]) {
     CButton RotateRightButton("Shift+R",renderer,{400,400},true,true,true,font,{255,255,255,255});
     RotateRightButton.setSvgIcon((resDir+"/resources/vector/RotateRight.svg").c_str(), true,0.03f);
 
+    CButton PenButton("Drawing Pen",renderer,{400,400},true,true,true,font,{255,255,255,255});
+    PenButton.setSvgIcon((resDir+"/resources/vector/Pen.svg").c_str(), true,0.03f);
+    
+    CButton PenColorButton("Change Color Right Click",renderer,{400,400},true,true,true,font,{255,255,255,255});
+    //PenButton.setSvgIcon((resDir+"/resources/vector/Pen.svg").c_str(), true,0.03f);
+
+
 
     Clabel RotateRightLabel(renderer,{400,400},true,true,font);
     RotateRightLabel.LoadSVGtoLabel((resDir+"/resources/vector/RotateRight.svg").c_str(),0.03f);
@@ -497,7 +506,7 @@ int main(int argc, char* argv[]) {
 
         //DES_FPS=10;
         FrameControl.makeAllFalse();
-        FrameControl.setDrawingMode(Canvas.isDrawing());
+        FrameControl.setDrawingMode(DrawingMode);
         int displayIndex = SDL_GetWindowDisplayIndex(window);
         
         
@@ -514,6 +523,7 @@ int main(int argc, char* argv[]) {
 
         //FrameControl.setWindowActive(windowActive)
         FrameControl.setScrolling(dragging);
+        FrameControl.setWindowActive(windowActive);
        
     
         
@@ -577,6 +587,8 @@ int main(int argc, char* argv[]) {
         ZoomLabel.setVisibility(!hide_ui);
         RotateRightLabel.setVisibility(!hide_ui);
         RotateLeftLabel.setVisibility(!hide_ui);
+        PenButton.setEnabled(!hide_ui);
+        PenColorButton.setEnabled(DrawingMode&&!hide_ui);
         RotateRightButton.setEnabled(!hide_ui);
         RotateLeftButton.setEnabled(!hide_ui);
         UnhideTipLabel.setVisibility(hide_ui);
@@ -646,6 +658,8 @@ int main(int argc, char* argv[]) {
             FrameControl.setMouseOnButton(NextImageRightButton->CheckIfHover(mouseX,mouseY,deltaTime));
             FrameControl.setMouseOnButton(NextImageLeftButton->CheckIfHover(mouseX,mouseY,deltaTime));
             FrameControl.setMouseOnButton(RotateLeftButton.CheckIfHover(mouseX,mouseY,deltaTime));
+            FrameControl.setMouseOnButton(PenButton.CheckIfHover(mouseX,mouseY,deltaTime));
+             FrameControl.setMouseOnButton(PenColorButton.CheckIfHover(mouseX,mouseY,deltaTime));
             FrameControl.setMouseOnButton(RotateRightButton.CheckIfHover(mouseX,mouseY,deltaTime));
             FrameControl.setMouseOnButton(FullscreenButton->CheckIfHover(mouseX,mouseY,deltaTime));
             FrameControl.setMouseOnButton(OptionsButton->CheckIfHover(mouseX,mouseY,deltaTime));
@@ -674,10 +688,13 @@ int main(int argc, char* argv[]) {
             
 
         }
-
-        RotateRightButton.Render(0,ZoomLabel.getNexty()-ZoomLabel.getLabelH()*2);
-
+        PenButton.Render(0,ZoomLabel.getNexty()-ZoomLabel.getLabelH()*2);
+        RotateRightButton.Render(0,PenButton.getY()-PenButton.getH());
         RotateLeftButton.Render(0,RotateRightButton.getY()-RotateRightButton.getH());
+        PenColorButton.Render(PenButton.getX()+PenButton.getW(),PenButton.getY());
+        PenColorButton.setnColor({Canvas.getCurrentPenColor().r,Canvas.getCurrentPenColor().g,Canvas.getCurrentPenColor().b,128});
+        PenColorButton.sethColor(Canvas.getCurrentPenColor());
+
        // NextImageRightButton->Render(winW/2,winH-NextImageRightButton->getH());
         //NextImageLeftButton->Render(winW/2-NextImageLeftButton->getW(),winH-NextImageLeftButton->getH());
         ButtonsHbox.Render( winW/2, winH);
@@ -805,6 +822,12 @@ int main(int argc, char* argv[]) {
 
 
                 }
+                if(event.key.keysym.sym == SDLK_z && (event.key.keysym.mod & KMOD_CTRL)){
+
+                    Canvas.Undo();
+
+                }
+
                 if(event.key.keysym.sym == SDLK_d && (event.key.keysym.mod & KMOD_CTRL)){
                       if(DEBUG) debug_mode=!debug_mode;
 
@@ -842,6 +865,7 @@ int main(int argc, char* argv[]) {
                     Images->NextImage(1,winW,winH);
                     
                     Canvas.clear();
+                    
                     thumbgroup.NextThumbnail(1,winW,winH);
                     FrameControl.ResetCoolDown();
                     }
@@ -941,8 +965,19 @@ int main(int argc, char* argv[]) {
         
             }
           
+            //Right mouse button
+            if((event.type == SDL_MOUSEBUTTONDOWN)&&  (event.button.button == SDL_BUTTON_RIGHT)){
+
+                std::cout<<"Right click"<<std::endl;
+                if(DrawingMode){
+                    Canvas.nextColor();
+                }
 
 
+
+
+            }
+            //ledt mouse button
             if (event.type == SDL_MOUSEBUTTONDOWN &&
                 event.button.button == SDL_BUTTON_LEFT) {
 
@@ -981,6 +1016,8 @@ int main(int argc, char* argv[]) {
             OptionsButton->setMouseLocation(mouseX, mouseY);
             RotateLeftButton.setMouseLocation(mouseX,mouseY);
             RotateRightButton.setMouseLocation(mouseX,mouseY);
+            PenButton.setMouseLocation(mouseX,mouseY);
+            PenColorButton.setMouseLocation(mouseX,mouseY);
 
              
 
@@ -994,12 +1031,24 @@ int main(int argc, char* argv[]) {
                 dragging=false;
                 Images->CurrentImageRotate90(winW,winH);
                 Canvas.clear();
+               
             }
 
             if( RotateRightButton.CheckIfClicked()){
                 dragging=false;
                 Images->CurrentImageRotate270(winW,winH);
                 Canvas.clear();
+               
+            }
+
+            if( PenButton.CheckIfClicked()){
+                DrawingMode=!DrawingMode;
+               
+            }
+
+            if( PenColorButton.CheckIfClicked()){
+               if(DrawingMode) Canvas.nextColor();
+               
             }
 
             if(nimg!=-1){
@@ -1008,6 +1057,7 @@ int main(int argc, char* argv[]) {
                 //int ind=
                 Images->NextImage(nimg-currentIndex,winW,winH);
                 Canvas.clear();
+                //std::cout<<"nimg-currentIndex "<<nimg-currentIndex<<std::endl;
                
 
             }
@@ -1042,7 +1092,7 @@ int main(int argc, char* argv[]) {
                 Images->NextImage(NextImageRightButton->CheckIfClicked()?1:-1,winW,winH);
                 Canvas.clear();
                 thumbgroup.NextThumbnail(NextImageRightButton->CheckIfClicked()?1:-1,winW,winH);
-              
+                
             }
 
 

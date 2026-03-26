@@ -16,6 +16,7 @@ class CConfigLoader
 {
 private:
     std::string fontName;
+    std::string version;
     int fontSize = 18;
     int idleFps = 24;
 
@@ -69,6 +70,14 @@ public:
         long ma = ini.GetLongValue("settings", "MAXIMAGE_QUEUE", 10);
         long hu = ini.GetLongValue("settings", "HIDE_UI", 0);
         long ta = ini.GetLongValue("settings", "THUMBNAIL_ANIMATION_SPEED", 5);
+        const char* ver = ini.GetValue("info", "version", "none");
+
+        // if(  ver APP_VERSION){
+        //     version=APP_VERSION;
+        //     setDefaults();
+        //     return save(filename);
+
+        // }
 
         fontName = name;
         fontSize = static_cast<int>(size);
@@ -101,6 +110,8 @@ public:
         ini.SetLongValue("settings", "MAXIMAGE_QUEUE", mAXIMAGE_QUEUE);
         ini.SetLongValue("settings", "HIDE_UI", hIDE_UI);
         ini.SetLongValue("settings", "THUMBNAIL_ANIMATION_SPEED", tHUMBNAIL_ANIMATION_SPEED);
+
+        ini.SetValue("info", "version", version.c_str());
 
         SI_Error rc = ini.SaveFile(filename.c_str());
         return rc >= 0;

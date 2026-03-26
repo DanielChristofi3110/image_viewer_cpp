@@ -80,6 +80,10 @@ class CFrameControl{
          //std::cout<<"sss\n";
          if(!enabled) return 1000/dfps;
 
+        if (WindowActive){
+
+            return 1000/dfps;
+        }
         if(cctime>0){
             dfps=mfps;
 
