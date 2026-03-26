@@ -523,7 +523,7 @@ int main(int argc, char* argv[]) {
 
         //FrameControl.setWindowActive(windowActive)
         FrameControl.setScrolling(dragging);
-        FrameControl.setWindowActive(windowActive);
+        //FrameControl.setWindowActive(windowActive);
        
     
         
