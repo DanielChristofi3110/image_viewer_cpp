@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <memory>
 #include "GUI.hpp"
+#include "Cursor.hpp"
 
 
 class CWindowDecorations{
@@ -17,7 +18,7 @@ class CWindowDecorations{
     
     private:
     uint64_t size=50;
-    int Y=0;
+    int Y=5;
 
     std::unique_ptr<Clabel> background;
     std::unique_ptr<CButton> minimizeButton;
@@ -42,52 +43,84 @@ class CWindowDecorations{
         enabled=e;
         renderer=r;
         background = std::make_unique<Clabel>("________",renderer,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255});
-        minimizeButton = std::make_unique<CButton>("Min",r,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255});
-        maximizeButton = std::make_unique<CButton>("Max",r,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255});
+        minimizeButton = std::make_unique<CButton>("",r,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255});
+        maximizeButton = std::make_unique<CButton>("",r,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255});
         closeButton = std::make_unique<CButton>("",r,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255});
-        settingsButton = std::make_unique<CButton>("Set",r,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255});
+        settingsButton = std::make_unique<CButton>("",r,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255});
        
         
         background->setBackgroundColor({128,128,128,128});
-        closeButton->setnColor({255,0,0,0});
-        closeButton->sethColor({255,0,0,0});
-        maximizeButton->setnColor({255,0,0,0});
-        maximizeButton->sethColor({255,0,0,0});
-        minimizeButton->setnColor({255,0,0,0});
-        minimizeButton->sethColor({255,0,0,0});
-        settingsButton->setnColor({255,0,0,0});
-        settingsButton->sethColor({255,0,0,0});
+        closeButton->setnColor({255,255,255,0});
+        closeButton->sethColor({255,255,255,64});
+        maximizeButton->setnColor({255,255,255,0});
+        maximizeButton->sethColor({255,255,255,64});
+        minimizeButton->setnColor({255,255,255,0});
+        minimizeButton->sethColor({255,255,255,64});
+        settingsButton->setnColor({255,255,255,0});
+        settingsButton->sethColor({255,255,255,64});
     }
 
 
-    void Render(int winW,int winH,int mouseX,int mouseY,float dt){
+    void Render(int winW,int winH,int mouseX,int mouseY,float dt,CCursor::cursorType & cursor){
 
         if(!enabled) return;
         
-        background->Render(Cordinates{0,Y},Cordinates{winW,static_cast<int>(size)});
+        background->Render(Cordinates{0,0},Cordinates{winW,static_cast<int>(size)});
         closeButton->setText("Clo");
         closeButton->Render(winW-closeButton->getW(),Y);
-        closeButton->CheckIfHover(mouseX, mouseY, dt);
+       if( closeButton->CheckIfHover(mouseX, mouseY, dt)) cursor = CCursor::Hand;
 
         //maximizeButton->setText("Max");
-        maximizeButton->Render(closeButton->getX()-maximizeButton->getW(),Y);
-        maximizeButton->CheckIfHover(mouseX, mouseY, dt);
+        maximizeButton->Render(closeButton->getX()-maximizeButton->getW(),Y+2);
+       if(  maximizeButton->CheckIfHover(mouseX, mouseY, dt)) cursor = CCursor::Hand;
 
        // minimizeButton->setText("Min");
-        minimizeButton->Render(maximizeButton->getX()-minimizeButton->getW(),Y);
-        minimizeButton->CheckIfHover(mouseX, mouseY, dt);
+        minimizeButton->Render(maximizeButton->getX()-minimizeButton->getW(),Y+5);
+       if( minimizeButton->CheckIfHover(mouseX, mouseY, dt))cursor = CCursor::Hand;
 
 
 
        // settingsButton->setText("Set");
         settingsButton->Render(0,Y);
-        settingsButton->CheckIfHover(mouseX, mouseY, dt);
+        if( settingsButton->CheckIfHover(mouseX, mouseY, dt))cursor = CCursor::Hand;;
 
         size = closeButton->getH();
 
 
     }
 
+    bool CheckifCloseClick(int mX,int mY){
+
+        closeButton->setMouseLocation(mX,mY);
+        return closeButton->CheckIfClicked();
+
+
+
+    }
+
+    bool CheckifMinimizeClick(int mX,int mY){
+
+        minimizeButton->setMouseLocation(mX,mY);
+        return minimizeButton->CheckIfClicked();
+
+
+
+    }
+
+    bool CheckifMaximizeClick(int mX,int mY){
+
+        maximizeButton->setMouseLocation(mX,mY);
+        return maximizeButton->CheckIfClicked();
+
+
+
+    }
+
+    void setBackgroundColor(SDL_Color c){
+
+
+        background->setBackgroundColor(c);
+    }
 
     uint64_t getSize(){
         if(!enabled) return 0;
@@ -102,19 +135,22 @@ class CWindowDecorations{
 
     void SetMinimizeSVG(const std::string& value) {
        minimizeSVG = value;
+       minimizeButton->setSvgIcon(minimizeSVG.c_str(),false,0.028f);
     }
 
     void SetMaximizeSVG(const std::string& value) {
         maximizeSVG = value;
+        maximizeButton->setSvgIcon(maximizeSVG.c_str(),false,0.03f);
     }
 
     void SetCloseSVG(const std::string& value) {
         closeSVG = value;
-        closeButton->setSvgIcon(closeSVG.c_str(),false,0.04f);
+        closeButton->setSvgIcon(closeSVG.c_str(),false,0.032f);
     }
 
     void SetOptionSVG(const std::string& value) {
         optionSVG = value;
+        settingsButton->setSvgIcon(optionSVG.c_str(),false,0.032f);
     }
 
 

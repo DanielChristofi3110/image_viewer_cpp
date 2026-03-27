@@ -344,6 +344,9 @@ int main(int argc, char* argv[]) {
     CWindowDecorations WindowDecorations(renderer,font,BORDERLESS);
     //Images->setCurrentImageWindowDecorationY(WindowDecorations.getH());
     WindowDecorations.SetCloseSVG(resDir+"/resources/vector/Close.svg");
+    WindowDecorations.SetMaximizeSVG(resDir+"/resources/vector/Maximize.svg");
+    WindowDecorations.SetMinimizeSVG(resDir+"/resources/vector/Minimize.svg");
+    WindowDecorations.SetOptionSVG(resDir+"/resources/vector/Options.svg");
  
     float zoom = 0;
 
@@ -548,7 +551,7 @@ int main(int argc, char* argv[]) {
         background.Update(deltaTime);
         background.Render();
         Canvas.setPenInvertedColor({thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().r,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().g,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().b,255});
-
+        WindowDecorations.setBackgroundColor({thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().r,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().g,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().b,255});
         
 
 
@@ -576,7 +579,7 @@ int main(int argc, char* argv[]) {
         
         thumb_showing=thumbgroup.getThumbShowing();
 
-        WindowDecorations.Render(winW, winH, 0, 0, deltaTime);
+        
 
         
 
@@ -706,7 +709,7 @@ int main(int argc, char* argv[]) {
             TextTextBox.Render(winW,winH,mouseX,mouseY,deltaTime,CursorType);
             if(DrawingMode) Canvas.RenderPen(mouseX, mouseY);
             
-
+              WindowDecorations.Render(winW, winH, mouseX, mouseY, deltaTime,CursorType);
         }
         PenButton.Render(0,ZoomLabel.getNexty()-ZoomLabel.getLabelH()*2);
         RotateRightButton.Render(0,PenButton.getY()-PenButton.getH());
@@ -728,7 +731,7 @@ int main(int argc, char* argv[]) {
         }
        
         
-
+      
         SDL_RenderPresent(renderer);
 
         
@@ -1038,8 +1041,36 @@ int main(int argc, char* argv[]) {
             RotateRightButton.setMouseLocation(mouseX,mouseY);
             PenButton.setMouseLocation(mouseX,mouseY);
             PenColorButton.setMouseLocation(mouseX,mouseY);
+            
+            if(WindowDecorations.CheckifCloseClick(mouseX,mouseY)){
 
+                running=false;
+            }
+            //SDL_MinimizeWindow(window);
+
+            if(WindowDecorations.CheckifMinimizeClick(mouseX,mouseY)){
+
+                //running=false;
+                SDL_MinimizeWindow(window);
+            }
              
+            if(WindowDecorations.CheckifMaximizeClick(mouseX,mouseY)){
+
+                //running=false;
+                //SDL_MinimizeWindow(window);
+                dragging = false;
+                fullscreen = !fullscreen;
+                    SDL_SetWindowFullscreen(
+                        window,
+                        fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0
+                    );
+                    thumbgroup.UlnoanLoad();
+
+                    FrameControl.ResetCoolDown();
+                SDL_GetRendererOutputSize(renderer, &winW, &winH);
+                //Centerhear
+                imageToCenter=true;
+            }
 
 
 
@@ -1155,7 +1186,7 @@ int main(int argc, char* argv[]) {
         }
         if(dragging) CursorType=CCursor::SizeAll;
         if(DrawingMode) CursorType=CCursor::Hide;
-
+        
        Cursor.setCursor( CursorType);
         Uint32 currentTime = SDL_GetTicks();
      
