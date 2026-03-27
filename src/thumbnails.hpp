@@ -1,5 +1,6 @@
 #pragma once
 #include "Cursor.hpp"
+#include "WindowDecorations.hpp"
 #include "globals.hpp"
 #include "image.hpp"
 #include "GUI.hpp"
@@ -509,6 +510,7 @@ class CThumbnailGroup{
          std::shared_ptr<CImages> Images;
          bool visible=true;
          float Yelevation=0;
+         int WindowDecorationY=0;
          
          
          const int drawProgressH=10;
@@ -573,7 +575,7 @@ class CThumbnailGroup{
 
 
          for (uint64_t i = 0; i < size; i++) {
-            SDL_Rect rect = {thumbX, thumbY-static_cast<int>(Yelevation), THUMB_WIDTH, THUMB_HEIGHT};
+            SDL_Rect rect = {thumbX, thumbY-static_cast<int>(Yelevation)+WindowDecorationY, THUMB_WIDTH, THUMB_HEIGHT};
 
             // highlight current image
             if(visible){
@@ -601,6 +603,10 @@ class CThumbnailGroup{
        // std::cout<<gx<<std::endl;
     }
 
+    void setWindowDecorationY(int y){
+
+        WindowDecorationY=y;
+    }
     void drawLabels(){
         
         if(buttons.empty() || !visible) return;
@@ -610,7 +616,7 @@ class CThumbnailGroup{
             //cordtemp.x-=THUMB_WIDTH;
             //labels[i]->Render({cordtemp.x,cordtemp.y+20},std::to_string(i+1)+"/"+std::to_string(size));
             //buttons[i]->setText(std::to_string(i+1)+"/"+std::to_string(size));
-            buttons[i]->Render(cordtemp.x-THUMB_WIDTH-THUMB_PADDING,cordtemp.y-static_cast<int>(Yelevation),THUMB_WIDTH,THUMB_HEIGHT);
+            buttons[i]->Render(cordtemp.x-THUMB_WIDTH-THUMB_PADDING,cordtemp.y-static_cast<int>(Yelevation)+WindowDecorationY,THUMB_WIDTH,THUMB_HEIGHT);
 
         }
 
@@ -625,7 +631,7 @@ class CThumbnailGroup{
         // Clamp t so it doesn't overshoot
         if (t > 1.0f) t = 1.0f;
 
-        Yelevation = Yelevation + (target - Yelevation) * t;
+        Yelevation = Yelevation + ((target) - Yelevation) * t;
     }
 
     void CheckThumbnailPress(float dt,int mx,int my,CCursor::cursorType & cursor){
@@ -671,7 +677,7 @@ class CThumbnailGroup{
 
         SDL_Rect bgThumBox;
         bgThumBox.x = thumbnails[0]->getX()-INIT_THUMB_X/2-THUMB_WIDTH-THUMB_PADDING; // small padding
-        bgThumBox.y = -static_cast<int>(Yelevation);
+        bgThumBox.y = -static_cast<int>(Yelevation)+WindowDecorationY;
 
         bgThumBox.w = ((static_cast<int>(thumbnails.size())*(THUMB_WIDTH+INIT_THUMB_X))-INIT_THUMB_X)+(INIT_THUMB_X/2)*2;
         //bgThumBox.w = thumbnails[thumbnails.size()-1].getX()+THUMB_WIDTH;//
@@ -693,7 +699,7 @@ class CThumbnailGroup{
         SDL_Rect bgThumSel;
         //bgThumSel.x = (THUMB_PADDING+THUMB_WIDTH)*(thumbcurrentIndex)+INIT_THUMB_X/2; // sel start
         bgThumSel.x =  thumbnails[currentIndex]->getX()-THUMB_WIDTH-THUMB_PADDING*2;
-        bgThumSel.y = -static_cast<int>(Yelevation);
+        bgThumSel.y = -static_cast<int>(Yelevation)+WindowDecorationY;
         CindCords.x=bgThumSel.x;
         CindCords.y=bgThumSel.y;
 
@@ -771,6 +777,7 @@ class CThumbnailGroup{
 
          // std::cout<<"Render call"<<std::endl;
         
+        
           // std::cout<<"ASYNC call"<<std::endl;
         if(THUMBNAIL_ASYNCLOADING)
         for(int i=0; i<thumbnails.size(); i++){
@@ -792,7 +799,7 @@ class CThumbnailGroup{
 
 
       // std::cout<<"ScrollPr call"<<std::endl;
-        scrollProgressBack->Render(Cordinates{0,10},Cordinates{winW,10});
+        scrollProgressBack->Render(Cordinates{0,WindowDecorationY+drawProgressH},Cordinates{winW,10});
         // std::cout<<"ScrollPr exit"<<std::endl;
 
        // std::cout<<"drawProgressCon call"<<std::endl;
@@ -823,7 +830,7 @@ class CThumbnailGroup{
 
         if (scWidth<5) scWidth=5;
        // std::cout<<"---------------- scCordx    "<<scCordx<<std::endl;
-        s->Render(Cordinates{static_cast<int>(scCordx),drawProgressH},Cordinates{static_cast<int>(scWidth),drawProgressH});
+        s->Render(Cordinates{static_cast<int>(scCordx),WindowDecorationY+drawProgressH},Cordinates{static_cast<int>(scWidth),drawProgressH});
 
 
     }
@@ -834,7 +841,7 @@ class CThumbnailGroup{
          float scCordx=m*static_cast<float>(c+thumb_showing)/size;
         float scWidth=(1.0f/size)*m;
        
-        s->Render(Cordinates{0,drawProgressH},Cordinates{static_cast<int>(scCordx),drawProgressH});
+        s->Render(Cordinates{0,WindowDecorationY+drawProgressH},Cordinates{static_cast<int>(scCordx),drawProgressH});
 
 
     }
@@ -865,7 +872,7 @@ class CThumbnailGroup{
     }
     void MoveScrollBar(int mx,int my,int wW,int wH){
 
-          if(my<=10 &&(mx>=0 && mx<=wW)){
+          if((my<=WindowDecorationY+drawProgressH && my>=WindowDecorationY )&&(mx>=0 && mx<=wW)){
                 int new_scrollOffset=(static_cast<float>(mx)/static_cast<float>(wW))*size;
 
                         //std::cout<<"press on bar "<<(float)mx/winW<<std::endl;

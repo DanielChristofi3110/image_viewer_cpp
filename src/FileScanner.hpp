@@ -5,6 +5,7 @@
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_ttf.h>
 #include <algorithm>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -16,7 +17,7 @@
 #include <chrono>
 
 
-#define SINGLE_IMAGE_LOAD false
+
 
 class CFileScanner{
 private:
@@ -33,12 +34,13 @@ private:
     std::mutex dataMutex;
     std::atomic<bool> running{false};
     std::atomic<bool> foundNew{false};
-
+    bool single_image_load;
 public:
 
-    CFileScanner(char* ar, float t){
+    CFileScanner(char* ar, float t,bool sil){
         updateTime = t;
         cupdateTime = t;
+        single_image_load=sil;
 
         if (ar == nullptr) {
         std::cerr << "Error: input path is null\n";
@@ -51,17 +53,18 @@ public:
         dir = firstImagePath.parent_path();
 
        // loadImages();
-     if(SINGLE_IMAGE_LOAD)loadFirstImage();
-     else loadImages();
+     
+        loadImages();
         sortImages();
+      
     }
 
 
 
-    CFileScanner( std::unique_ptr<std::filesystem::path> p, float t){
+    CFileScanner( std::unique_ptr<std::filesystem::path> p, float t,bool sil){
         updateTime = t;
         cupdateTime = t;
-
+        single_image_load=sil;
 
 
         fs::path fi=std::move(*p);
@@ -69,9 +72,11 @@ public:
         dir = firstImagePath.parent_path();
 
        // loadImages();
-     if(SINGLE_IMAGE_LOAD)loadFirstImage();
-     else loadImages();
+        loadImages();
+       
+ 
         sortImages();
+       
     }
     ~CFileScanner(){
 
@@ -79,6 +84,7 @@ public:
         
     }
 
+    fs::path getFirstimagePath(){return firstImagePath;}
 
     void loadImages(){
 
@@ -201,7 +207,7 @@ public:
     }
 
     void startWatching(){
-        if(SINGLE_IMAGE_LOAD) return;
+        if(single_image_load) return;
         running = true;
         scannerThread = std::thread(&CFileScanner::scanLoop, this);
          std::cout<<"File scanner loop started"<<std::endl;
@@ -216,7 +222,7 @@ public:
     }
 
     int getInitCurrentIndex(){
-
+        if(single_image_load) return 0;
         for (size_t i = 0; i < imageFiles.size(); i++) {
 
             if (imageFiles[i] == firstImagePath)
@@ -228,8 +234,13 @@ public:
 
 
     const std::vector<std::string> getImageFiles() const {
-
+        
         std::vector<std::string> result;
+        if(single_image_load){
+
+            result.push_back(firstImagePath.string());
+            return result;
+        }
         result.reserve(imageFiles.size());
 
         for (const auto& p : imageFiles)
@@ -244,6 +255,7 @@ public:
     }
 
     int getImageFilesSize(){
+        if(single_image_load) return 1;
           std::lock_guard<std::mutex> lock(dataMutex);
         return imageFiles.size();
     }

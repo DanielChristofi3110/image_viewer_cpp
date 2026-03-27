@@ -10,6 +10,7 @@
 #include "Cursor.hpp"
 #include "ConfigLoader.hpp"
 #include "Canvas.hpp"
+#include "WindowDecorations.hpp"
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_mouse.h>
 #include <SDL2/SDL_pixels.h>
@@ -21,6 +22,7 @@
 #include <ostream>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 #ifdef _WIN32
 #include <dwmapi.h>
@@ -32,7 +34,7 @@
 #endif
 
 
-
+#define BORDERLESS true
 
 
 bool hide_ui=false;
@@ -147,8 +149,9 @@ int main(int argc, char* argv[]) {
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         1000, 700,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE| SDL_WINDOW_ALLOW_HIGHDPI
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE| SDL_WINDOW_ALLOW_HIGHDPI 
     );
+    if(BORDERLESS)SDL_SetWindowBordered(window, SDL_FALSE);
     std::cout<<"------------------Created window-----------------------"<<std::endl;
 
     #ifdef _WIN32
@@ -321,7 +324,7 @@ int main(int argc, char* argv[]) {
   
     // image load f
     //const char * p= droppedPath.string().c_str();
-    CFileScanner FileScanner(std::move(droppedPath),1);
+    CFileScanner FileScanner(std::move(droppedPath),1,ConfigLoader->getSingle_image_load());
 
     // std::cout<<"------------------Images Loaded-----------------------"<<std::endl;
   
@@ -330,14 +333,17 @@ int main(int argc, char* argv[]) {
     int currentIndex = 0;
 
     //int thumbcurrentIndex=0;
-
+  
     currentIndex=FileScanner.getInitCurrentIndex();
   
     //CImages Images(renderer,imageFiles,currentIndex,winW,winH);
     std::shared_ptr<CImages> Images = std::make_shared<CImages>(renderer,FileScanner.getImageFiles(),currentIndex,winW,winH);
 
+    
 
-
+    CWindowDecorations WindowDecorations(renderer,font,BORDERLESS);
+    //Images->setCurrentImageWindowDecorationY(WindowDecorations.getH());
+    WindowDecorations.SetCloseSVG(resDir+"/resources/vector/Close.svg");
  
     float zoom = 0;
 
@@ -354,49 +360,51 @@ int main(int argc, char* argv[]) {
     thumbgroup.ReplaceThumbnailsAround(currentIndex,winW/THUMB_WIDTH);
     thumbgroup.setCurrentIndex(currentIndex);
     thumbgroup.MoveScrollTo(currentIndex, winW, winH);
+    
+   
 
 
-    Clabel RotateLeftLabel(renderer,{400,400},true,true,font);
-    RotateLeftLabel.LoadSVGtoLabel((resDir+"/resources/vector/RotateLeft.svg").c_str(),0.03f);
-    RotateLeftLabel.setIconPositionLeft();
+    // Clabel RotateLeftLabel(renderer,{400,400},true,true,font);
+    // RotateLeftLabel.LoadSVGtoLabel((resDir+"/resources/vector/RotateLeft.svg").c_str(),0.03f);
+    // RotateLeftLabel.setIconPositionLeft();
 
     CButton RotateLeftButton("R",renderer,{400,400},true,true,true,font,{255,255,255,255});
-    RotateLeftButton.setSvgIcon((resDir+"/resources/vector/RotateLeft.svg").c_str(), true,0.03f);
+    RotateLeftButton.setSvgIcon((resDir+"/resources/vector/RotateLeft.svg").c_str(), true,ConfigLoader->getMainColor(),0.03f);
 
 
 
     CButton RotateRightButton("Shift+R",renderer,{400,400},true,true,true,font,{255,255,255,255});
-    RotateRightButton.setSvgIcon((resDir+"/resources/vector/RotateRight.svg").c_str(), true,0.03f);
+    RotateRightButton.setSvgIcon((resDir+"/resources/vector/RotateRight.svg").c_str(), true,ConfigLoader->getMainColor(),0.03f);
 
     CButton PenButton("Drawing Pen",renderer,{400,400},true,true,true,font,{255,255,255,255});
-    PenButton.setSvgIcon((resDir+"/resources/vector/Pen.svg").c_str(), true,0.03f);
+    PenButton.setSvgIcon((resDir+"/resources/vector/Pen.svg").c_str(), true,ConfigLoader->getMainColor(),0.03f);
     
     CButton PenColorButton("Change Color Right Click",renderer,{400,400},true,true,true,font,{255,255,255,255});
     //PenButton.setSvgIcon((resDir+"/resources/vector/Pen.svg").c_str(), true,0.03f);
 
 
 
-    Clabel RotateRightLabel(renderer,{400,400},true,true,font);
-    RotateRightLabel.LoadSVGtoLabel((resDir+"/resources/vector/RotateRight.svg").c_str(),0.03f);
-    RotateRightLabel.setIconPositionLeft();
+    // Clabel RotateRightLabel(renderer,{400,400},true,true,font);
+    // RotateRightLabel.LoadSVGtoLabel((resDir+"/resources/vector/RotateRight.svg").c_str(),0.03f);
+    // RotateRightLabel.setIconPositionLeft();
 
 
 
     Clabel ResolutionLabel(renderer,{400,400},true,true,font);
-    ResolutionLabel.LoadSVGtoLabel((resDir+"/resources/vector/Resolution.svg").c_str(),0.03f);
+    ResolutionLabel.LoadSVGtoLabel((resDir+"/resources/vector/Resolution.svg").c_str(),ConfigLoader->getMainColor(),0.03f);
     ResolutionLabel.setIconPositionLeft();
 
     Clabel ZoomLabel(renderer,{400,400},true,true,font);
-    ZoomLabel.LoadSVGtoLabel((resDir+"/resources/vector/Zoom.svg").c_str(),0.03f);
+    ZoomLabel.LoadSVGtoLabel((resDir+"/resources/vector/Zoom.svg").c_str(),ConfigLoader->getMainColor(),0.03f);
     ZoomLabel.setIconPositionLeft();
 
     Clabel TimeLabel(renderer,{400,400},true,true,font);
-    TimeLabel.LoadSVGtoLabel((resDir+"/resources/vector/Date.svg").c_str(),0.03f);
+    TimeLabel.LoadSVGtoLabel((resDir+"/resources/vector/Date.svg").c_str(),ConfigLoader->getMainColor(),0.03f);
     TimeLabel.setIconPositionLeft();
 
 
     Clabel FileLabel(renderer,{400,400},true,true,font);
-    FileLabel.LoadSVGtoLabel((resDir+"/resources/vector/File.svg").c_str(),0.03f);
+    FileLabel.LoadSVGtoLabel((resDir+"/resources/vector/File.svg").c_str(),ConfigLoader->getMainColor(),0.03f);
     FileLabel.setIconPositionLeft();
 
 
@@ -418,24 +426,24 @@ int main(int argc, char* argv[]) {
 
     std::shared_ptr<CButton> NextImageRightButton =  std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
    // CButton NextImageRightButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-    NextImageRightButton->setSvgIcon((resDir+"/resources/vector/ArrowRight.svg").c_str(),false,0.06f);
+    NextImageRightButton->setSvgIcon((resDir+"/resources/vector/ArrowRight.svg").c_str(),false,ConfigLoader->getMainColor(),0.06f);
 
 
 
     std::shared_ptr<CButton> NextImageLeftButton =  std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
     //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-    NextImageLeftButton->setSvgIcon((resDir+"/resources/vector/ArrowLeft.svg").c_str(),false,0.06f);
+    NextImageLeftButton->setSvgIcon((resDir+"/resources/vector/ArrowLeft.svg").c_str(),false,ConfigLoader->getMainColor(),0.06f);
 
 
      std::shared_ptr<CButton> FullscreenButton = std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
     //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-     FullscreenButton->setSvgIcon((resDir+"/resources/vector/Fullscreen.svg").c_str(),false,0.06f);
+     FullscreenButton->setSvgIcon((resDir+"/resources/vector/Fullscreen.svg").c_str(),false,ConfigLoader->getMainColor(),0.06f);
 
 
 
     std::shared_ptr<CButton> OptionsButton = std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
     //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
-     OptionsButton->setSvgIcon((resDir+"/resources/vector/Options.svg").c_str(),false,0.06f);
+     OptionsButton->setSvgIcon((resDir+"/resources/vector/Options.svg").c_str(),false,ConfigLoader->getMainColor(),0.06f);
 
     //  Clabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
     CAnimatedlabel AnimLabelOnCopy(renderer,{0,0},true,true,true,font,{0,255,0,255},2,"Copied to clipboard");
@@ -487,7 +495,9 @@ int main(int argc, char* argv[]) {
 
     bool Typing=false;
     bool DrawingMode=false;
+    
     //Canvas.setPenInvertedColor({255,255,255,255});
+    
     while (running) {
 
         
@@ -529,6 +539,7 @@ int main(int argc, char* argv[]) {
         
 
         SDL_GetRendererOutputSize(renderer, &winW, &winH);
+        Images->setCurrentImageWindowDecorationY(WindowDecorations.getH());
 
         Images->set_window(winW,winH);
 
@@ -547,20 +558,27 @@ int main(int argc, char* argv[]) {
         imageToCenter=false;
 
       }
-
+       
         Images->Render(winW,winH);
+       
         currentIndex= Images->getCurrentIndex();
         zoom=Images->getCurrentImageZoom();
+        
         Cordinates c=Images->getCurrentImageCords();
+       // Images->setCurrentImageCords({c.x,c.y+WindowDecorations.getH()});
+        //c=Images->getCurrentImageCords();
         offsetX=static_cast<float>(c.x);
         offsetY=static_cast<float>(c.y);
-
-        Canvas.Render(static_cast<int>(offsetX),static_cast<int>(offsetY),zoom,Images->getCurrentImageRotation());
+     
+        Canvas.Render(static_cast<int>(offsetX),static_cast<int>(offsetY),zoom,0);//Images->getCurrentImageRotation());
  
 
         
         thumb_showing=thumbgroup.getThumbShowing();
 
+        WindowDecorations.Render(winW, winH, 0, 0, deltaTime);
+
+        
 
       
 
@@ -585,8 +603,8 @@ int main(int argc, char* argv[]) {
         TimeLabel.setVisibility(!hide_ui);
         ResolutionLabel.setVisibility(!hide_ui);
         ZoomLabel.setVisibility(!hide_ui);
-        RotateRightLabel.setVisibility(!hide_ui);
-        RotateLeftLabel.setVisibility(!hide_ui);
+       // RotateRightLabel.setVisibility(!hide_ui);
+        //RotateLeftLabel.setVisibility(!hide_ui);
         PenButton.setEnabled(!hide_ui);
         PenColorButton.setEnabled(DrawingMode&&!hide_ui);
         RotateRightButton.setEnabled(!hide_ui);
@@ -650,6 +668,8 @@ int main(int argc, char* argv[]) {
         NextImageLeftButton->setEnabled(!hide_ui);
         FullscreenButton->setEnabled(!hide_ui);
         OptionsButton->setEnabled(!hide_ui);
+
+        thumbgroup.setWindowDecorationY(WindowDecorations.getH());
         {
 
             int mouseX, mouseY;
@@ -666,17 +686,17 @@ int main(int argc, char* argv[]) {
             //if(mouseY!=lastMouseY)
             FrameControl.setMouseOnThmbnails(mouseY<THUMB_WIDTH&&windowActive);
 
-            if(mouseY<THUMB_WIDTH&&windowActive){
+            if((mouseY<THUMB_WIDTH+WindowDecorations.getH())&&windowActive){
 
                 thumbgroup.UpdateYelevation(0,Thumbnail_ANIM_SPEED, deltaTime);
             }else if(hide_ui){
-                thumbgroup.UpdateYelevation(THUMB_HEIGHT+THUMB_PADDING*2+5,Thumbnail_ANIM_SPEED, deltaTime);
+                thumbgroup.UpdateYelevation(THUMB_HEIGHT+THUMB_PADDING*2+5+WindowDecorations.getH(),Thumbnail_ANIM_SPEED, deltaTime);
 
             }
 
             if(FrameControl.getMouseOnButton()) CursorType=CCursor::Hand;
              //if(FrameControl.getMouseOnButton()) CursorType=CCursor::Hand;
-            if(mouseY>=0 && mouseY<=thumbgroup.getDrawProgressH()){
+            if(mouseY>=WindowDecorations.getH() && mouseY<=thumbgroup.getDrawProgressH()+WindowDecorations.getH()){
                 MouseLable.Render(mouseX,mouseY,winW,winH,(std::to_string(1+static_cast<int>(std::floor((static_cast<float>(mouseX)/static_cast<float>(winW))*static_cast<float>(thumbgroup.getSize()))))+"/"+std::to_string(thumbgroup.getSize())));
                 CursorType=CCursor::SizeWE;
                 
@@ -1098,7 +1118,7 @@ int main(int argc, char* argv[]) {
 
                 }else if (event.button.button == SDL_BUTTON_LEFT) {
 
-                  if(event.button.y<=thumbgroup.getDrawProgressH()){
+                  if(event.button.y<=WindowDecorations.getH()+thumbgroup.getDrawProgressH() && event.button.y>=0){
 
 
                        thumbgroup.MoveScrollBar(event.button.x, event.button.y, winW, winH);

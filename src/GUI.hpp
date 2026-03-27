@@ -713,6 +713,14 @@ class CButton{
         else label->setIconPositionRight();
 
     }
+    void setSvgIcon(const char *filename,bool svgLeft,SDL_Color c,float scale=1 ){
+
+        label->LoadSVGtoLabel(filename,c,scale);
+
+        if(svgLeft) label->setIconPositionLeft();
+        else label->setIconPositionRight();
+
+    }
 
     void setEnabled(bool b){
 

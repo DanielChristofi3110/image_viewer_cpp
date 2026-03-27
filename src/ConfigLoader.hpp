@@ -1,3 +1,4 @@
+#include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_stdinc.h>
 #include <cstdint>
@@ -25,6 +26,8 @@ private:
     int mAXIMAGE_QUEUE = 10;
     int tHUMBNAIL_ANIMATION_SPEED = 5;
     bool hIDE_UI = false;
+    bool single_image_load =false;
+    SDL_Color mainColor;
 
 public:
     void setDefaults()
@@ -69,8 +72,15 @@ public:
         long un = ini.GetLongValue("settings", "UNLOADAT", 4);
         long ma = ini.GetLongValue("settings", "MAXIMAGE_QUEUE", 10);
         long hu = ini.GetLongValue("settings", "HIDE_UI", 0);
+        long si = ini.GetLongValue("settings", "SINGLE_IMAGE_LOAD", 0);
+
         long ta = ini.GetLongValue("settings", "THUMBNAIL_ANIMATION_SPEED", 5);
         const char* ver = ini.GetValue("info", "version", "none");
+
+
+        long mcR= ini.GetLongValue("theme", "MainR", 255);
+        long mcG= ini.GetLongValue("theme", "MainG", 255);
+        long mcB= ini.GetLongValue("theme", "MainB", 255);
 
         // if(  ver APP_VERSION){
         //     version=APP_VERSION;
@@ -79,6 +89,7 @@ public:
 
         // }
 
+        mainColor= {static_cast<Uint8>(mcR),static_cast<Uint8>(mcG),static_cast<Uint8>(mcB),255};
         fontName = name;
         fontSize = static_cast<int>(size);
         idleFps = static_cast<int>(fps);
@@ -86,6 +97,7 @@ public:
         uNLOADAT = static_cast<int>(un);
         mAXIMAGE_QUEUE = static_cast<int>(ma);
         hIDE_UI = static_cast<bool>(hu);
+        single_image_load= static_cast<bool>(si);
         tHUMBNAIL_ANIMATION_SPEED = static_cast<int>(ta);
 
         return true;
@@ -109,9 +121,15 @@ public:
         ini.SetLongValue("settings", "UNLOADAT", uNLOADAT);
         ini.SetLongValue("settings", "MAXIMAGE_QUEUE", mAXIMAGE_QUEUE);
         ini.SetLongValue("settings", "HIDE_UI", hIDE_UI);
+        ini.SetLongValue("settings", "SINGLE_IMAGE_LOAD", single_image_load);
+
         ini.SetLongValue("settings", "THUMBNAIL_ANIMATION_SPEED", tHUMBNAIL_ANIMATION_SPEED);
 
         ini.SetValue("info", "version", version.c_str());
+
+        ini.SetLongValue("theme", "MainR", mainColor.r);
+        ini.SetLongValue("theme", "MainG", mainColor.g);
+        ini.SetLongValue("theme", "MainB", mainColor.b);
 
         SI_Error rc = ini.SaveFile(filename.c_str());
         return rc >= 0;
@@ -126,6 +144,8 @@ public:
     int getMAXIMAGE_QUEUE() const { return mAXIMAGE_QUEUE; }
     bool getHIDE_UI() const { return hIDE_UI; }
     float getTHUMBNAIL_ANIMATION_SPEED() const { return tHUMBNAIL_ANIMATION_SPEED; }
+    SDL_Color getMainColor()const {return mainColor;}
+    bool getSingle_image_load() const{return single_image_load;}
 
     // --- setters ---
     void setFontName(const std::string& v) { fontName = v; }
@@ -136,6 +156,8 @@ public:
     void setMAXIMAGE_QUEUE(int v) { mAXIMAGE_QUEUE = v; }
     void setHIDE_UI(bool v) { hIDE_UI = v; }
     void setTHUMBNAIL_ANIMATION_SPEED(float v) { tHUMBNAIL_ANIMATION_SPEED = v; }
+    void setMainColor(SDL_Color c){mainColor=c;}
+      void setSingle_image_load (bool v) { single_image_load = v; }
 };
 
 class CConfigEditorGUI{
@@ -155,7 +177,11 @@ class CConfigEditorGUI{
     "Unload At",
     "Max Image Queue",
     "HIDE_UI",
-    "THUMBNAIL_ANIMATION_SPEED"
+    "THUMBNAIL_ANIMATION_SPEED",
+    "MainR",
+    "MainG",
+    "MainB",
+   "SINGLE_IMAGE_LOAD"
         };
     bool AnyTyping=false;
     Cordinates cords{100,100};
@@ -229,6 +255,10 @@ class CConfigEditorGUI{
             TextBoxes[4]->setText(std::to_string(cfg->getMAXIMAGE_QUEUE()));
             TextBoxes[5]->setText(std::to_string(cfg->getHIDE_UI()));
             TextBoxes[6]->setText(std::to_string(static_cast<int>(cfg->getTHUMBNAIL_ANIMATION_SPEED())));
+            TextBoxes[7]->setText(std::to_string(cfg->getMainColor().r));
+            TextBoxes[8]->setText(std::to_string(cfg->getMainColor().g));
+            TextBoxes[9]->setText(std::to_string(cfg->getMainColor().b));
+            TextBoxes[10]->setText(std::to_string(cfg->getSingle_image_load()));
         }
 
     void Render(int wW,int wH,int mx,int my,float dt,CCursor::cursorType &cursor){
@@ -304,6 +334,8 @@ class CConfigEditorGUI{
         cfg->setMAXIMAGE_QUEUE(TextBoxes[4]->getInt());
         cfg->setHIDE_UI(static_cast<bool>(TextBoxes[5]->getInt()));
         cfg->setTHUMBNAIL_ANIMATION_SPEED(static_cast<int>(TextBoxes[6]->getInt()));
+        cfg->setMainColor({static_cast<Uint8>(TextBoxes[7]->getInt()),static_cast<Uint8>(TextBoxes[8]->getInt()),static_cast<Uint8>(TextBoxes[9]->getInt())});
+        cfg->setSingle_image_load(TextBoxes[10]->getInt());
         cfg->save(filename);
     }
 

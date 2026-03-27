@@ -35,6 +35,7 @@ class CImage{
         std::atomic<bool> textureReady{false};
         std::mutex imageMutex;
         std::string CreationTime="";
+        int WindowDecorationY=0;
 
 
 
@@ -240,7 +241,7 @@ class CImage{
 
         void CenterImage(int winW,int winH){
            // return;
-
+            winH-=WindowDecorationY;
             zoom = std::min((float)winW / imgW, (float)winH / imgH);
                     offsetX = 0;
                     offsetY = THUMB_HEIGHT+INIT_THUMB_Y*2;
@@ -248,9 +249,13 @@ class CImage{
             calculate_offsets(zoom,winH,winW,imgH,imgW,offsetY,offsetX);
 
             cords.x=offsetX;
-            cords.y=offsetY;
+            cords.y=offsetY+WindowDecorationY;
            // std::cout << "Debug Center image cords : " << cords.x << " " << cords.y << std::endl;
 
+        }
+
+        void setWindowDecorationY(int y){
+            WindowDecorationY=y;
         }
        void LoadImage_(const std::string& path,int winW,int winH){
 
@@ -664,7 +669,9 @@ class CImages{
         }
     void Render(int winW,int winH){
         //UpdateTexturesFromSurfaces();
+       
         images[currentIndex]->Render(winW,winH);
+        
 
 
 
@@ -821,6 +828,11 @@ class CImages{
 
 
         return queued[i].load();
+    }
+
+    void setCurrentImageWindowDecorationY(int y){
+
+        images[currentIndex]->setWindowDecorationY(y);
     }
 
 }; 
