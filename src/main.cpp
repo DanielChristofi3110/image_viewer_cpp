@@ -1130,7 +1130,7 @@ int main(int argc, char* argv[]) {
 
             }
 
-            if(OptionsButton->CheckIfClicked()){
+            if(OptionsButton->CheckIfClicked() || WindowDecorations.CheckifOptionClick(mouseX,mouseY)){
                 
                 ConfigEditorGUI.setEnabled(true);
 

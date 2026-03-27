@@ -116,11 +116,22 @@ class CWindowDecorations{
 
     }
 
+    bool CheckifOptionClick(int mX,int mY){
+
+        settingsButton->setMouseLocation(mX,mY);
+        return settingsButton->CheckIfClicked();
+
+
+
+    }
+
     void setBackgroundColor(SDL_Color c){
 
 
         background->setBackgroundColor(c);
     }
+
+    
 
     uint64_t getSize(){
         if(!enabled) return 0;
