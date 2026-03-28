@@ -31,6 +31,7 @@ class CWindowDecorations{
     std::string maximizeSVG="";
     std::string closeSVG="";
     std::string optionSVG="";
+    SDL_Color Ui_color{0,0,0,255};
 
 
 
@@ -39,9 +40,10 @@ class CWindowDecorations{
     //Clabel(const std::string txt, SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
     //CButton(const std::string& text,SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
 
-    CWindowDecorations(SDL_Renderer * r,TTF_Font *f,bool e){
+    CWindowDecorations(SDL_Renderer * r,TTF_Font *f,bool e,SDL_Color c){
         enabled=e;
         renderer=r;
+        Ui_color=c;
         background = std::make_unique<Clabel>("________",renderer,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255});
         minimizeButton = std::make_unique<CButton>("",r,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255});
         maximizeButton = std::make_unique<CButton>("",r,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255});
@@ -146,22 +148,22 @@ class CWindowDecorations{
 
     void SetMinimizeSVG(const std::string& value) {
        minimizeSVG = value;
-       minimizeButton->setSvgIcon(minimizeSVG.c_str(),false,0.028f);
+       minimizeButton->setSvgIcon(minimizeSVG.c_str(),false,Ui_color,0.028f);
     }
 
     void SetMaximizeSVG(const std::string& value) {
         maximizeSVG = value;
-        maximizeButton->setSvgIcon(maximizeSVG.c_str(),false,0.03f);
+        maximizeButton->setSvgIcon(maximizeSVG.c_str(),false,Ui_color,0.03f);
     }
 
     void SetCloseSVG(const std::string& value) {
         closeSVG = value;
-        closeButton->setSvgIcon(closeSVG.c_str(),false,0.032f);
+        closeButton->setSvgIcon(closeSVG.c_str(),false,Ui_color,0.032f);
     }
 
     void SetOptionSVG(const std::string& value) {
         optionSVG = value;
-        settingsButton->setSvgIcon(optionSVG.c_str(),false,0.032f);
+        settingsButton->setSvgIcon(optionSVG.c_str(),false,Ui_color,0.032f);
     }
 
 

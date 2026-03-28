@@ -6,6 +6,7 @@
 #include <SDL2/SDL2_rotozoom.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_pixels.h>
+#include <SDL2/SDL2_gfxPrimitives.h> // Make sure SDL_gfx is included
 
 #include <SDL2/SDL_ttf.h>
 #include <condition_variable>
@@ -27,6 +28,7 @@
 struct Stroke {
     SDL_Color color;
     std::vector<Cordinates> points;
+    uint16_t thickness=10;
 };
 
 class CCanvas {
@@ -132,11 +134,12 @@ public:
     }
 
     // Call when mouse button is pressed
-    void StartStroke(int x, int y) {
+    void StartStroke(int x, int y,uint16_t thi) {
         drawing = true;
         currentStroke = Stroke{};
         currentStroke.color = Current_color;
         currentStroke.points.push_back({x, y});
+       currentStroke.thickness=thi;
     }
 
     // Call while dragging
@@ -166,11 +169,16 @@ void Render(int offX, int offY, float zoom, int rotation) {
 
     // Draw all saved strokes
     for (const auto& stroke : strokes) {
-        SDL_SetRenderDrawColor(renderer,
-                               stroke.color.r,
-                               stroke.color.g,
-                               stroke.color.b,
-                               stroke.color.a);
+
+        // Uint8 r = stroke.color.r;
+        // Uint8 g = stroke.color.g;
+        // Uint8 b = stroke.color.b;
+        // Uint8 a = stroke.color.a;
+
+        Uint32 gfxColor = (stroke.color.a << 24) | 
+                  (stroke.color.b << 16) |
+                  (stroke.color.g << 8) |
+                  (stroke.color.r);
 
         for (size_t i = 1; i < stroke.points.size(); i++) {
 
@@ -187,18 +195,25 @@ void Render(int offX, int offY, float zoom, int rotation) {
             int x2 = static_cast<int>(p2.x * zoom + offX);
             int y2 = static_cast<int>(p2.y * zoom + offY);
 
-            SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
+            if (stroke.thickness <= 1) {
+                // Anti-aliased line if thickness is 1
+                aalineColor(renderer, x1, y1, x2, y2, gfxColor);
+            } else {
+                // Thick line for thickness > 1
+                thickLineColor(renderer, x1, y1, x2, y2, stroke.thickness, gfxColor);
+            }
         }
     }
 
     // Draw current stroke
     if (drawing) {
-        SDL_SetRenderDrawColor(renderer,
-                               currentStroke.color.r,
-                               currentStroke.color.g,
-                               currentStroke.color.b,
-                               currentStroke.color.a);
+       
+         Uint32 gfxColor = (currentStroke.color.a << 24) | 
+                  (currentStroke.color.b << 16) |
+                  (currentStroke.color.g << 8) |
+                  (currentStroke.color.r);
 
+        
         for (size_t i = 1; i < currentStroke.points.size(); i++) {
 
             SDL_Point p1 = RotatePoint(currentStroke.points[i - 1].x,
@@ -214,13 +229,25 @@ void Render(int offX, int offY, float zoom, int rotation) {
             int x2 = static_cast<int>(p2.x * zoom + offX);
             int y2 = static_cast<int>(p2.y * zoom + offY);
 
-            SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
+            if (currentStroke.thickness <= 1) {
+                aalineColor(renderer, x1, y1, x2, y2, gfxColor);
+            } else {
+                thickLineColor(renderer, x1, y1, x2, y2, currentStroke.thickness, gfxColor);
+            }
         }
+
+
     }
 }
-    void RenderPen(int mx,int my){
+    void RenderPen(int mx,int my,int th){
 
-        PenIcons[currentPen]->Render(Cordinates{mx,my-PenIcons[currentPen]->getLabelH()/2+1});
+        PenIcons[currentPen]->Render(Cordinates{mx,my-PenIcons[currentPen]->getLabelH()/2-5});
+
+          Uint32 gfxColor = (Current_color.a << 24) | 
+                  (Current_color.b << 16) |
+                  (Current_color.g << 8) |
+                  (Current_color.r);
+        aacircleRGBA(renderer, mx, my, th/2, Current_color.r,Current_color.g,Current_color.b,Current_color.a);
     }
 
     // Optional: change color

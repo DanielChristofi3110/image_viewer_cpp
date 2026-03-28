@@ -5,6 +5,7 @@
 #include <SDL2/SDL2_rotozoom.h>
 #include <SDL2/SDL_surface.h>
 #include <condition_variable>
+#include <SDL2/SDL2_imageFilter.h>
 #include <cstddef>
 #include <iostream>
 #include <iterator>
@@ -90,6 +91,7 @@ class CImage{
                     SDL_FreeSurface(surf);
                     surf = nullptr;  // Nullify the pointer after freeing
                 }
+                
 
                 if (texture) {
                     SDL_DestroyTexture(texture);

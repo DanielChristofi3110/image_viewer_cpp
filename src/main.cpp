@@ -34,7 +34,7 @@
 #endif
 
 
-#define BORDERLESS true
+#define BORDERLESS false
 
 
 bool hide_ui=false;
@@ -125,6 +125,7 @@ int main(int argc, char* argv[]) {
 
     confDir=execDir+"/config/config.ini";
     #ifdef __linux
+    if(BORDERLESS)SDL_SetHint(SDL_HINT_VIDEODRIVER, "x11");
     resDir=execDir+"/../share/imageviewer/";
     confDir=getConfigPath();
     #ifndef NDEBUG
@@ -135,10 +136,11 @@ int main(int argc, char* argv[]) {
     #endif
     #endif
 
-
+    //SDL_SetHint(SDL_HINT_VIDEODRIVER, "x11");//nowayland
+    //SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_PREFER_LIBDECOR, "1");
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG);
-
+    SDL_Surface* icon = IMG_Load((resDir+"/resources/images/iconimage.png").c_str());
 
     
     //AA
@@ -154,6 +156,11 @@ int main(int argc, char* argv[]) {
     if(BORDERLESS)SDL_SetWindowBordered(window, SDL_FALSE);
     std::cout<<"------------------Created window-----------------------"<<std::endl;
 
+    if (icon) {
+     std::cout<<"Icon\n";
+    SDL_SetWindowIcon(window, icon);
+    SDL_FreeSurface(icon);
+    }
     #ifdef _WIN32
     #ifdef _DEBUG
     EnableDebugConsole();
@@ -238,6 +245,7 @@ int main(int argc, char* argv[]) {
     bool running = true;
     bool fullscreen = false;
     bool dragging = false;
+   // bool window_dragging=true;
 
     int winW, winH;
     SDL_Event event;
@@ -341,7 +349,7 @@ int main(int argc, char* argv[]) {
 
     
 
-    CWindowDecorations WindowDecorations(renderer,font,BORDERLESS);
+    CWindowDecorations WindowDecorations(renderer,font,BORDERLESS,ConfigLoader->getMainColor());
     //Images->setCurrentImageWindowDecorationY(WindowDecorations.getH());
     WindowDecorations.SetCloseSVG(resDir+"/resources/vector/Close.svg");
     WindowDecorations.SetMaximizeSVG(resDir+"/resources/vector/Maximize.svg");
@@ -498,7 +506,7 @@ int main(int argc, char* argv[]) {
 
     bool Typing=false;
     bool DrawingMode=false;
-    
+    int drawingThickness=1;
     //Canvas.setPenInvertedColor({255,255,255,255});
     
     while (running) {
@@ -707,9 +715,14 @@ int main(int argc, char* argv[]) {
 
             TextTextBox.setVisible(debug_mode);
             TextTextBox.Render(winW,winH,mouseX,mouseY,deltaTime,CursorType);
-            if(DrawingMode) Canvas.RenderPen(mouseX, mouseY);
+            if(DrawingMode) Canvas.RenderPen(mouseX, mouseY,drawingThickness);
             
               WindowDecorations.Render(winW, winH, mouseX, mouseY, deltaTime,CursorType);
+
+            // if(mouseY>WindowDecorations.getH()){
+
+            //     window_dragging=false;
+            // }
         }
         PenButton.Render(0,ZoomLabel.getNexty()-ZoomLabel.getLabelH()*2);
         RotateRightButton.Render(0,PenButton.getY()-PenButton.getH());
@@ -948,13 +961,22 @@ int main(int argc, char* argv[]) {
                 Loadthumbnails=false;
             }
 
-        
-            if (event.type == SDL_MOUSEWHEEL) {
-
+            if (event.type == SDL_MOUSEWHEEL && DrawingMode) {
+                // Check if Ctrl is held
+                if (SDL_GetModState() & KMOD_CTRL) {
+                    drawingThickness += event.wheel.y; // event.wheel.y is +1 or -1 depending on scroll
+                    if (drawingThickness < 1) drawingThickness = 1; // prevent negative thickness
+                }
+            }
+            if (event.type == SDL_MOUSEWHEEL ) {
+                if(SDL_GetModState() & KMOD_CTRL) continue;
                 int mouseX, mouseY;
                 SDL_GetMouseState(&mouseX, &mouseY);
 
                  FrameControl.setMouseOnScroll(true);
+
+                
+
                 if(mouseY>THUMB_HEIGHT+2*THUMB_PADDING){ //|| hide_ui){
 
 
@@ -1007,6 +1029,7 @@ int main(int argc, char* argv[]) {
 
            
             dragging = true&&!ConfigEditorGUI.isEnabled()&&!DrawingMode;
+            
                 
             lastMouseX = event.button.x;
 
@@ -1019,7 +1042,9 @@ int main(int argc, char* argv[]) {
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
 
-            if(DrawingMode)Canvas.StartStroke(static_cast<int>((mouseX - offsetX) / zoom), static_cast<int>((mouseY - offsetY) / zoom));
+           // if(mouseY<WindowDecorations.getH()&& mouseY>0){ window_dragging=true;}
+
+            if(DrawingMode)Canvas.StartStroke(static_cast<int>((mouseX - offsetX) / zoom), static_cast<int>((mouseY - offsetY) / zoom),drawingThickness);
 
             Typing=ConfigEditorGUI.isEnabled();
             //TextTextBox.CheckIfPressed(mouseX,mouseY,Typing);
@@ -1165,6 +1190,7 @@ int main(int argc, char* argv[]) {
                     Canvas.EndStroke();
                    // DrawingMode=false;   
                     dragging = false;
+                   // window_dragging=false;
                     }
 
 
@@ -1174,9 +1200,28 @@ int main(int argc, char* argv[]) {
 
                         
                         Images->moveCurrentImage(dx, dy);
+
                         lastMouseX = event.motion.x;
                         lastMouseY = event.motion.y;
                     }
+                    
+                    // if (event.type == SDL_MOUSEMOTION && window_dragging) {
+                    //     SDL_RaiseWindow(window);
+                    //     int mx,my;
+                    //     SDL_GetGlobalMouseState(&mx, &my);
+                    //     int dx = mx;
+                    //     int dy = my;
+
+                    //     int wx, wy;
+                    //     SDL_GetWindowPosition(window, &wx, &wy);
+
+                    //     std::cout<<"Window Dragging "<<window_dragging<<" "<<wx<<" "<<dx<<std::endl;
+                    //      SDL_SetWindowPosition(window, mx, mx);
+
+
+                    //     lastMouseX = event.motion.x;
+                    //     lastMouseY = event.motion.y;
+                    // }
 
                 if(event.type==SDL_MOUSEMOTION){
 
