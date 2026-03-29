@@ -88,6 +88,15 @@ public:
 
     void loadImages(){
 
+        if(single_image_load){
+             imageFiles.push_back(firstImagePath);
+             knownImages.insert(firstImagePath);
+             if (DEBUG)
+                    std::cout << "Loaded single image " << firstImagePath.string() << std::endl;
+             return;
+
+        }
+
         for (const auto& entry : fs::directory_iterator(dir)) {
 
             if (!entry.is_regular_file()) continue;

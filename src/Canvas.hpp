@@ -132,6 +132,9 @@ public:
 
         }
     }
+    ~CCanvas() {
+    PenIcons.clear();  // ensures destruction happens now
+    }
 
     // Call when mouse button is pressed
     void StartStroke(int x, int y,uint16_t thi) {
