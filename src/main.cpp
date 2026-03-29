@@ -507,6 +507,7 @@ int main(int argc, char* argv[]) {
     bool Typing=false;
     bool DrawingMode=false;
     int drawingThickness=1;
+    bool single_image=ConfigLoader->getSingle_image_load();
     //Canvas.setPenInvertedColor({255,255,255,255});
     
     while (running) {
@@ -697,10 +698,10 @@ int main(int argc, char* argv[]) {
             //if(mouseY!=lastMouseY)
             FrameControl.setMouseOnThmbnails(mouseY<THUMB_WIDTH&&windowActive);
 
-            if((mouseY<THUMB_WIDTH+WindowDecorations.getH())&&windowActive){
+            if((mouseY<THUMB_WIDTH+WindowDecorations.getH())&&windowActive&&!single_image){
 
                 thumbgroup.UpdateYelevation(0,Thumbnail_ANIM_SPEED, deltaTime);
-            }else if(hide_ui){
+            }else if(hide_ui||single_image){
                 thumbgroup.UpdateYelevation(THUMB_HEIGHT+THUMB_PADDING*2+5+WindowDecorations.getH(),Thumbnail_ANIM_SPEED, deltaTime);
 
             }
@@ -762,9 +763,9 @@ int main(int argc, char* argv[]) {
                 ConfigEditorGUI.AddTextToTyping(event.text.text);
                 }
         }
-            if (event.type == SDL_DROPFILE) {
+            if (event.type == SDL_DROPFILE && !single_image) {
                 std::filesystem::path droppedPath(event.drop.file);
-
+               
                 std::cout << "File dropped: " << droppedPath.string() << std::endl;
 
                 FileScanner.addPath(std::move(droppedPath));
