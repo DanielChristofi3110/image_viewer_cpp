@@ -127,7 +127,7 @@ On Linux, SDL2 dependencies are resolved via system packages.
 SDL2_gfx is linked manually and must be available on your system.
 ## License
 
---
+This project is licensed under the GPL v3 License - see the LICENSE file for details.
 
 
 
