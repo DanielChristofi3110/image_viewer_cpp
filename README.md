@@ -17,10 +17,27 @@ This project demonstrates a minimal setup for loading and displaying images usin
 
 ## Features
 
--  **Load and display common image formats (PNG, JPG, etc.)** -
+-  **Load and display common image formats (PNG, JPG, etc.)** 
 -  **SDL2-based rendering**
 -  **Cross-platform support (Windows & Linux)** 
 -  **Simple packaging support via CPack (DEB, RPM, TGZ)t**
+-  **Fast scrollong and thumbnails preview**
+
+   ![prev_fast_scrollong](previews/prev_fast_scrolling.gif)
+
+-  **Copy images to clipboard by pressing ctrl-c**
+
+   ![prev_ctrl_c](previews/prev_ctrl_c.gif)
+
+-  **Draw on top of an image**
+
+   ![prev_ctrl_c](previews/prev_draw.gif)
+
+-  **Drag and drop**
+
+   ![prev_ctrl_c](previews/prev_drag_and_drop.gif)
+
+
 ## Requirements
 ###   General
 -  **CMake ≥ 3.16**
