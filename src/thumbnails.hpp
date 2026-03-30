@@ -1023,7 +1023,7 @@ class CThumbnailGroup{
 
     void addThumbnail(const std::string path){
 
-        std::cout<<"add call |"<<path<<"|"<<std::endl;
+     
         thumbnails.push_back(std::make_unique<CThumbnail>(renderer,size));
         //thumbnails.back()->
         imageFiles.push_back(path);
