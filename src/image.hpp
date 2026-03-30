@@ -314,7 +314,7 @@ class CImage{
 
 
         void Render(int winW,int winH){
-            // std::cout<<textureReady<<" "<<zoom<<std::endl;
+           // std::cout<<textureReady<<"AAAAA"<<zoom<<std::endl;
             //zoom=z;
             if(surfaceReady && !textureReady){
                 
@@ -325,6 +325,8 @@ class CImage{
                 
 
             }
+
+           // std::cout<<textureReady<<"BBBBBBBB"<<zoom<<std::endl;
         
             //cords.x=600;
             //cords.y=600;
@@ -515,7 +517,7 @@ class CImages{
     std::condition_variable cv;
     std::queue<int> loadQueue;
     std::atomic<bool> running{true};
-    std::vector<std::atomic<bool>> queued;
+    std::deque<std::atomic<bool>> queued;
     
     public:
    
@@ -532,7 +534,7 @@ class CImages{
             images.push_back(std::make_unique<CImage>(renderer));
         }
 
-        queued = std::vector<std::atomic<bool>>(size);
+        queued = std::deque<std::atomic<bool>>(size);
         for (int i = 0; i < size; i++) {
             queued[i] = false;
         }   
@@ -560,7 +562,7 @@ class CImages{
                 {
                     if (!images[index]->IsSurfaceReady())
                     {
-                        if(DEBUG)  std::cout<<"Loading async Surface "<<index<<std::endl;
+                        if(DEBUG)  std::cout<<"Loading async Surface "<<index<<" f size"<<imageFiles.size()<<std::endl;
                         images[index]->LoadSurfaceOnly(imageFiles[index],winW,winH);
                         if(DEBUG) std::cout<<"Loaded async Surface "<<index<<std::endl;
                     }
@@ -624,13 +626,22 @@ class CImages{
     void LoadAroundAsync(int aroundnum)
     {
         if (size<=0) return;
+        
         for (int i = -aroundnum; i <= aroundnum; i++)
-        {
+        { 
+           // if(i<0) continue;
+          
             int ind = (currentIndex + i + size) % size;
             //std::cout<<"last index "<<ind<<std::endl;
+           
             if(ind<0 || ind>=size) continue;
+             
+             
+             
+               
             if (!images[ind]->IsSurfaceReady() && !queued[ind].exchange(true))
             {
+              
                 std::lock_guard<std::mutex> lock(queueMutex);
                 loadQueue.push(ind);
                 cv.notify_one();
@@ -719,7 +730,7 @@ class CImages{
        images[currentIndex]->CenterImage(winW,winH);
        
     
-
+          if(DEBUG) std::cout<<"Next ended "<<std::endl;
        return currentIndex;
         
 
@@ -818,10 +829,14 @@ class CImages{
     }
 
     void addImage(const std::string path){
-
+  
         imageFiles.push_back(path);
+        queued.emplace_back(false);
+        //queued.back()=true;
+;
         images.push_back(std::make_unique<CImage>(renderer));
         size++;
+       // queued[size].store(true);
 
 
     }

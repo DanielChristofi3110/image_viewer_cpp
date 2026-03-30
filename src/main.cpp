@@ -556,7 +556,7 @@ int main(int argc, char* argv[]) {
         Images->set_window(winW,winH);
 
        
-        background.StartLerp({thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().r,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().g,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().b,255}, 0.5f);
+       background.StartLerp({thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().r,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().g,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().b,255}, 0.5f);
         background.Update(deltaTime);
         background.Render();
         Canvas.setPenInvertedColor({thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().r,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().g,thumbgroup.getThumbnailByInd(currentIndex)->getTavgcolor().b,255});
@@ -768,10 +768,11 @@ int main(int argc, char* argv[]) {
                
                 if(DEBUG) std::cout << "File dropped: " << droppedPath.string() << std::endl;
 
-                FileScanner.addPath(std::move(droppedPath));
+               FileScanner.addPath(std::move(droppedPath));
 
                 thumbgroup.addThumbnail(FileScanner.getLastImageFile());
                 Images->addImage(FileScanner.getLastImageFile());
+               
 
                 SDL_free(event.drop.file);
             }

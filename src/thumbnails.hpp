@@ -307,11 +307,12 @@ public:
    
     std::string getName(){
 
-        if(Name ==""){
+         if(Name ==""){
             std::string DisplayFilePath =Path.substr(Path.find_last_of((delim),Path.length()));
-           Name=  DisplayFilePath.substr(1,DisplayFilePath.length());
-        }
+            Name=  DisplayFilePath.substr(1,DisplayFilePath.length());
+         }
         return Name;
+       
     }
 
     void LoadThumbnailImage(const std::string& imgPath,SDL_Renderer* renderer) {
@@ -648,17 +649,21 @@ class CThumbnailGroup{
 
     bool CheckThumbnailPress(int winW,int winH,float dt,int mx,int my,CCursor::cursorType & cursor){
          if(buttons.empty()) return false;
-
+        
+         //std::cout<<"butn "<<buttons.size()<<" \n";
          for(uint64_t i=0;i<buttons.size();i++){
             //int x=buttons[i]->getX();
             //int y=buttons[i]->getY();
+            // std::cout<<"CheckIfHover start \n ";
             if(buttons[i]->CheckIfHover(mx,my,dt)){
 
-
+               // std::cout<<"CheckIfHover true start \n ";
                 cursor=CCursor::Hand;
                 thumb_name->Render(mx, my+20, winW, winH, thumbnails[i]->getName());
+                //thumb_name->Render(mx, my+20, winW, winH, "-");
                 //return true;
             }
+            // std::cout<<"CheckIfHover end \n ";
 
          }
          return false;
@@ -740,11 +745,16 @@ class CThumbnailGroup{
         bool all_loaded=true;
         int around_size=thumb_showing*2 ;
       if(DEBUG)  std::cout << "Trying Replace Around "<<thumb_showing*2 <<"  "<<currentIndex<<"\n";
-        for(int i=(currentIndex-around_size>0)?currentIndex-around_size:0; i<currentIndex+around_size;i++){
+      //std::cout<<"be for"<<std::endl;
+        //for(int i=(currentIndex-around_size>0)?currentIndex-around_size:0; i<currentIndex+around_size;i++){
+        for (int i = static_cast<int>(currentIndex) - thumb_showing; i <=  static_cast<int>(currentIndex) + thumb_showing ; i++){
             //std::cout << "Trying Replace "<<i<<"\n";
+            // std::cout<<"in for"<<std::endl;
+           
             if(i<0 || i>thumbnails.size()-1) continue;
 
             if(THUMBNAIL_ASYNCLOADING){
+            
             thumbnails[static_cast<uint64_t>(i)]->LoadThumbnailImage(imageFiles[i],renderer);
             }else{
             //ReplaceThumbnailWithImage(i,imageFiles[i],renderer,thumbnails,Loadedthumbnails);
@@ -789,7 +799,7 @@ class CThumbnailGroup{
 
     void Render(int &winH,int &winW,int mx,int my,float dt,CCursor::cursorType & cursor){
 
-         // std::cout<<"Render call"<<std::endl;
+         //std::cout<<"Render call"<<std::endl;
         
         
           // std::cout<<"ASYNC call"<<std::endl;
@@ -827,15 +837,18 @@ class CThumbnailGroup{
        //   std::cout<<"drawSelection call"<<std::endl;
         drawSelection();
       //  std::cout<<"drawThumbnails call"<<std::endl;
+       //std::cout<<"Render A"<<std::endl;
         drawThumbnails(winW, winH);
+       // std::cout<<"Render B"<<std::endl;
 
         
        //  std::cout<<"drawLabels call"<<std::endl;
         drawLabels();
+       // std::cout<<"Render C"<<std::endl;
         CheckThumbnailPress(winW,winH,dt,mx,my,cursor);
 
        //   std::cout<<"Render exit"<<std::endl;
-
+     // std::cout<<"Render Exit"<<std::endl;
     }
 
    
@@ -1010,8 +1023,9 @@ class CThumbnailGroup{
 
     void addThumbnail(const std::string path){
 
-       // std::cout<<"add call"<<std::endl;
+        std::cout<<"add call |"<<path<<"|"<<std::endl;
         thumbnails.push_back(std::make_unique<CThumbnail>(renderer,size));
+        //thumbnails.back()->
         imageFiles.push_back(path);
         //
         buttons.push_back(std::make_unique<CButton>(" ",renderer,Cordinates{0,0},true,true,true,font,SDL_Color{255,255,255,255}));
@@ -1020,7 +1034,7 @@ class CThumbnailGroup{
         //
         size+=1;
         ReplaceThumbnailsAround();
-        // std::cout<<"add exit"<<std::endl;
+  
 
 
     }
