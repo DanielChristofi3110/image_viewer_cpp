@@ -191,7 +191,7 @@ class CImage{
                     return;
                 }
 
-                 std::cout << "Created default texture " <<std::endl;
+                 if(DEBUG) std::cout << "Created default texture " <<std::endl;
 
                 
             }
@@ -217,7 +217,7 @@ class CImage{
     
         CImage(SDL_Renderer *r){
            Loaded=false;
-           std::cout << "Image constructor called"<<std::endl;
+           if(DEBUG) std::cout << "Image constructor called"<<std::endl;
            zoom=1.0f;
            offsetX=0;
            offsetY=0;
@@ -227,7 +227,7 @@ class CImage{
            texture = nullptr;
            surf = nullptr;
            SetDefaultTexture();
-           std::cout << "Image constructor exited"<<std::endl;
+           if(DEBUG) std::cout << "Image constructor exited"<<std::endl;
 
 
 
@@ -236,7 +236,7 @@ class CImage{
         ~CImage(){
                 if (surf) SDL_FreeSurface(surf);
                 if (texture) SDL_DestroyTexture(texture);
-                std::cout<<"Destroyed Image "<<std::endl;
+                if(DEBUG) std::cout<<"Destroyed Image "<<std::endl;
             }
         CImage(const CImage&) = delete;
         CImage& operator=(const CImage&) = delete;
@@ -379,7 +379,7 @@ class CImage{
         void LoadSurfaceOnly(const std::string& path,int wW,int wH)
             {
                 std::lock_guard<std::mutex> lock(imageMutex);
-                std::cout<<" Time: "<<  getFileTime(path)<<std::endl;
+                if(DEBUG) std::cout<<" Time: "<<  getFileTime(path)<<std::endl;
                 CreationTime=getFileTime(path);
                 
                 if (!CreationTime.empty())
@@ -414,7 +414,7 @@ class CImage{
 
                 textureReady = true;
                 Loaded = true;
-                std::cout<<"texture Created"<<std::endl;
+                if(DEBUG) std::cout<<"texture Created"<<std::endl;
                 // We no longer need the surface after texture creation
                 //SDL_FreeSurface(surf);
                 //surf = nullptr;
@@ -430,7 +430,7 @@ class CImage{
           //  }
            // CreateTextureFromSurface();
              //CenterImage(winW,winH);
-             std::cout<<"cord y"<<cords.y<<" zoom "<<zoom;
+            if(DEBUG)  std::cout<<"cord y"<<cords.y<<" zoom "<<zoom;
              x=cords.x;
              y=cords.y;
              z=zoom;
@@ -560,9 +560,9 @@ class CImages{
                 {
                     if (!images[index]->IsSurfaceReady())
                     {
-                         std::cout<<"Loading async Surface "<<index<<std::endl;
+                        if(DEBUG)  std::cout<<"Loading async Surface "<<index<<std::endl;
                         images[index]->LoadSurfaceOnly(imageFiles[index],winW,winH);
-                        std::cout<<"Loaded async Surface "<<index<<std::endl;
+                        if(DEBUG) std::cout<<"Loaded async Surface "<<index<<std::endl;
                     }
                 }
             }
@@ -571,7 +571,7 @@ class CImages{
 
         
         
-        std::cout<<"Images constructor loaded "<<iF.size()<<std::endl;
+        if(DEBUG) std::cout<<"Images constructor loaded "<<iF.size()<<std::endl;
     };
 
     void set_window(int wx,int wy){
@@ -708,12 +708,12 @@ class CImages{
     }
 
     int NextImage(int i,int winW,int winH){
-         std::cout<<"Next caled "<<std::endl;
+        if(DEBUG) std::cout<<"Next caled "<<std::endl;
         if(i>0)
         currentIndex=(currentIndex + i) % size;
         else
         currentIndex = (currentIndex + i + imageFiles.size()) % imageFiles.size();
-        std::cout<<"Next by "<<i<<" ="<<currentIndex<<std::endl;
+       if(DEBUG) std::cout<<"Next by "<<i<<" ="<<currentIndex<<std::endl;
        LoadAroundAsync(ASYNCLOADING);
        UnLoadAround(UNLOADAT);
        images[currentIndex]->CenterImage(winW,winH);

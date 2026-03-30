@@ -110,9 +110,9 @@ std::string getConfigPath()
 }
 #endif
 
-
 int main(int argc, char* argv[]) {
-   // std::cout << "Version: " << APP_VERSION << std::endl;
+    std::cout << "Version: " << APP_VERSION << std::endl;
+    if(DEBUG) std::cout << "Debug mode\n";
     #ifdef _WIN32
     SetProcessDPIAware();
     #endif
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
     resDir=execDir+"/../share/imageviewer/";
     confDir=getConfigPath();
     #ifndef NDEBUG
-    std::cout << "Debug mode\n";
+   
     resDir=execDir;
     confDir=execDir+"/config/config.ini";
   
@@ -154,10 +154,10 @@ int main(int argc, char* argv[]) {
         SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE| SDL_WINDOW_ALLOW_HIGHDPI 
     );
     if(BORDERLESS)SDL_SetWindowBordered(window, SDL_FALSE);
-    std::cout<<"------------------Created window-----------------------"<<std::endl;
+    if(DEBUG) std::cout<<"------------------Created window-----------------------"<<std::endl;
 
     if (icon) {
-     std::cout<<"Icon\n";
+     if(DEBUG) std::cout<<"Icon\n";
     SDL_SetWindowIcon(window, icon);
     SDL_FreeSurface(icon);
     }
@@ -177,19 +177,19 @@ int main(int argc, char* argv[]) {
     );
     #endif
 
-    std::cout <<"HELLO"<<std::endl;
+   
     std::shared_ptr<CConfigLoader> ConfigLoader;
     ConfigLoader=std::make_shared<CConfigLoader>();
-    std::cout <<confDir<<std::endl;
+   if(DEBUG)  std::cout <<confDir<<std::endl;
     if (ConfigLoader->load(confDir))
     {
-        std::cout << "Font Name: " << ConfigLoader->getFontName() << std::endl;
-        std::cout << "Font Size: " << ConfigLoader->getFontSize() << std::endl;
-        std::cout << "Idle Fps: " << ConfigLoader->getidleFps() << std::endl;
+        if(DEBUG) std::cout << "Font Name: " << ConfigLoader->getFontName() << std::endl;
+        if(DEBUG) std::cout << "Font Size: " << ConfigLoader->getFontSize() << std::endl;
+        if(DEBUG) std::cout << "Idle Fps: " << ConfigLoader->getidleFps() << std::endl;
     }
 
     if (TTF_Init() == -1) {
-        std::cout << "TTF Init Error: " << TTF_GetError() << "\n";
+        if(DEBUG) std::cout << "TTF Init Error: " << TTF_GetError() << "\n";
         return 1;
     }
 
@@ -207,14 +207,14 @@ int main(int argc, char* argv[]) {
         MAXIMAGE_QUEUE=ConfigLoader->getMAXIMAGE_QUEUE();
         hide_ui=ConfigLoader->getHIDE_UI();
 
-        std::cout<<"ASYNCLOADING  "<<ASYNCLOADING<<std::endl; 
-        std::cout<<"UNLOADAT "<<UNLOADAT<<std::endl;
-        std::cout<<"MQ "<<MAXIMAGE_QUEUE<<std::endl;
+        if(DEBUG)  std::cout<<"ASYNCLOADING  "<<ASYNCLOADING<<std::endl; 
+        if(DEBUG)  std::cout<<"UNLOADAT "<<UNLOADAT<<std::endl;
+        if(DEBUG)  std::cout<<"MQ "<<MAXIMAGE_QUEUE<<std::endl;
 
 
 
     
-    std::cout<<"------------------Created  render-----------------------"<<std::endl;
+    if(DEBUG)  std::cout<<"------------------Created  render-----------------------"<<std::endl;
 
 
    
@@ -222,7 +222,7 @@ int main(int argc, char* argv[]) {
 
     TTF_Font* font = TTF_OpenFont((resDir+"/fonts/"+ConfigLoader->getFontName()).c_str(), ConfigLoader->getFontSize());
     if (!font) {
-        std::cout << "Failed to load font: " << TTF_GetError() <<"fallback"<< "\n";
+        if(DEBUG) std::cout << "Failed to load font: " << TTF_GetError() <<"fallback"<< "\n";
         font = TTF_OpenFont((resDir+"/fonts/InterVariable.ttf").c_str(), ConfigLoader->getFontSize());
          if (!font)
              return 1;
@@ -231,14 +231,14 @@ int main(int argc, char* argv[]) {
     CConfigEditorGUI ConfigEditorGUI(renderer,font,ConfigLoader);
      ConfigEditorGUI.loadFromConfig();
      ConfigEditorGUI.setEnabled(false);
-    std::cout<<"------------------Loaded font-----------------------"<<std::endl;
+    if(DEBUG) std::cout<<"------------------Loaded font-----------------------"<<std::endl;
     //int thumb_proc_ind = 0;
     //const int imageFiles_size = imageFiles.size();
 
  //Canvas
 
     CCanvas Canvas(renderer,font,(resDir+"/resources/vector/Pen.svg").c_str());
-    std::cout<<"------------------Loaded Thumbnails-----------------------"<<std::endl;
+    if(DEBUG) std::cout<<"------------------Loaded Thumbnails-----------------------"<<std::endl;
 
     
 
@@ -656,13 +656,13 @@ int main(int argc, char* argv[]) {
         strs.push_back("Mouse (x,y) "+std::to_string(lastMouseX)+","+std::to_string(lastMouseY));
         strs.push_back(info);
         strs.push_back("DeltaT  "+std::to_string(deltaTime));
-        DebugLabel.setVisibility(debug_mode);
+        DebugLabel.setVisibility(debug_mode&&DEBUG);
         DebugLabel.setCords(0, THUMB_WIDTH);
         DebugLabel.Render(strs);
-        debugline.setVisibility(debug_mode);
-        debugline2.setVisibility(debug_mode);
-        debuglineimg.setVisibility(debug_mode);
-        debugline2img.setVisibility(debug_mode);
+        debugline.setVisibility(debug_mode&&DEBUG);
+        debugline2.setVisibility(debug_mode&&DEBUG);
+        debuglineimg.setVisibility(debug_mode&&DEBUG);
+        debugline2img.setVisibility(debug_mode&&DEBUG);
         debugline.Render(Cordinates{winW/2-4,winH},Cordinates{9,winH});
         debugline2.Render(Cordinates{0,winH/2-4},Cordinates{winW,9});
         {
@@ -714,7 +714,7 @@ int main(int argc, char* argv[]) {
                 
             }
 
-            TextTextBox.setVisible(debug_mode);
+            TextTextBox.setVisible(debug_mode&&DEBUG);
             TextTextBox.Render(winW,winH,mouseX,mouseY,deltaTime,CursorType);
             if(DrawingMode) Canvas.RenderPen(mouseX, mouseY,drawingThickness);
             
@@ -766,7 +766,7 @@ int main(int argc, char* argv[]) {
             if (event.type == SDL_DROPFILE && !single_image) {
                 std::filesystem::path droppedPath(event.drop.file);
                
-                std::cout << "File dropped: " << droppedPath.string() << std::endl;
+                if(DEBUG) std::cout << "File dropped: " << droppedPath.string() << std::endl;
 
                 FileScanner.addPath(std::move(droppedPath));
 
@@ -781,7 +781,7 @@ int main(int argc, char* argv[]) {
                 int newWidth = event.window.data1;
                 int newHeight = event.window.data2;
 
-                std::cout << "Window resized to: "
+                if(DEBUG) std::cout << "Window resized to: "
                 << newWidth << " x "
                 << newHeight << std::endl;
 
@@ -807,7 +807,7 @@ int main(int argc, char* argv[]) {
             if (event.window.event == SDL_WINDOWEVENT_MAXIMIZED || event.window.event == SDL_WINDOWEVENT_RESTORED)
             {
 
-                std::cout << "Window was maximized!" << std::endl;
+               if(DEBUG)  std::cout << "Window was maximized!" << std::endl;
 
             }
 
@@ -850,12 +850,12 @@ int main(int argc, char* argv[]) {
                 }
                 }
 
-                if (event.key.keysym.sym == SDLK_h &&(event.key.keysym.sym & KMOD_CTRL)) {
+                if (event.key.keysym.sym == SDLK_h && (event.key.keysym.mod & KMOD_CTRL)) {
                     hide_ui=!hide_ui;
                 }
                 if (event.key.keysym.sym == SDLK_SPACE) {
                     //free_mode=!free_mode;
-                    std::cout<<"free: "<<free_mode<<std::endl;
+                  if(DEBUG)   std::cout<<"free: "<<free_mode<<std::endl;
 
 
                 }
@@ -897,7 +897,7 @@ int main(int argc, char* argv[]) {
                 if (event.key.keysym.sym == SDLK_RIGHT) {
                     Loadthumbnails=true;
                     //int ind=
-                    std::cout<<"MQ "<<MAXIMAGE_QUEUE<<std::endl;
+                    if(DEBUG) std::cout<<"MQ "<<MAXIMAGE_QUEUE<<std::endl;
                     if(!(Images->getQueueSize()>MAXIMAGE_QUEUE)) {
                     Images->NextImage(1,winW,winH);
                     
@@ -1002,7 +1002,7 @@ int main(int argc, char* argv[]) {
 
                 }else {
 
-                    std::cout<<"THUMB MOUSE SCROLL "<<event.wheel.y <<std::endl;
+                    if(DEBUG) std::cout<<"THUMB MOUSE SCROLL "<<event.wheel.y <<std::endl;
 
                     
                     thumbgroup.UpdateScrollOffset(event.wheel.y,winH,winW);
@@ -1014,7 +1014,7 @@ int main(int argc, char* argv[]) {
             //Right mouse button
             if((event.type == SDL_MOUSEBUTTONDOWN)&&  (event.button.button == SDL_BUTTON_RIGHT)){
 
-                std::cout<<"Right click"<<std::endl;
+                if(DEBUG) std::cout<<"Right click"<<std::endl;
                 if(DrawingMode){
                     Canvas.nextColor();
                 }

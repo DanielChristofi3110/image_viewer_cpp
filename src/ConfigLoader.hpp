@@ -48,7 +48,7 @@ public:
         ini.SetUnicode();
 
 
-         std::cout <<filename.c_str()<< "\n";
+         if(DEBUG) std::cout <<filename.c_str()<< "\n";
         // If file doesn't exist → create default
         if (!std::filesystem::exists(filename))
         {
@@ -181,7 +181,8 @@ class CConfigEditorGUI{
     "MainR",
     "MainG",
     "MainB",
-   "SINGLE_IMAGE_LOAD"
+   "SINGLE_IMAGE_LOAD",
+   APP_VERSION
         };
     bool AnyTyping=false;
     Cordinates cords{100,100};
@@ -313,7 +314,7 @@ class CConfigEditorGUI{
 
         FontSelectorDropDown->CheckIfClickedCurrentSelection(mx, my);
         if(!FontSelectorDropDown->isColapsed()){
-        std::cout<<FontSelectorDropDown->CheckIfClickedOption(mx, my)<<std::endl;
+        if(DEBUG) std::cout<<FontSelectorDropDown->CheckIfClickedOption(mx, my)<<std::endl;
          int ci=FontSelectorDropDown->CheckIfClickedOption(mx, my);
 
          if(ci!=-1){
@@ -324,7 +325,7 @@ class CConfigEditorGUI{
 
        SaveButton->setMouseLocation(mx, my); 
        if( SaveButton->CheckIfClicked()){
-        std::cout<<"SavePressConf"<<std::endl;
+        if(DEBUG) std::cout<<"SavePressConf"<<std::endl;
 
         cfg->setFontName(FontSelectorDropDown->getCurrentSelectionString());
         cfg->setFontSize(TextBoxes[0]->getInt());
@@ -341,7 +342,7 @@ class CConfigEditorGUI{
 
        ExitButton->setMouseLocation(mx, my); 
        if( ExitButton->CheckIfClicked()){
-        std::cout<<"ExitPressConf"<<std::endl;
+        if(DEBUG) std::cout<<"ExitPressConf"<<std::endl;
         //visible=false;
         enabled=false;
     }

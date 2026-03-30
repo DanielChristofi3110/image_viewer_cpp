@@ -208,7 +208,7 @@ class Clabel{
     ~Clabel(){
         if(texture) SDL_DestroyTexture(texture);
         if (textTexture)SDL_DestroyTexture(textTexture);
-        std::cout<<"Destroy Label "<<std::endl;
+        if(DEBUG) std::cout<<"Destroy Label "<<std::endl;
     }
 
     Clabel(const Clabel&) = delete;
@@ -911,7 +911,7 @@ private:
 
 Cordinates Offset {0,0};
 std::unique_ptr<Clabel> label;
-std::string Text="Test";
+std::string Text="";
 public:
 
 CMouseLabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
@@ -1247,7 +1247,7 @@ class CDropDown{
 
          for(uint64_t i=0;i<SelectionName.size();i++ ){
 
-            std::cout<<"comp |"<<s<<"| to |"<<SelectionName[i]<<"|"<<std::endl;
+            if(DEBUG) std::cout<<"comp |"<<s<<"| to |"<<SelectionName[i]<<"|"<<std::endl;
             if(s==SelectionName[i]) {
 
 

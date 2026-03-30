@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <stdio.h>
+#include "globals.hpp"
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -179,7 +180,7 @@ void copyToWindowsClipboard(SDL_Surface* surf)
 
         CloseClipboard();
 
-        std::cout << "Copied image to clipboard (PNG + DIB + BITMAP)\n";
+       if(DEBUG)  std::cout << "Copied image to clipboard (PNG + DIB + BITMAP)\n";
     }
     else
     {
@@ -235,7 +236,7 @@ void copyToWindowsClipboard(SDL_Surface* surf)
         fwrite(pngData.data(), 1, pngData.size(), pipe);
         pclose(pipe);
 
-        std::cout << "Copied image to Wayland clipboard (PNG)\n";
+        if(DEBUG) std::cout << "Copied image to Wayland clipboard (PNG)\n";
     }
 
 
@@ -290,7 +291,7 @@ void copyToWindowsClipboard(SDL_Surface* surf)
         fwrite(pngData.data(), 1, pngData.size(), pipe);
         pclose(pipe);
 
-        std::cout << "Copied image to X11 clipboard (PNG)\n";
+        if(DEBUG) std::cout << "Copied image to X11 clipboard (PNG)\n";
     }
 #endif
 };

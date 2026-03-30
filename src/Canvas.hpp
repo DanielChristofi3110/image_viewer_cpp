@@ -282,7 +282,7 @@ void Render(int offX, int offY, float zoom, int rotation) {
         
         currentPen++;
         currentPen=currentPen%Pallet_size;
-         std::cout<<"Next color "<<currentPen<<std::endl;
+        if(DEBUG)  std::cout<<"Next color "<<currentPen<<std::endl;
         Current_color=ColorPallet[currentPen];
         reset_flag=false;
     }

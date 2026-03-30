@@ -23,14 +23,28 @@
 
 
 
-
 #ifdef _WIN32
 #define FIX_WINDOWS true
-#elif __unix__
-#define FIX_WINDOWS false
+#define DEBUG false
+
+#ifdef _DEBUG
+    #define DEBUG true
 #endif
 
-#define DEBUG true
+#elif __unix__
+#define FIX_WINDOWS false
+#ifdef NDEBUG
+    #define DEBUG false //no debug
+#else
+    #define DEBUG true
+#endif
+
+#endif
+
+
+
+
+
 #define FULL_PRELOAD false
 
 #define THUMBNAIL_ASYNCLOADING true
@@ -68,68 +82,6 @@ std::string delim="\\";
 std::string delim="/";
 #endif
 
-
-
-
-SDL_Texture* CreateRadialGradientTexture(SDL_Renderer* renderer, int width, int height,SDL_Color color)
-{
-    SDL_Texture* texture = SDL_CreateTexture(
-        renderer,
-        SDL_PIXELFORMAT_RGBA8888,
-        SDL_TEXTUREACCESS_STREAMING,
-        width,
-        height
-    );
-
-    if (!texture)
-        return nullptr;
-
-    void* pixels;
-    int pitch;
-
-    if (SDL_LockTexture(texture, nullptr, &pixels, &pitch) != 0)
-        return nullptr;
-
-    Uint32* pixelBuffer = (Uint32*)pixels;
-
-    SDL_Color centerColor = color;
-    SDL_Color edgeColor   = {0, 0, 0, 255};   // black edges
-
-    float centerX = width / 2.0f;
-    float centerY = height / 2.0f;
-    float maxDist = std::sqrt(centerX * centerX + centerY * centerY);
-
-    for (int y = 0; y < height; y++)
-    {
-        for (int x = 0; x < width; x++)
-        {
-            float dx = x - centerX;
-            float dy = y - centerY;
-
-            float dist = std::sqrt(dx * dx + dy * dy);
-            float t = dist / maxDist;
-            t = std::clamp(t, 0.0f, 1.0f);
-
-            // Optional smooth curve
-            t = pow(t, 1.3f);
-
-            Uint8 r = (Uint8)(centerColor.r + t * (edgeColor.r - centerColor.r));
-            Uint8 g = (Uint8)(centerColor.g + t * (edgeColor.g - centerColor.g));
-            Uint8 b = (Uint8)(centerColor.b + t * (edgeColor.b - centerColor.b));
-
-           SDL_PixelFormat* format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
-
-            Uint32 color = SDL_MapRGBA(format, r, g, b, 255);
-
-            SDL_FreeFormat(format);
-            pixelBuffer[y * (pitch / 4) + x] = color;
-        }
-    }
-
-    SDL_UnlockTexture(texture);
-
-    return texture;
-}
 
 
 

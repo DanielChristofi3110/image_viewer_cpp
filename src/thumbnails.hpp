@@ -38,7 +38,7 @@ private:
     Cordinates cords;
     std::atomic<bool> loading{false};
     std::atomic<bool> ready{false};
-
+    std::string Name="",Path="";
     std::vector<unsigned char> pendingPixels;
     int pendingW = 0;
     int pendingH = 0;
@@ -98,14 +98,14 @@ private:
 
             if (!data)
             {
-                std::cout << "Failed to load image: " << path << "\n";
+                if(DEBUG) std::cout << "Failed to load image: " << path << "\n";
                 return nullptr;
             }
 
             unsigned char* resizedData =
                 new unsigned char[static_cast<size_t>(targetW * targetH * 4)];
 
-            // ✅ Correct resize2 call
+           
             bool success =static_cast<bool>(stbir_resize_uint8_srgb(
                 data,
                 width,
@@ -210,7 +210,7 @@ public:
         void loadThumbnailImageFromSurface(SDL_Renderer* renderer) {
 
             if(!surface) {
-                std::cout<<"no surface"<<std::endl;
+                if(DEBUG) std::cout<<"no surface"<<std::endl;
                 return;}
             tavgcolor = GetAverageColor(surface);
 
@@ -298,20 +298,29 @@ public:
         
         tex_thumb=nullptr;
     }
-        std::cout<<"Destroyed thumbnail "<<ind<<std::endl;
+       if(DEBUG)  std::cout<<"Destroyed thumbnail "<<ind<<std::endl;
     }
 
     CThumbnail(const CThumbnail&) = delete;
     CThumbnail& operator=(const CThumbnail&) = delete;
 
+   
+    std::string getName(){
+
+        if(Name ==""){
+            std::string DisplayFilePath =Path.substr(Path.find_last_of((delim),Path.length()));
+           Name=  DisplayFilePath.substr(1,DisplayFilePath.length());
+        }
+        return Name;
+    }
 
     void LoadThumbnailImage(const std::string& imgPath,SDL_Renderer* renderer) {
-
+        Path= imgPath;
         if(THUMBNAIL_ASYNCLOADING){
           if (loaded || loading)
             return;
 
-         std::cout<<"Loading tumb "<<imgPath<<std::endl;    
+         if(DEBUG) std::cout<<"Loading tumb "<<imgPath<<std::endl;    
         loading = true;
 
         std::thread([this, imgPath]() {
@@ -333,7 +342,7 @@ public:
              
             int w, h;
             SDL_Texture* original = loadThumbnailImageFile(imgPath, renderer, w, h,100,100);
-            std::cout << "LoadThumbnailImage Call for " <<ind<<" loaded :"<<loaded<<std::endl;
+            if(DEBUG) std::cout << "LoadThumbnailImage Call for " <<ind<<" loaded :"<<loaded<<std::endl;
             // SDL_Texture* original = loadThumbnailImageFromSurface(renderer)
             if (!original)
                 return;
@@ -496,6 +505,7 @@ class CThumbnailGroup{
          std::unique_ptr<Clabel> scrollProgress;
          std::unique_ptr<Clabel> scrollOffsetProgress;
         std::unique_ptr<Clabel> scrollProgressBack;
+        std::unique_ptr<CMouseLabel> thumb_name;
 
         TTF_Font *font;
         
@@ -516,11 +526,13 @@ class CThumbnailGroup{
          const int drawProgressH=10;
 
     public:
-
+        //CMouseLabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
         CThumbnailGroup(int amount,SDL_Renderer* vrenderer,std::shared_ptr<CImages> im,TTF_Font *f,bool drawLabels,const std::vector<std::string>& files){
             renderer=vrenderer;
             imageFiles=files;
             font=f;
+
+            thumb_name = std::make_unique<CMouseLabel>(renderer,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255});
             scrollProgress=std::make_unique<Clabel>(vrenderer,Cordinates{0,0},true,false,true,f,SDL_Color{255,255,255,255});
             scrollProgress->setBackgroundColor(SDL_Color{255,255,255,255});
 
@@ -634,8 +646,8 @@ class CThumbnailGroup{
         Yelevation = Yelevation + ((target) - Yelevation) * t;
     }
 
-    void CheckThumbnailPress(float dt,int mx,int my,CCursor::cursorType & cursor){
-         if(buttons.empty()) return;
+    bool CheckThumbnailPress(int winW,int winH,float dt,int mx,int my,CCursor::cursorType & cursor){
+         if(buttons.empty()) return false;
 
          for(uint64_t i=0;i<buttons.size();i++){
             //int x=buttons[i]->getX();
@@ -644,10 +656,12 @@ class CThumbnailGroup{
 
 
                 cursor=CCursor::Hand;
+                thumb_name->Render(mx, my+20, winW, winH, thumbnails[i]->getName());
+                //return true;
             }
 
          }
-
+         return false;
 
     }
       uint64_t CheckIfThumbnaiClicked(int s,int e,int mx,int my){
@@ -660,7 +674,7 @@ class CThumbnailGroup{
             if(buttons[i]->CheckIfClicked()){
 
 
-                std::cout<<"--Clicked thumbnail "<<i<<std::endl;
+                if(DEBUG) std::cout<<"--Clicked thumbnail "<<i<<std::endl;
                 currentIndex=i;
                 return i;
             }
@@ -725,7 +739,7 @@ class CThumbnailGroup{
         //return false;
         bool all_loaded=true;
         int around_size=thumb_showing*2 ;
-       std::cout << "Trying Replace Around "<<thumb_showing*2 <<"  "<<currentIndex<<"\n";
+      if(DEBUG)  std::cout << "Trying Replace Around "<<thumb_showing*2 <<"  "<<currentIndex<<"\n";
         for(int i=(currentIndex-around_size>0)?currentIndex-around_size:0; i<currentIndex+around_size;i++){
             //std::cout << "Trying Replace "<<i<<"\n";
             if(i<0 || i>thumbnails.size()-1) continue;
@@ -752,7 +766,7 @@ class CThumbnailGroup{
         if(ind<0) return false;
         bool all_loaded=true;
         int around_size=temp_thumb_showing*2 ;
-       std::cout << "Trying Replace Around "<<temp_thumb_showing*2 <<"  "<<ind<<"\n";
+       if(DEBUG) std::cout << "Trying Replace Around "<<temp_thumb_showing*2 <<"  "<<ind<<"\n";
         for(int i=(ind-around_size>0)?ind-around_size:0; i<ind+around_size;i++){
             //std::cout << "Trying Replace "<<i<<"\n";
             if(i<0 || i>thumbnails.size()-1) continue;
@@ -794,7 +808,7 @@ class CThumbnailGroup{
       
        
         //std::cout<<"PRESS call"<<std::endl;
-        CheckThumbnailPress(dt,mx,my,cursor);
+       
         //std::cout<<"PRESS exit"<<std::endl;
 
 
@@ -813,9 +827,12 @@ class CThumbnailGroup{
        //   std::cout<<"drawSelection call"<<std::endl;
         drawSelection();
       //  std::cout<<"drawThumbnails call"<<std::endl;
-         drawThumbnails(winW, winH);
+        drawThumbnails(winW, winH);
+
+        
        //  std::cout<<"drawLabels call"<<std::endl;
         drawLabels();
+        CheckThumbnailPress(winW,winH,dt,mx,my,cursor);
 
        //   std::cout<<"Render exit"<<std::endl;
 
@@ -930,7 +947,7 @@ class CThumbnailGroup{
 
         int64_t temp_index=static_cast<int64_t>(currentIndex)+n;
 
-      std::cout<<"NextThumbnail call "<<size<<std::endl;
+      if(DEBUG) std::cout<<"NextThumbnail call "<<size<<std::endl;
         // currentIndex+=n;
 
          if(temp_index<0) {
@@ -945,7 +962,7 @@ class CThumbnailGroup{
         }
          temp_index=temp_index%size;
 
-        std::cout<<"NextThumbnail call ce "<<temp_index<<std::endl;
+        if(DEBUG) std::cout<<"NextThumbnail call ce "<<temp_index<<std::endl;
         //scrollOffset=currentIndex;
         //MoveScrollTo(currentIndex,wW,wH);
          if(CindCords.x>wW-THUMB_WIDTH*2 && n>0){

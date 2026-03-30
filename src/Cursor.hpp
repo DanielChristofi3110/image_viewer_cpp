@@ -84,7 +84,7 @@ public:
         SDL_FreeCursor(cursorNo);
         SDL_FreeCursor(cursorHand);
 
-        std::cout<<"Cursor Destroyed"<<std::endl;
+       if(DEBUG)  std::cout<<"Cursor Destroyed"<<std::endl;
     }
 
     void setCursor(cursorType ct)

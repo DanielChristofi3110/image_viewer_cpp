@@ -152,7 +152,7 @@ public:
 
         cupdateTime = updateTime;
 
-        std::cout << "checking file Update " << std::endl;
+        if(DEBUG) std::cout << "checking file Update " << std::endl;
 
         for (const auto& entry : fs::directory_iterator(dir))
         {
@@ -219,7 +219,7 @@ public:
         if(single_image_load) return;
         running = true;
         scannerThread = std::thread(&CFileScanner::scanLoop, this);
-         std::cout<<"File scanner loop started"<<std::endl;
+        if(DEBUG)  std::cout<<"File scanner loop started"<<std::endl;
     }
     
     void stopWatching(){
@@ -227,7 +227,7 @@ public:
 
         if (scannerThread.joinable())
             scannerThread.join();
-           std::cout<<"File scanner loop ended"<<std::endl;
+        if(DEBUG)    std::cout<<"File scanner loop ended"<<std::endl;
     }
 
     int getInitCurrentIndex(){
