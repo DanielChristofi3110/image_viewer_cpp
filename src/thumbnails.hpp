@@ -1033,7 +1033,8 @@ class CThumbnailGroup{
         buttons.back()->sethColor({255,255,255,128});  
         //
         size+=1;
-        ReplaceThumbnailsAround();
+       // ReplaceThumbnailsAround();
+         thumbnails.back()->LoadThumbnailImage(imageFiles.back(),renderer);
   
 
 
