@@ -20,7 +20,7 @@ This project demonstrates a minimal setup for loading and displaying images usin
 -  **Load and display common image formats (PNG, JPG, etc.)** 
 -  **SDL2-based rendering**
 -  **Cross-platform support (Windows & Linux)** 
--  **Simple packaging support via CPack (DEB, RPM, TGZ)t**
+-  **Simple packaging support via CPack (DEB, RPM, TGZ)**
 -  **Fast scrollong and thumbnails preview**
 
    ![prev_fast_scrollong](previews/prev_fast_scrolling.gif)
