@@ -18,7 +18,7 @@
 
 
 
-
+//images
 class CImage{
     private:
         Cordinates cords={0,0};
@@ -84,21 +84,19 @@ class CImage{
 
             return avg;
         }
-
+        // sync loading
         SDL_Texture* loadImageFile(const std::string& path, SDL_Renderer* renderer) {
-             // Free the old surface and texture if they exist
                 if (surf) {
                     SDL_FreeSurface(surf);
-                    surf = nullptr;  // Nullify the pointer after freeing
+                    surf = nullptr;  
                 }
                 
 
                 if (texture) {
                     SDL_DestroyTexture(texture);
-                    texture = nullptr;  // Nullify the pointer after destroying
+                    texture = nullptr; 
                 }
 
-                // Load the new surface
                 surf = IMG_Load(path.c_str());
                 if (!surf) {
                     std::cout << "Failed to load: " << path << "\n";
@@ -108,23 +106,20 @@ class CImage{
                 imgW = surf->w;
                 imgH = surf->h;
 
-                // Create a new texture from the surface
                 SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
-                return tex;  // Return the newly created texture
+                return tex;  
             }
 
         SDL_Texture* rotatedTexture(int rot){
 
             if (!surf) return nullptr;
             SDL_DestroyTexture(texture);
-            // Rotate surface 90 degrees clockwise
             SDL_Surface* rotatedSurf = rotozoomSurface(surf, rot, 1.0, 1);
             int rw = rotatedSurf->w;
             int rh = rotatedSurf->h;
 
             SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, rotatedSurf);
 
-            //SDL_FreeSurface(surf);
             SDL_FreeSurface(rotatedSurf);
             imgH=rh;
             imgW=rw;
@@ -141,17 +136,11 @@ class CImage{
                         offsetY-=H_comp;
                     }
                     if(imgW*zoom+offsetX<winW){
-                        //if(DEBUG)std::cout<<"dest.w+dest.y "<<dest.w+dest.x<<"winH"<<winW<<std::endl;
                         int W_comp=(winW-(imgW*zoom+offsetX))/2;
                         offsetX=W_comp;
 
                     }
-                   // if(DEBUG)std::cout<<"OFFSET Y: "<<offsetY<<std::endl;
-                    //if(DEBUG)std::cout<<"OFFSET X: "<<offsetX<<std::endl;
-                    //if(DEBUG)std::cout<<"zoom: "<<zoom<<std::endl;
-                    //if(DEBUG)std::cout<<"imgW: "<<imgW<<std::endl;
-                    //if(DEBUG)std::cout<<"imgH: "<<imgH<<std::endl;
-
+                 
 
 
         }
@@ -159,7 +148,6 @@ class CImage{
             {
                 std::lock_guard<std::mutex> lock(imageMutex);
 
-                // Cleanup old data
                 if (surf) {
                     SDL_FreeSurface(surf);
                     surf = nullptr;
@@ -170,21 +158,18 @@ class CImage{
                     texture = nullptr;
                 }
 
-                // Create 100x100 surface (RGBA)
                 surf = SDL_CreateRGBSurfaceWithFormat(0, 100, 100, 32, SDL_PIXELFORMAT_RGBA32);
                 if (!surf) {
                     std::cout << "Failed to create default surface: " << SDL_GetError() << std::endl;
                     return;
                 }
 
-                // Fill with gray color
                 Uint32 gray = SDL_MapRGBA(surf->format, 128, 128, 128, 0);
                 SDL_FillRect(surf, NULL, gray);
 
                 imgW = 100;
                 imgH = 100;
 
-                // Create texture from surface
                 texture = SDL_CreateTextureFromSurface(renderer, surf);
                 if (!texture) {
                     std::cout << "Failed to create default texture: " << SDL_GetError() << std::endl;
@@ -242,7 +227,6 @@ class CImage{
         CImage& operator=(const CImage&) = delete;
 
         void CenterImage(int winW,int winH){
-           // return;
             winH-=WindowDecorationY;
             zoom = std::min((float)winW / imgW, (float)winH / imgH);
                     offsetX = 0;
@@ -252,7 +236,6 @@ class CImage{
 
             cords.x=offsetX;
             cords.y=offsetY+WindowDecorationY;
-           // std::cout << "Debug Center image cords : " << cords.x << " " << cords.y << std::endl;
 
         }
 
@@ -278,11 +261,7 @@ class CImage{
              
               
         }
-        void LoadImage2(const std::string& path,int winW,int winH){
 
-
-           // LoadImage(path,winW,winH);
-        }
 
 
         void calcZoom(int winW,int winH){
@@ -314,27 +293,20 @@ class CImage{
 
 
         void Render(int winW,int winH){
-           // std::cout<<textureReady<<"AAAAA"<<zoom<<std::endl;
-            //zoom=z;
             if(surfaceReady && !textureReady){
                 
                 CreateTextureFromSurface();
                 CenterImage(winW, winH);
                 
-                //std::cout<<textureReady<<" -Zoom"<<zoom<<std::endl;
                 
 
             }
 
-           // std::cout<<textureReady<<"BBBBBBBB"<<zoom<<std::endl;
         
-            //cords.x=600;
-            //cords.y=600;
             
             if (!texture) return;
             
            
-           // zoom=1;
             int renderW = int(imgW * zoom);
             int renderH = int(imgH * zoom);
 
@@ -344,7 +316,6 @@ class CImage{
           
                 dstRect = { cords.x, cords.y, renderW, renderH };
 
-                //std::cout<<dstRect.y<<" "<<cords.y<<std::endl;
 
             SDL_Point center = { dstRect.w / 2, dstRect.h / 2 };
 
@@ -353,7 +324,6 @@ class CImage{
             }
 
 
-            //std::cout << "Rendering" << " " <<imgW<<" x "<<zoom<< std::endl;
         }
 
 
@@ -370,7 +340,6 @@ class CImage{
 
         void Rotate270(){
             angle+=270;
-            //if(angle>=360) angle=0;
           texture = rotatedTexture(angle);
 
           angle=angle%360;
@@ -378,6 +347,8 @@ class CImage{
         }
 
 
+
+        // async load 1 surf
         void LoadSurfaceOnly(const std::string& path,int wW,int wH)
             {
                 std::lock_guard<std::mutex> lock(imageMutex);
@@ -404,7 +375,7 @@ class CImage{
                    
             }
 
-
+        // async load 2 surf->tex
         void CreateTextureFromSurface()
             {
                 std::lock_guard<std::mutex> lock(imageMutex);
@@ -417,28 +388,21 @@ class CImage{
                 textureReady = true;
                 Loaded = true;
                 if(DEBUG) std::cout<<"texture Created"<<std::endl;
-                // We no longer need the surface after texture creation
-                //SDL_FreeSurface(surf);
-                //surf = nullptr;
                  
             }
 
+        // unused 
+        // void Initialize(int winW,int winH,float &x,float& y,float& z){
+        //     return;
 
-        void Initialize(int winW,int winH,float &x,float& y,float& z){
-            return;
-
-          //  while (!surfaceReady) {
-          //   
-          //  }
-           // CreateTextureFromSurface();
-             //CenterImage(winW,winH);
-            if(DEBUG)  std::cout<<"cord y"<<cords.y<<" zoom "<<zoom;
-             x=cords.x;
-             y=cords.y;
-             z=zoom;
-            //calcZoom(winW,winH);
+     
+        //     if(DEBUG)  std::cout<<"cord y"<<cords.y<<" zoom "<<zoom;
+        //      x=cords.x;
+        //      y=cords.y;
+        //      z=zoom;
+         
            
-        }    
+        // }    
         SDL_Texture* getTexture(){return texture;}
 
         int getW(){
@@ -503,7 +467,7 @@ class CImage{
 
 };
 
-
+//image group
 class CImages{
 
     private:
@@ -539,7 +503,6 @@ class CImages{
             queued[i] = false;
         }   
 
-        //std::vector<std::unique_ptr<CImage>> images(size);
         loaderThread = std::thread([this]() {
 
             while (running)
@@ -581,14 +544,15 @@ class CImages{
         winW=wx;
         winH=wy;
     }
-    void InitializeCurrentIndex(int winW,int winH, float& x, float&y,float& z){
+    //unused
+    // void InitializeCurrentIndex(int winW,int winH, float& x, float&y,float& z){
 
-            LoadAroundAsync(ASYNCLOADING);
-            images[currentIndex]->Initialize(winW, winH,x,y,z);
+    //         LoadAroundAsync(ASYNCLOADING);
+    //         images[currentIndex]->Initialize(winW, winH,x,y,z);
 
 
 
-    }
+    // }
     ~CImages()
     {
         running = false;
@@ -629,10 +593,8 @@ class CImages{
         
         for (int i = -aroundnum; i <= aroundnum; i++)
         { 
-           // if(i<0) continue;
           
             int ind = (currentIndex + i + size) % size;
-            //std::cout<<"last index "<<ind<<std::endl;
            
             if(ind<0 || ind>=size) continue;
              
@@ -681,7 +643,6 @@ class CImages{
             }
         }
     void Render(int winW,int winH){
-        //UpdateTexturesFromSurfaces();
        
         images[currentIndex]->Render(winW,winH);
         
@@ -832,11 +793,9 @@ class CImages{
   
         imageFiles.push_back(path);
         queued.emplace_back(false);
-        //queued.back()=true;
-;
+
         images.push_back(std::make_unique<CImage>(renderer));
         size++;
-       // queued[size].store(true);
 
 
     }

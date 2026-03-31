@@ -27,7 +27,7 @@
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb_image_resize2.h"
 
-
+//thumbnail
 class CThumbnail{
 private:
     SDL_Texture * tex_thumb;
@@ -46,6 +46,13 @@ private:
     std::mutex pixelMutex;
 
 
+    bool IsWebP(const std::string& path){
+        std::string lower = path;
+        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+
+        return lower.size() >= 5 &&
+            lower.substr(lower.size() - 5) == ".webp";
+    }
 
     SDL_Color GetAverageColor(SDL_Surface* surface)
         {
@@ -58,7 +65,7 @@ private:
             SDL_LockSurface(surface);
 
             Uint8* pixels = (Uint8*)surface->pixels;
-            //int bpp = surface->format->BytesPerPixel;
+            
 
             for (int y = 0; y < surface->h; y++)
             {
@@ -92,7 +99,6 @@ private:
         {
             int width, height, channels;
 
-            // Force RGBA (4 channels)
             unsigned char* data =
                 stbi_load(path.c_str(), &width, &height, &channels, 4);
 
@@ -110,12 +116,12 @@ private:
                 data,
                 width,
                 height,
-                width * 4,          // input stride
+                width * 4,          
                 resizedData,
                 targetW,
                 targetH,
-                targetW * 4,        // output stride
-                STBIR_RGBA          // pixel layout only
+                targetW * 4,        
+                STBIR_RGBA        
             ));
 
             if (!success)
@@ -156,9 +162,73 @@ private:
 
             return texture;
         }
+          // Load image using SDL_image
+        void BackgroundLoadSDL_Image(const std::string& path, int targetW, int targetH)
+        {
+          
+            SDL_Surface* loaded = IMG_Load(path.c_str());
 
+            if (!loaded)
+            {
+                loading = false;
+                return;
+            }
 
+            SDL_Surface* surface = SDL_ConvertSurfaceFormat(
+                loaded,
+                SDL_PIXELFORMAT_RGBA32,
+                0
+            );
 
+            SDL_FreeSurface(loaded);
+
+            if (!surface)
+            {
+                loading = false;
+                return;
+            }
+
+            int width = surface->w;
+            int height = surface->h;
+
+            unsigned char* data = static_cast<unsigned char*>(surface->pixels);
+
+            std::vector<unsigned char> resized(
+                static_cast<uint64_t>(targetW * targetH * 4)
+            );
+
+            unsigned char* result =
+                stbir_resize_uint8_srgb(
+                    data,
+                    width,
+                    height,
+                    width * 4,
+                    resized.data(),
+                    targetW,
+                    targetH,
+                    targetW * 4,
+                    STBIR_RGBA
+                );
+
+            SDL_FreeSurface(surface);
+
+            if (!result)
+            {
+                loading = false;
+                return;
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(pixelMutex);
+                pendingPixels = std::move(resized);
+                pendingW = targetW;
+                pendingH = targetH;
+                ready = true;
+            }
+
+            loading = false;
+        }
+        // Load image using std_image
         void BackgroundLoad(const std::string& path, int targetW, int targetH)
         {
             int width, height, channels;
@@ -249,9 +319,7 @@ public:
         }
     CThumbnail(SDL_Renderer* renderer,uint64_t i){
         ind=i;
-         //std::cout << "Thumb constructor called for "<<ind<<std::endl;
 
-        // Create empty texture for thumbnail
         SDL_Texture* scaledThumb = SDL_CreateTexture(
             renderer,
             SDL_PIXELFORMAT_RGBA8888,
@@ -266,28 +334,19 @@ public:
             
         }
 
-        // Save current render target
         SDL_Texture* oldTarget = SDL_GetRenderTarget(renderer);
 
-        // Set new target
         SDL_SetRenderTarget(renderer, scaledThumb);
 
-        // Set draw color to yellow
         SDL_SetRenderDrawColor(renderer, 128, 128, 128, 255);
 
-        // Clear texture with yellow
         SDL_RenderClear(renderer);
 
-        // Restore previous render target
         SDL_SetRenderTarget(renderer, oldTarget);
 
-        //thumbnails.push_back(scaledThumb);
-       // Loadedthumbnails.push_back(false);
         tex_thumb=scaledThumb;
-        //thumb_proc_ind++;
         loaded=false;
 
-      // std::cout << "Thumb constructor exited for:" <<ind<<std::endl;
 
 
 
@@ -318,33 +377,35 @@ public:
     void LoadThumbnailImage(const std::string& imgPath,SDL_Renderer* renderer) {
         Path= imgPath;
         if(THUMBNAIL_ASYNCLOADING){
+            //asyncloading
           if (loaded || loading)
             return;
 
-         if(DEBUG) std::cout<<"Loading tumb "<<imgPath<<std::endl;    
+         if(DEBUG) std::cout<<"Loading tumb "<<imgPath<<" isWebP "<<IsWebP(imgPath)<<std::endl;    
         loading = true;
 
         std::thread([this, imgPath]() {
-                BackgroundLoad(imgPath, THUMB_WIDTH, THUMB_HEIGHT);
+                
+             if (!IsWebP(imgPath))
+            {
+                BackgroundLoad(imgPath, THUMB_WIDTH, THUMB_HEIGHT); //loads if not webp
+                
+            }else{
+                BackgroundLoadSDL_Image(imgPath, THUMB_WIDTH, THUMB_HEIGHT);//loads if  webp
+            }
+            
             }).detach();
 
         }else{
-        //std::cout << "LoadThumbnailImage Call for " <<ind<<" loaded :"<<loaded<<std::endl;
-        /* if (index >= thumbnails.size() || Loadedthumbnails[index]){
-                std::cout<<"Skiped: "<<index<<std::endl;
-                return;
-            }*/
-            //old
+    
             
             if (loaded){
-                //std::cout<<"Skiped: "<<ind<<std::endl;
                 return;
             }
              
             int w, h;
             SDL_Texture* original = loadThumbnailImageFile(imgPath, renderer, w, h,100,100);
             if(DEBUG) std::cout << "LoadThumbnailImage Call for " <<ind<<" loaded :"<<loaded<<std::endl;
-            // SDL_Texture* original = loadThumbnailImageFromSurface(renderer)
             if (!original)
                 return;
 
@@ -387,7 +448,6 @@ public:
             
             tex_thumb = scaledThumb;
            loaded=true;
-            // std::cout << "LoadThumbnailImage exit for " <<ind<<std::endl;
             
         }
              
@@ -398,7 +458,6 @@ public:
             
             if (!ready)
                 return;
-            //std::cout<<"Updateing tumb "<<pendingPixels.size()<<std::endl;
             std::lock_guard<std::mutex> lock(pixelMutex);
 
             SDL_Surface* surface =
@@ -427,7 +486,6 @@ public:
                 loaded = true;
             }
             pendingPixels.clear();
-            //pendingPixels.shrink_to_fit();
             ready = false;
         }
     void UnloadLoad(){
@@ -497,7 +555,7 @@ public:
 };
 
 
-
+//thumbnai group
 class CThumbnailGroup{
     private:
          std::vector<std::unique_ptr<CThumbnail>> thumbnails;
@@ -527,7 +585,6 @@ class CThumbnailGroup{
          const int drawProgressH=10;
 
     public:
-        //CMouseLabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
         CThumbnailGroup(int amount,SDL_Renderer* vrenderer,std::shared_ptr<CImages> im,TTF_Font *f,bool drawLabels,const std::vector<std::string>& files){
             renderer=vrenderer;
             imageFiles=files;
@@ -552,7 +609,6 @@ class CThumbnailGroup{
                 if(drawLabels){
 
 
-                //labels.push_back(std::make_unique<Clabel>(renderer,thumbnails[i]->gerCords(),false,false,f));
                 buttons.push_back(std::make_unique<CButton>(" ",renderer,Cordinates{0,0},true,true,true,f,SDL_Color{255,255,255,255}));
                 buttons.back()->setnColor({0,0,0,0});
                 buttons.back()->sethColor({255,255,255,128});  
@@ -583,23 +639,21 @@ class CThumbnailGroup{
 
 
     void drawThumbnails(int &winW,int &winH){
-        //if(!visible) return;
         thumb_showing=0;
 
 
          for (uint64_t i = 0; i < size; i++) {
             SDL_Rect rect = {thumbX, thumbY-static_cast<int>(Yelevation)+WindowDecorationY, THUMB_WIDTH, THUMB_HEIGHT};
 
-            // highlight current image
             if(visible){
             if (i == currentIndex) {
-                SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // yellow border
+                SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); 
                 SDL_RenderDrawRect(renderer, &rect);
             }
 
             SDL_RenderCopy(renderer, thumbnails[i]->getTexture(), NULL, &rect);
         }
-            thumbX += THUMB_WIDTH + THUMB_PADDING; // spacing
+            thumbX += THUMB_WIDTH + THUMB_PADDING; 
 
             thumbnails[i]->setCords(thumbX, thumbY);
 
@@ -612,8 +666,6 @@ class CThumbnailGroup{
 
         FCords =thumbnails[0]->gerCords();
         LCords =thumbnails.back()->gerCords();
-        //int gx=thumbnails[0]->getX();
-       // std::cout<<gx<<std::endl;
     }
 
     void setWindowDecorationY(int y){
@@ -626,9 +678,6 @@ class CThumbnailGroup{
         for(uint64_t i=0; i<size; i++){
                 //
             Cordinates cordtemp=thumbnails[static_cast<uint64_t>(i)]->gerCords();
-            //cordtemp.x-=THUMB_WIDTH;
-            //labels[i]->Render({cordtemp.x,cordtemp.y+20},std::to_string(i+1)+"/"+std::to_string(size));
-            //buttons[i]->setText(std::to_string(i+1)+"/"+std::to_string(size));
             buttons[i]->Render(cordtemp.x-THUMB_WIDTH-THUMB_PADDING,cordtemp.y-static_cast<int>(Yelevation)+WindowDecorationY,THUMB_WIDTH,THUMB_HEIGHT);
 
         }
@@ -638,10 +687,8 @@ class CThumbnailGroup{
 
     void UpdateYelevation(float target,float speed, float dt)
     {
-        //float speed = 5.0f; // higher = faster interpolation
         float t = dt * speed;
 
-        // Clamp t so it doesn't overshoot
         if (t > 1.0f) t = 1.0f;
 
         Yelevation = Yelevation + ((target) - Yelevation) * t;
@@ -650,20 +697,12 @@ class CThumbnailGroup{
     bool CheckThumbnailPress(int winW,int winH,float dt,int mx,int my,CCursor::cursorType & cursor){
          if(buttons.empty()) return false;
         
-         //std::cout<<"butn "<<buttons.size()<<" \n";
          for(uint64_t i=0;i<buttons.size();i++){
-            //int x=buttons[i]->getX();
-            //int y=buttons[i]->getY();
-            // std::cout<<"CheckIfHover start \n ";
             if(buttons[i]->CheckIfHover(mx,my,dt)){
 
-               // std::cout<<"CheckIfHover true start \n ";
                 cursor=CCursor::Hand;
                 thumb_name->Render(mx, my+20, winW, winH, thumbnails[i]->getName());
-                //thumb_name->Render(mx, my+20, winW, winH, "-");
-                //return true;
             }
-            // std::cout<<"CheckIfHover end \n ";
 
          }
          return false;
@@ -673,8 +712,6 @@ class CThumbnailGroup{
          if(buttons.empty()) return -1;
 
          for(uint64_t i=s;i<(e<0?buttons.size():e);i++){
-            //int x=buttons[i]->getX();
-            //int y=buttons[i]->getY();
             buttons[i]->setMouseLocation(mx, my);
             if(buttons[i]->CheckIfClicked()){
 
@@ -690,20 +727,18 @@ class CThumbnailGroup{
     }
 
     void drawBackground(){
-        //if(!visible) return;
-         thumbX = INIT_THUMB_X-scrollOffset*(THUMB_PADDING+THUMB_WIDTH); // start padding
+         thumbX = INIT_THUMB_X-scrollOffset*(THUMB_PADDING+THUMB_WIDTH);
          thumbY = INIT_THUMB_Y;
 
         SDL_Rect bgThumBox;
-        bgThumBox.x = thumbnails[0]->getX()-INIT_THUMB_X/2-THUMB_WIDTH-THUMB_PADDING; // small padding
+        bgThumBox.x = thumbnails[0]->getX()-INIT_THUMB_X/2-THUMB_WIDTH-THUMB_PADDING; 
         bgThumBox.y = -static_cast<int>(Yelevation)+WindowDecorationY;
 
         bgThumBox.w = ((static_cast<int>(thumbnails.size())*(THUMB_WIDTH+INIT_THUMB_X))-INIT_THUMB_X)+(INIT_THUMB_X/2)*2;
-        //bgThumBox.w = thumbnails[thumbnails.size()-1].getX()+THUMB_WIDTH;//
         bgThumBox.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbnails[0]->getY();
        if(visible){
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150); // black with 150/255 alpha
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150); 
         SDL_RenderFillRect(renderer, &bgThumBox);
     }
 
@@ -716,23 +751,18 @@ class CThumbnailGroup{
 
         int thumbcurrentIndex=static_cast<int>(currentIndex)-scrollOffset;
         SDL_Rect bgThumSel;
-        //bgThumSel.x = (THUMB_PADDING+THUMB_WIDTH)*(thumbcurrentIndex)+INIT_THUMB_X/2; // sel start
         bgThumSel.x =  thumbnails[currentIndex]->getX()-THUMB_WIDTH-THUMB_PADDING*2;
         bgThumSel.y = -static_cast<int>(Yelevation)+WindowDecorationY;
         CindCords.x=bgThumSel.x;
         CindCords.y=bgThumSel.y;
 
-        if( bgThumSel.x<0){
-           // scrollOffset--;
-
-        }
 
         bgThumSel.w = THUMB_WIDTH+THUMB_PADDING*2;
         bgThumSel.h = THUMB_HEIGHT+INIT_THUMB_Y+thumbY;
 
         if(visible) {
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 150); // black with 150/255 alpha
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 150); 
         SDL_RenderFillRect(renderer, &bgThumSel);
         }
 
@@ -741,15 +771,10 @@ class CThumbnailGroup{
 
 
     bool ReplaceThumbnailsAround() {
-        //return false;
         bool all_loaded=true;
         int around_size=thumb_showing*2 ;
       if(DEBUG)  std::cout << "Trying Replace Around "<<thumb_showing*2 <<"  "<<currentIndex<<"\n";
-      //std::cout<<"be for"<<std::endl;
-        //for(int i=(currentIndex-around_size>0)?currentIndex-around_size:0; i<currentIndex+around_size;i++){
         for (int i = static_cast<int>(currentIndex) - thumb_showing; i <=  static_cast<int>(currentIndex) + thumb_showing ; i++){
-            //std::cout << "Trying Replace "<<i<<"\n";
-            // std::cout<<"in for"<<std::endl;
            
             if(i<0 || i>thumbnails.size()-1) continue;
 
@@ -757,7 +782,6 @@ class CThumbnailGroup{
             
             thumbnails[static_cast<uint64_t>(i)]->LoadThumbnailImage(imageFiles[i],renderer);
             }else{
-            //ReplaceThumbnailWithImage(i,imageFiles[i],renderer,thumbnails,Loadedthumbnails);
             
             if(!Images->IsSurfaceOfIndexReady(static_cast<uint64_t>(i))&&!Images->getQueuedImage(i)) all_loaded=false;
             if((!Images->IsSurfaceOfIndexReady(static_cast<uint64_t>(i))&&Images->getQueuedImage(i)) || thumbnails[static_cast<uint64_t>(i)]->isLoaded())continue;
@@ -772,19 +796,16 @@ class CThumbnailGroup{
 
     bool ReplaceThumbnailsAround(int ind
     ,int temp_thumb_showing) {
-        //return false;
         if(ind<0) return false;
         bool all_loaded=true;
         int around_size=temp_thumb_showing*2 ;
        if(DEBUG) std::cout << "Trying Replace Around "<<temp_thumb_showing*2 <<"  "<<ind<<"\n";
-        for(int i=(ind-around_size>0)?ind-around_size:0; i<ind+around_size;i++){
-            //std::cout << "Trying Replace "<<i<<"\n";
+        for (int i = static_cast<int>(currentIndex) - thumb_showing; i <=  static_cast<int>(currentIndex) + thumb_showing ; i++){
             if(i<0 || i>thumbnails.size()-1) continue;
 
             if(THUMBNAIL_ASYNCLOADING){
             thumbnails[static_cast<uint64_t>(i)]->LoadThumbnailImage(imageFiles[static_cast<uint64_t>(i)],renderer);
             }else{
-            //ReplaceThumbnailWithImage(i,imageFiles[i],renderer,thumbnails,Loadedthumbnails);
             
             if(!Images->IsSurfaceOfIndexReady(static_cast<uint64_t>(i))) all_loaded=false;
             if(!Images->IsSurfaceOfIndexReady(static_cast<uint64_t>(i)) || thumbnails[static_cast<uint64_t>(i)]->isLoaded())continue;
@@ -799,56 +820,35 @@ class CThumbnailGroup{
 
     void Render(int &winH,int &winW,int mx,int my,float dt,CCursor::cursorType & cursor){
 
-         //std::cout<<"Render call"<<std::endl;
         
         
-          // std::cout<<"ASYNC call"<<std::endl;
         if(THUMBNAIL_ASYNCLOADING)
         for(int i=0; i<thumbnails.size(); i++){
         thumbnails[i]->Update(renderer);
     
       }
 
-       //std::cout<<"ASYNC exit"<<std::endl;
 
 
-     // std::cout<<"BACK call"<<std::endl;
         drawBackground();
-        // std::cout<<"BACK exit"<<std::endl;
       
        
-        //std::cout<<"PRESS call"<<std::endl;
        
-        //std::cout<<"PRESS exit"<<std::endl;
 
 
-      // std::cout<<"ScrollPr call"<<std::endl;
         scrollProgressBack->Render(Cordinates{0,WindowDecorationY+drawProgressH},Cordinates{winW,10});
-        // std::cout<<"ScrollPr exit"<<std::endl;
 
-       // std::cout<<"drawProgressCon call"<<std::endl;
         if(visible)drawProgressCon(scrollOffsetProgress, scrollOffset, winW);
-       //  std::cout<<"drawProgressCon exit"<<std::endl;
         
-        //  std::cout<<"scrollProgress call"<<std::endl;
         drawProgress(scrollProgress, currentIndex, winW);
-       // std::cout<<"scrollProgress exit"<<std::endl;
 
-       //   std::cout<<"drawSelection call"<<std::endl;
         drawSelection();
-      //  std::cout<<"drawThumbnails call"<<std::endl;
-       //std::cout<<"Render A"<<std::endl;
         drawThumbnails(winW, winH);
-       // std::cout<<"Render B"<<std::endl;
 
         
-       //  std::cout<<"drawLabels call"<<std::endl;
         drawLabels();
-       // std::cout<<"Render C"<<std::endl;
         CheckThumbnailPress(winW,winH,dt,mx,my,cursor);
 
-       //   std::cout<<"Render exit"<<std::endl;
-     // std::cout<<"Render Exit"<<std::endl;
     }
 
    
@@ -859,7 +859,6 @@ class CThumbnailGroup{
         float scWidth=(1.0f/size)*m;
 
         if (scWidth<5) scWidth=5;
-       // std::cout<<"---------------- scCordx    "<<scCordx<<std::endl;
         s->Render(Cordinates{static_cast<int>(scCordx),WindowDecorationY+drawProgressH},Cordinates{static_cast<int>(scWidth),drawProgressH});
 
 
@@ -893,7 +892,6 @@ class CThumbnailGroup{
         if(FCords.x>THUMB_WIDTH && n<0)
             return;
         
-        //currentIndex+=n;
         scrollOffset+=n;
         ReplaceThumbnailsAround(scrollOffset,thumb_showing);
         
@@ -905,7 +903,6 @@ class CThumbnailGroup{
           if((my<=WindowDecorationY+drawProgressH && my>=WindowDecorationY )&&(mx>=0 && mx<=wW)){
                 int new_scrollOffset=(static_cast<float>(mx)/static_cast<float>(wW))*size;
 
-                        //std::cout<<"press on bar "<<(float)mx/winW<<std::endl;
                         if(new_scrollOffset!=scrollOffset){
                         scrollOffset=new_scrollOffset;
                         ReplaceThumbnailsAround(scrollOffset,thumb_showing);
@@ -927,7 +924,7 @@ class CThumbnailGroup{
          for (size_t i = 0; i < size; i++) {
 
 
-            t_thumbX += THUMB_WIDTH + THUMB_PADDING; // spacing
+            t_thumbX += THUMB_WIDTH + THUMB_PADDING;
 
 
 
@@ -961,7 +958,6 @@ class CThumbnailGroup{
         int64_t temp_index=static_cast<int64_t>(currentIndex)+n;
 
       if(DEBUG) std::cout<<"NextThumbnail call "<<size<<std::endl;
-        // currentIndex+=n;
 
          if(temp_index<0) {
             temp_index=size-1;
@@ -976,10 +972,7 @@ class CThumbnailGroup{
          temp_index=temp_index%size;
 
         if(DEBUG) std::cout<<"NextThumbnail call ce "<<temp_index<<std::endl;
-        //scrollOffset=currentIndex;
-        //MoveScrollTo(currentIndex,wW,wH);
          if(CindCords.x>wW-THUMB_WIDTH*2 && n>0){
-                //scrollOffset+=n;
                 UpdateScrollOffset(n,wW,wH);
          }
 
@@ -1015,7 +1008,6 @@ class CThumbnailGroup{
         for(uint64_t i=0;i<buttons.size();i++){
 
             buttons[i]->setEnabled(b);
-            //buttons[i].se
         }
     }
     bool getVisibility(){return visible;}
@@ -1025,15 +1017,11 @@ class CThumbnailGroup{
 
      
         thumbnails.push_back(std::make_unique<CThumbnail>(renderer,size));
-        //thumbnails.back()->
         imageFiles.push_back(path);
-        //
         buttons.push_back(std::make_unique<CButton>(" ",renderer,Cordinates{0,0},true,true,true,font,SDL_Color{255,255,255,255}));
         buttons.back()->setnColor({0,0,0,0});
         buttons.back()->sethColor({255,255,255,128});  
-        //
         size+=1;
-       // ReplaceThumbnailsAround();
          thumbnails.back()->LoadThumbnailImage(imageFiles.back(),renderer);
   
 

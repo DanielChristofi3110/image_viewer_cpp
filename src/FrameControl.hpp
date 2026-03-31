@@ -77,7 +77,6 @@ class CFrameControl{
     }
     int estimateFrameDelat(int mfps){
         int dfps=mfps;
-         //std::cout<<"sss\n";
          if(!enabled) return 1000/dfps;
 
         if (WindowActive){

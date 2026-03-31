@@ -12,7 +12,8 @@
 #include "GUI.hpp"
 #include "Cursor.hpp"
 
-
+// not used
+// WindowDecorations for borderless wayland issues
 class CWindowDecorations{
 
     
@@ -37,8 +38,6 @@ class CWindowDecorations{
 
     public :
 
-    //Clabel(const std::string txt, SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
-    //CButton(const std::string& text,SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
 
     CWindowDecorations(SDL_Renderer * r,TTF_Font *f,bool e,SDL_Color c){
         enabled=e;
@@ -72,17 +71,14 @@ class CWindowDecorations{
         closeButton->Render(winW-closeButton->getW(),Y);
        if( closeButton->CheckIfHover(mouseX, mouseY, dt)) cursor = CCursor::Hand;
 
-        //maximizeButton->setText("Max");
         maximizeButton->Render(closeButton->getX()-maximizeButton->getW(),Y+2);
        if(  maximizeButton->CheckIfHover(mouseX, mouseY, dt)) cursor = CCursor::Hand;
 
-       // minimizeButton->setText("Min");
         minimizeButton->Render(maximizeButton->getX()-minimizeButton->getW(),Y+5);
        if( minimizeButton->CheckIfHover(mouseX, mouseY, dt))cursor = CCursor::Hand;
 
 
 
-       // settingsButton->setText("Set");
         settingsButton->Render(0,Y);
         if( settingsButton->CheckIfHover(mouseX, mouseY, dt))cursor = CCursor::Hand;;
 

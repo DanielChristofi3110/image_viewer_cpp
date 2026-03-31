@@ -7,7 +7,7 @@
 
 
 
-
+//background  
 class CBackground {
 
 private:

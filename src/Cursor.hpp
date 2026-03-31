@@ -1,7 +1,6 @@
 #pragma once
 #include "globals.hpp"
 #include "image.hpp"
-// #include "GUI.hpp"
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>

@@ -13,8 +13,9 @@
 #include "globals.hpp"
 
 
-class CConfigLoader
-{
+
+//config loader
+class CConfigLoader{
 private:
     std::string fontName;
     std::string version;
@@ -49,7 +50,6 @@ public:
 
 
          if(DEBUG) std::cout <<filename.c_str()<< "\n";
-        // If file doesn't exist → create default
         if (!std::filesystem::exists(filename))
         {
             std::cout << "Config not found. Creating default config...\n";
@@ -82,12 +82,6 @@ public:
         long mcG= ini.GetLongValue("theme", "MainG", 255);
         long mcB= ini.GetLongValue("theme", "MainB", 255);
 
-        // if(  ver APP_VERSION){
-        //     version=APP_VERSION;
-        //     setDefaults();
-        //     return save(filename);
-
-        // }
 
         mainColor= {static_cast<Uint8>(mcR),static_cast<Uint8>(mcG),static_cast<Uint8>(mcB),255};
         fontName = name;
@@ -108,7 +102,6 @@ public:
         CSimpleIniA ini;
         ini.SetUnicode();
 
-        // Ensure directory exists
         std::filesystem::create_directories(
             std::filesystem::path(filename).parent_path()
         );
@@ -135,7 +128,7 @@ public:
         return rc >= 0;
     }
 
-    // --- getters ---
+    // getters
     const std::string& getFontName() const { return fontName; }
     int getFontSize() const { return fontSize; }
     int getidleFps() const { return idleFps; }
@@ -147,7 +140,7 @@ public:
     SDL_Color getMainColor()const {return mainColor;}
     bool getSingle_image_load() const{return single_image_load;}
 
-    // --- setters ---
+    // setters 
     void setFontName(const std::string& v) { fontName = v; }
     void setFontSize(int v) { fontSize = v; }
     void setIdleFps(int v) { idleFps = v; }
@@ -160,6 +153,7 @@ public:
       void setSingle_image_load (bool v) { single_image_load = v; }
 };
 
+//Ui config
 class CConfigEditorGUI{
     private:
     SDL_Renderer * renderer;
@@ -198,10 +192,6 @@ class CConfigEditorGUI{
     public:
 
 
-    // Clabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,TTF_Font * f){
-    // CTextBox(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
-    // CButton(const std::string& text,SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
-    //CDropDown(Cordinates c,SDL_Renderer* r,bool db, bool abs,bool v,TTF_Font * f){
     CConfigEditorGUI(SDL_Renderer *r,TTF_Font * f,  std::shared_ptr<CConfigLoader> _cfg){
 
         renderer=r;
@@ -229,25 +219,16 @@ class CConfigEditorGUI{
 
 
 
-    // FieldName.push_back(("Test1"));
-    // FieldName.push_back(("Test2"));
-    // FieldName.push_back(("Test3")); 
 
-
-    //labels.push_back((std::make_unique<Clabel>(r,Cordinates{300,300},true,true,f)));
-    //labels[0]->setText("Font Type:");
     for(uint64_t i=0;i<FieldName.size() ;i++){
         labels.push_back((std::make_unique<Clabel>(r,Cordinates{300,300},true,true,f)));
         TextBoxes.push_back((std::make_unique<CTextBox>(r,Cordinates{200,200},true,true,true,f,SDL_Color{255,255,255,255})));
-        //TextBoxes[i]->setText("std::string s");
         TextBoxes.back()->textType=CTextBox::NumOnly;
     }
 
-   // TextBoxes[0]->textType=CTextBox::TextOnly;
 
     }
     void loadFromConfig(){
-           // TextBoxes[0]->setText(cfg->getFontName());
             FontSelectorDropDown->setCurrentSelectionByString(cfg->getFontName());
             TextBoxes[0]->setText(std::to_string(cfg->getFontSize()));
             TextBoxes[1]->setText(std::to_string(cfg->getidleFps()));
@@ -304,12 +285,6 @@ class CConfigEditorGUI{
 
     }
 
-    // "Font Name", 0
-    // "Font Size", 1
-    // "Idle FPS", 2
-    // "Async Loading", 3
-    // "Unload At", 4
-    // "Max Image Queue" 5
     void checkIfButtonClick(int mx,int my,const std::string& filename){
 
         FontSelectorDropDown->CheckIfClickedCurrentSelection(mx, my);
@@ -343,7 +318,6 @@ class CConfigEditorGUI{
        ExitButton->setMouseLocation(mx, my); 
        if( ExitButton->CheckIfClicked()){
         if(DEBUG) std::cout<<"ExitPressConf"<<std::endl;
-        //visible=false;
         enabled=false;
     }
 

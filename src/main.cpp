@@ -136,8 +136,6 @@ int main(int argc, char* argv[]) {
     #endif
     #endif
 
-    //SDL_SetHint(SDL_HINT_VIDEODRIVER, "x11");//nowayland
-    //SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_PREFER_LIBDECOR, "1");
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG);
     SDL_Surface* icon = IMG_Load((resDir+"/resources/images/iconimage.png").c_str());
@@ -232,8 +230,6 @@ int main(int argc, char* argv[]) {
      ConfigEditorGUI.loadFromConfig();
      ConfigEditorGUI.setEnabled(false);
     if(DEBUG) std::cout<<"------------------Loaded font-----------------------"<<std::endl;
-    //int thumb_proc_ind = 0;
-    //const int imageFiles_size = imageFiles.size();
 
  //Canvas
 
@@ -245,7 +241,6 @@ int main(int argc, char* argv[]) {
     bool running = true;
     bool fullscreen = false;
     bool dragging = false;
-   // bool window_dragging=true;
 
     int winW, winH;
     SDL_Event event;
@@ -279,7 +274,6 @@ int main(int argc, char* argv[]) {
                 if (event.type == SDL_DROPFILE) {
                 droppedPath = std::make_unique<std::filesystem::path>(event.drop.file);
 
-                //std::cout << "File dropped: " << droppedPath << std::endl;
 
 
                 
@@ -294,14 +288,11 @@ int main(int argc, char* argv[]) {
         
 
         SDL_RenderClear(renderer);
-        //SDL_GetRendererOutputSize(renderer, &winW, &winH);
         initBackImage->Render(winW,winH);
         dropImageLabel.Render(Cordinates{winW/2 -100,winH/2});
-        //dropImageLabel.Render(Cordinates{100,100});
         
         SDL_RenderPresent(renderer);
          Uint32 frameTime = SDL_GetTicks() - frameStart;
-        //int frameDelay=estimateFrameDelat(DES_FPS);
         int frameDelay=FrameControl.estimateFrameDelat(1);
             if (frameDelay > frameTime) {
                 SDL_Delay(frameDelay - frameTime);
@@ -327,30 +318,21 @@ int main(int argc, char* argv[]) {
     }
    running=true;
  
-    //initBackImage.release();
-    //std::cout<<"AAAA"<<std::endl;
   
-    // image load f
-    //const char * p= droppedPath.string().c_str();
     CFileScanner FileScanner(std::move(droppedPath),1,ConfigLoader->getSingle_image_load());
 
-    // std::cout<<"------------------Images Loaded-----------------------"<<std::endl;
   
-    // std::cout<<"------------------Images Sorted-----------------------"<<std::endl;
 
     int currentIndex = 0;
 
-    //int thumbcurrentIndex=0;
   
     currentIndex=FileScanner.getInitCurrentIndex();
   
-    //CImages Images(renderer,imageFiles,currentIndex,winW,winH);
     std::shared_ptr<CImages> Images = std::make_shared<CImages>(renderer,FileScanner.getImageFiles(),currentIndex,winW,winH);
 
     
 
     CWindowDecorations WindowDecorations(renderer,font,BORDERLESS,ConfigLoader->getMainColor());
-    //Images->setCurrentImageWindowDecorationY(WindowDecorations.getH());
     WindowDecorations.SetCloseSVG(resDir+"/resources/vector/Close.svg");
     WindowDecorations.SetMaximizeSVG(resDir+"/resources/vector/Maximize.svg");
     WindowDecorations.SetMinimizeSVG(resDir+"/resources/vector/Minimize.svg");
@@ -375,9 +357,6 @@ int main(int argc, char* argv[]) {
    
 
 
-    // Clabel RotateLeftLabel(renderer,{400,400},true,true,font);
-    // RotateLeftLabel.LoadSVGtoLabel((resDir+"/resources/vector/RotateLeft.svg").c_str(),0.03f);
-    // RotateLeftLabel.setIconPositionLeft();
 
     CButton RotateLeftButton("R",renderer,{400,400},true,true,true,font,{255,255,255,255});
     RotateLeftButton.setSvgIcon((resDir+"/resources/vector/RotateLeft.svg").c_str(), true,ConfigLoader->getMainColor(),0.03f);
@@ -391,13 +370,9 @@ int main(int argc, char* argv[]) {
     PenButton.setSvgIcon((resDir+"/resources/vector/Pen.svg").c_str(), true,ConfigLoader->getMainColor(),0.03f);
     
     CButton PenColorButton("Change Color Right Click",renderer,{400,400},true,true,true,font,{255,255,255,255});
-    //PenButton.setSvgIcon((resDir+"/resources/vector/Pen.svg").c_str(), true,0.03f);
 
 
 
-    // Clabel RotateRightLabel(renderer,{400,400},true,true,font);
-    // RotateRightLabel.LoadSVGtoLabel((resDir+"/resources/vector/RotateRight.svg").c_str(),0.03f);
-    // RotateRightLabel.setIconPositionLeft();
 
 
 
@@ -436,27 +411,22 @@ int main(int argc, char* argv[]) {
     debugline2img.setBackgroundColor({0,255,255,255});
 
     std::shared_ptr<CButton> NextImageRightButton =  std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
-   // CButton NextImageRightButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
     NextImageRightButton->setSvgIcon((resDir+"/resources/vector/ArrowRight.svg").c_str(),false,ConfigLoader->getMainColor(),0.06f);
 
 
 
     std::shared_ptr<CButton> NextImageLeftButton =  std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
-    //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
     NextImageLeftButton->setSvgIcon((resDir+"/resources/vector/ArrowLeft.svg").c_str(),false,ConfigLoader->getMainColor(),0.06f);
 
 
      std::shared_ptr<CButton> FullscreenButton = std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
-    //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
      FullscreenButton->setSvgIcon((resDir+"/resources/vector/Fullscreen.svg").c_str(),false,ConfigLoader->getMainColor(),0.06f);
 
 
 
     std::shared_ptr<CButton> OptionsButton = std::make_shared<CButton>("",renderer,Cordinates{200,200},true,true,true,font,SDL_Color{64,255,64,255});
-    //CButton NextImageLeftButton("",renderer,{200,200},true,true,true,font,{64,255,64,255});
      OptionsButton->setSvgIcon((resDir+"/resources/vector/Options.svg").c_str(),false,ConfigLoader->getMainColor(),0.06f);
 
-    //  Clabel(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
     CAnimatedlabel AnimLabelOnCopy(renderer,{0,0},true,true,true,font,{0,255,0,255},2,"Copied to clipboard");
 
     CButtonHbox ButtonsHbox;
@@ -470,7 +440,6 @@ int main(int argc, char* argv[]) {
  
 
     CBackground background(renderer);
-    //SDL_Texture* backgroundTexture = CreateRadialGradientTexture(renderer, winW, winH,{0,0,0,255});
 
 
     Uint32 lastTime = SDL_GetTicks();
@@ -493,13 +462,11 @@ int main(int argc, char* argv[]) {
     CCursor::cursorType CursorType ;
 
     CMouseLabel MouseLable(renderer,{0,0},true,true,true,font,{0,255,0,255});
- //    CTextBox(SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
     CTextBox TextTextBox(renderer,{400,400},true,true,true,font,{0,0,0,0});
     
    
 
 
-    //current
 
    
     
@@ -508,7 +475,6 @@ int main(int argc, char* argv[]) {
     bool DrawingMode=false;
     int drawingThickness=1;
     bool single_image=ConfigLoader->getSingle_image_load();
-    //Canvas.setPenInvertedColor({255,255,255,255});
     
     while (running) {
 
@@ -526,7 +492,6 @@ int main(int argc, char* argv[]) {
 
 
 
-        //DES_FPS=10;
         FrameControl.makeAllFalse();
         FrameControl.setDrawingMode(DrawingMode);
         int displayIndex = SDL_GetWindowDisplayIndex(window);
@@ -543,9 +508,7 @@ int main(int argc, char* argv[]) {
             DES_FPS=10;
         }
 
-        //FrameControl.setWindowActive(windowActive)
         FrameControl.setScrolling(dragging);
-        //FrameControl.setWindowActive(windowActive);
        
     
         
@@ -564,9 +527,7 @@ int main(int argc, char* argv[]) {
         
 
 
-        //std::cout<<"c image cordy "<<Images->getCurrentImageCords().y<<std::endl;
       if(imageToCenter){
-       // Images->CenterCurrentImage(1000,700);
         imageToCenter=false;
 
       }
@@ -577,8 +538,6 @@ int main(int argc, char* argv[]) {
         zoom=Images->getCurrentImageZoom();
         
         Cordinates c=Images->getCurrentImageCords();
-       // Images->setCurrentImageCords({c.x,c.y+WindowDecorations.getH()});
-        //c=Images->getCurrentImageCords();
         offsetX=static_cast<float>(c.x);
         offsetY=static_cast<float>(c.y);
      
@@ -598,7 +557,6 @@ int main(int argc, char* argv[]) {
 
 
 
-        // ---- Render info text (with black background)
         std::string info = "File: " + std::string(FileScanner.getImageFile(currentIndex)) +
         "  Size: " + std::to_string(Images->getCurrentImageW()) + "x" + std::to_string(Images->getCurrentImageH()) +
         "  Zoom: " + std::to_string(static_cast<int>(std::floor(zoom*100))) + "%";
@@ -610,19 +568,15 @@ int main(int argc, char* argv[]) {
             hide_ui=true;
             thumbgroup.setVisibility(false);
         }
-        //hide_ui=ConfigLoader->getHIDE_UI();
         FileLabel.setVisibility(!hide_ui);
         TimeLabel.setVisibility(!hide_ui);
         ResolutionLabel.setVisibility(!hide_ui);
         ZoomLabel.setVisibility(!hide_ui);
-       // RotateRightLabel.setVisibility(!hide_ui);
-        //RotateLeftLabel.setVisibility(!hide_ui);
         PenButton.setEnabled(!hide_ui);
         PenColorButton.setEnabled(DrawingMode&&!hide_ui);
         RotateRightButton.setEnabled(!hide_ui);
         RotateLeftButton.setEnabled(!hide_ui);
         UnhideTipLabel.setVisibility(hide_ui);
-        //thumbgroup.setVisibility(!hide_ui);
 
 
          
@@ -695,7 +649,6 @@ int main(int argc, char* argv[]) {
             FrameControl.setMouseOnButton(RotateRightButton.CheckIfHover(mouseX,mouseY,deltaTime));
             FrameControl.setMouseOnButton(FullscreenButton->CheckIfHover(mouseX,mouseY,deltaTime));
             FrameControl.setMouseOnButton(OptionsButton->CheckIfHover(mouseX,mouseY,deltaTime));
-            //if(mouseY!=lastMouseY)
             FrameControl.setMouseOnThmbnails(mouseY<THUMB_WIDTH&&windowActive);
 
             if((mouseY<THUMB_WIDTH+WindowDecorations.getH())&&windowActive&&!single_image){
@@ -707,7 +660,6 @@ int main(int argc, char* argv[]) {
             }
 
             if(FrameControl.getMouseOnButton()) CursorType=CCursor::Hand;
-             //if(FrameControl.getMouseOnButton()) CursorType=CCursor::Hand;
             if(mouseY>=WindowDecorations.getH() && mouseY<=thumbgroup.getDrawProgressH()+WindowDecorations.getH()){
                 MouseLable.Render(mouseX,mouseY,winW,winH,(std::to_string(1+static_cast<int>(std::floor((static_cast<float>(mouseX)/static_cast<float>(winW))*static_cast<float>(thumbgroup.getSize()))))+"/"+std::to_string(thumbgroup.getSize())));
                 CursorType=CCursor::SizeWE;
@@ -720,10 +672,6 @@ int main(int argc, char* argv[]) {
             
               WindowDecorations.Render(winW, winH, mouseX, mouseY, deltaTime,CursorType);
 
-            // if(mouseY>WindowDecorations.getH()){
-
-            //     window_dragging=false;
-            // }
         }
         PenButton.Render(0,ZoomLabel.getNexty()-ZoomLabel.getLabelH()*2);
         RotateRightButton.Render(0,PenButton.getY()-PenButton.getH());
@@ -732,15 +680,12 @@ int main(int argc, char* argv[]) {
         PenColorButton.setnColor({Canvas.getCurrentPenColor().r,Canvas.getCurrentPenColor().g,Canvas.getCurrentPenColor().b,128});
         PenColorButton.sethColor(Canvas.getCurrentPenColor());
 
-       // NextImageRightButton->Render(winW/2,winH-NextImageRightButton->getH());
-        //NextImageLeftButton->Render(winW/2-NextImageLeftButton->getW(),winH-NextImageLeftButton->getH());
         ButtonsHbox.Render( winW/2, winH);
         OptionsButton->Render(winW-OptionsButton->getW(),winH-OptionsButton->getH());
         {
 
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
-            //ConfigEditorGUI.setEnabled(ConfEdit)
             ConfigEditorGUI.Render(winW, winH, mouseX, mouseY,deltaTime,CursorType);
         }
        
@@ -757,9 +702,6 @@ int main(int argc, char* argv[]) {
 
              if (event.type == SDL_TEXTINPUT) {
                 if(Typing){
-                //ttext += event.text.text;
-               // std::cout<<"Tiped "<<ttext<<std::endl;
-                //TextTextBox.appendtText(event.text.text);
                 ConfigEditorGUI.AddTextToTyping(event.text.text);
                 }
         }
@@ -790,11 +732,9 @@ int main(int argc, char* argv[]) {
                Images->CenterCurrentImage(winW,winH);
      
 
-                //thumbgroup.setThumbShowing(thumb_showing);
                 thumbgroup.ReplaceThumbnailsAround();
                 thumbgroup.UlnoanLoad();
 
-               // FrameControl.ResetCoolDown();
                 FrameControl.ResetCoolDown(0.2f);
 
             }
@@ -816,7 +756,6 @@ int main(int argc, char* argv[]) {
                 if (event.key.keysym.sym == SDLK_ESCAPE)
                     running = false;
 
-                //disable on typing
                 if(!Typing){
                     SDL_StopTextInput();
                 if (event.key.keysym.sym == SDLK_f ) {
@@ -828,7 +767,6 @@ int main(int argc, char* argv[]) {
                     thumbgroup.UlnoanLoad();
 
                     FrameControl.ResetCoolDown();
-                    //FrameControl.ResetCoolDown(0.2f);
                 }
 
                 if (event.key.keysym.sym == SDLK_r && (event.key.keysym.mod & KMOD_LSHIFT)) {
@@ -840,9 +778,6 @@ int main(int argc, char* argv[]) {
                        Canvas.clear();
                 }
                 if (event.key.keysym.sym == SDLK_c && (event.key.keysym.mod & KMOD_CTRL)) {
-                    //std::cout<<"Copy to clipboard init"<<std::endl;
-               
-                   // std::cout<<"good"<<std::endl;
                     
                     if(Images->getCurrentImageSurface()) {Clipboard.copyImageToClipboard(Images->getCurrentImageSurface());
                     AnimLabelOnCopy.ResetTimer();
@@ -855,7 +790,6 @@ int main(int argc, char* argv[]) {
                     hide_ui=!hide_ui;
                 }
                 if (event.key.keysym.sym == SDLK_SPACE) {
-                    //free_mode=!free_mode;
                   if(DEBUG)   std::cout<<"free: "<<free_mode<<std::endl;
 
 
@@ -883,21 +817,14 @@ int main(int argc, char* argv[]) {
                 }else{
                    
                     if (event.key.keysym.sym == SDLK_BACKSPACE) {
-                        //TextTextBox.popText();
                         ConfigEditorGUI.POPTextToTyping();
 
                     }
 
                 }
-                // if (event.key.keysym.sym == SDLK_o) {
-                //         //TextTextBox.popText();
-                //         ConfigEditorGUI.setEnabled(! ConfigEditorGUI.isEnabled());
-
-                // }
                 
                 if (event.key.keysym.sym == SDLK_RIGHT) {
                     Loadthumbnails=true;
-                    //int ind=
                     if(DEBUG) std::cout<<"MQ "<<MAXIMAGE_QUEUE<<std::endl;
                     if(!(Images->getQueueSize()>MAXIMAGE_QUEUE)) {
                     Images->NextImage(1,winW,winH);
@@ -913,7 +840,6 @@ int main(int argc, char* argv[]) {
                 }
                 if (event.key.keysym.sym == SDLK_LEFT) {
                     Loadthumbnails=true;
-                    //int ind=
                     if(!(Images->getQueueSize()>MAXIMAGE_QUEUE)) {
                     Images->NextImage(-1,winW,winH);
                     Canvas.clear();
@@ -949,8 +875,6 @@ int main(int argc, char* argv[]) {
                 }
 
                
-               // std::cout << "tmb " <<currentIndex-thumbgroup.getScrollOffset() <<" scroll:"<<thumbgroup.getScrollOffset()<<" ind:"<<currentIndex<<std::endl;
-                //std::cout<<"winW over "<<thumb_showing<<std::endl;
 
 
 
@@ -964,7 +888,6 @@ int main(int argc, char* argv[]) {
             }
 
             if (event.type == SDL_MOUSEWHEEL && DrawingMode) {
-                // Check if Ctrl is held
                 if (SDL_GetModState() & KMOD_CTRL) {
                     drawingThickness += event.wheel.y; // event.wheel.y is +1 or -1 depending on scroll
                     if (drawingThickness < 1) drawingThickness = 1; // prevent negative thickness
@@ -1044,12 +967,10 @@ int main(int argc, char* argv[]) {
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
 
-           // if(mouseY<WindowDecorations.getH()&& mouseY>0){ window_dragging=true;}
 
             if(DrawingMode)Canvas.StartStroke(static_cast<int>((mouseX - offsetX) / zoom), static_cast<int>((mouseY - offsetY) / zoom),drawingThickness);
 
             Typing=ConfigEditorGUI.isEnabled();
-            //TextTextBox.CheckIfPressed(mouseX,mouseY,Typing);
             ConfigEditorGUI.checkIfAnyTyping(mouseX, mouseY);
             ConfigEditorGUI.checkIfButtonClick(mouseX, mouseY,confDir);
 
@@ -1073,18 +994,14 @@ int main(int argc, char* argv[]) {
 
                 running=false;
             }
-            //SDL_MinimizeWindow(window);
 
             if(WindowDecorations.CheckifMinimizeClick(mouseX,mouseY)){
 
-                //running=false;
                 SDL_MinimizeWindow(window);
             }
              
             if(WindowDecorations.CheckifMaximizeClick(mouseX,mouseY)){
 
-                //running=false;
-                //SDL_MinimizeWindow(window);
                 dragging = false;
                 fullscreen = !fullscreen;
                     SDL_SetWindowFullscreen(
@@ -1095,7 +1012,6 @@ int main(int argc, char* argv[]) {
 
                     FrameControl.ResetCoolDown();
                 SDL_GetRendererOutputSize(renderer, &winW, &winH);
-                //Centerhear
                 imageToCenter=true;
             }
 
@@ -1132,10 +1048,8 @@ int main(int argc, char* argv[]) {
             if(nimg!=-1){
                 dragging=false;
                 Loadthumbnails=true;
-                //int ind=
                 Images->NextImage(nimg-currentIndex,winW,winH);
                 Canvas.clear();
-                //std::cout<<"nimg-currentIndex "<<nimg-currentIndex<<std::endl;
                
 
             }
@@ -1151,7 +1065,6 @@ int main(int argc, char* argv[]) {
 
                     FrameControl.ResetCoolDown();
                 SDL_GetRendererOutputSize(renderer, &winW, &winH);
-                //Centerhear
                 imageToCenter=true;
                 
 
@@ -1166,7 +1079,6 @@ int main(int argc, char* argv[]) {
             if(NextImageRightButton->CheckIfClicked()|| NextImageLeftButton->CheckIfClicked()){
                 dragging=false;
                 Loadthumbnails=true;
-                //int ind=
                 Images->NextImage(NextImageRightButton->CheckIfClicked()?1:-1,winW,winH);
                 Canvas.clear();
                 thumbgroup.NextThumbnail(NextImageRightButton->CheckIfClicked()?1:-1,winW,winH);
@@ -1190,9 +1102,7 @@ int main(int argc, char* argv[]) {
                     event.button.button == SDL_BUTTON_LEFT) {
 
                     Canvas.EndStroke();
-                   // DrawingMode=false;   
                     dragging = false;
-                   // window_dragging=false;
                     }
 
 
@@ -1207,28 +1117,11 @@ int main(int argc, char* argv[]) {
                         lastMouseY = event.motion.y;
                     }
                     
-                    // if (event.type == SDL_MOUSEMOTION && window_dragging) {
-                    //     SDL_RaiseWindow(window);
-                    //     int mx,my;
-                    //     SDL_GetGlobalMouseState(&mx, &my);
-                    //     int dx = mx;
-                    //     int dy = my;
 
-                    //     int wx, wy;
-                    //     SDL_GetWindowPosition(window, &wx, &wy);
-
-                    //     std::cout<<"Window Dragging "<<window_dragging<<" "<<wx<<" "<<dx<<std::endl;
-                    //      SDL_SetWindowPosition(window, mx, mx);
-
-
-                    //     lastMouseX = event.motion.x;
-                    //     lastMouseY = event.motion.y;
-                    // }
 
                 if(event.type==SDL_MOUSEMOTION){
 
                     if(DrawingMode)Canvas.DrawOn(static_cast<int>(( event.motion.x - offsetX) / zoom), static_cast<int>(( event.motion.y - offsetY) / zoom));
-                    //(mouseX-static_cast<int>(offsetX), mouseY-static_cast<int>(offsetY))
                 }
         }
         if(dragging) CursorType=CCursor::SizeAll;
@@ -1238,7 +1131,6 @@ int main(int argc, char* argv[]) {
         Uint32 currentTime = SDL_GetTicks();
      
         Uint32 frameTime = SDL_GetTicks() - frameStart;
-        //int frameDelay=estimateFrameDelat(DES_FPS);
         Uint32 frameDelay=static_cast<Uint32>(FrameControl.estimateFrameDelat(refreshRate));
             if (frameDelay > frameTime) {
                 SDL_Delay(frameDelay - frameTime);
@@ -1280,18 +1172,7 @@ int APIENTRY WinMain(HINSTANCE, HINSTANCE, LPSTR lpCmdLine, int) {
     int argc = 1; // The first argument is always the program name
     wchar_t** wargv = CommandLineToArgvW(GetCommandLineW(), &argc);
 
-    // if (argc < 2) {
-    //     // Convert the wide string to a narrow string for MessageBox
-    //     const wchar_t* errorMsg = L"Usage: viewer <image_path>";
-    //     int size_needed = WideCharToMultiByte(CP_UTF8, 0, errorMsg, -1, NULL, 0, NULL, NULL);
-    //     char* errorMsgA = new char[size_needed];
-    //     WideCharToMultiByte(CP_UTF8, 0, errorMsg, -1, errorMsgA, size_needed, NULL, NULL);
 
-    //     MessageBoxA(NULL, errorMsgA, "Error", MB_OK | MB_ICONERROR);
-
-    //     delete[] errorMsgA;
-    //     return 1;
-    // }
 
     // Convert the command line arguments from wchar_t** to char**
     char** argv = new char*[argc];

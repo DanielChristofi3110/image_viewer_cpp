@@ -21,7 +21,7 @@
 #include <iostream>
 #include <chrono>
 
-
+namespace fs = std::filesystem;
 
 #ifdef _WIN32
 #define FIX_WINDOWS true
@@ -47,7 +47,7 @@
 
 #define FULL_PRELOAD false
 
-#define THUMBNAIL_ASYNCLOADING true
+#define THUMBNAIL_ASYNCLOADING true //leave true
 
 const int THUMB_WIDTH = 100;
 const int THUMB_HEIGHT = 75;
@@ -55,7 +55,6 @@ const int INIT_THUMB_X = 10;
 const int INIT_THUMB_Y = 10;
 const int THUMB_PADDING = 10;
 
-namespace fs = std::filesystem;
 
 
 struct Cordinates{int x,y;};

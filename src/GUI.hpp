@@ -28,7 +28,7 @@
 
 
 
-
+//label
 class Clabel{
     private:
     Cordinates cords{0,0};
@@ -62,8 +62,6 @@ class Clabel{
                 return nullptr;
             }
 
-            //int width = image->width * scale;
-            //int height = image->height * scale;
             int width  = std::round(image->width * scale);
             int height = std::round(image->height * scale);
 
@@ -71,7 +69,6 @@ class Clabel{
             NSVGrasterizer* rast = nsvgCreateRasterizer();
 
             
-            //unsigned char* img = new unsigned char[width * height * 4];
             std::vector<unsigned char> img(width * height * 4);
 
            
@@ -117,21 +114,18 @@ class Clabel{
 
         nsvgRasterize(rast, image, 0, 0, scale, img.data(), width, height, width * 4);
 
-        // --- Overwrite pixels with solid color ---
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 int idx = (y * width + x) * 4;
 
-                // Keep alpha from the rasterized image (so shape transparency remains)
                 unsigned char alpha = img[idx + 3];
 
-                img[idx + 0] = color.r; // Red
-                img[idx + 1] = color.g; // Green
-                img[idx + 2] = color.b; // Blue
-                img[idx + 3] = alpha;   // Preserve alpha
+                img[idx + 0] = color.r; 
+                img[idx + 1] = color.g; 
+                img[idx + 2] = color.b; 
+                img[idx + 3] = alpha;  
             }
         }
-        // --- Done overwriting ---
 
         SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
             img.data(),
@@ -172,7 +166,6 @@ class Clabel{
 
 
 
-        //setText("test");
 
     }
 
@@ -185,7 +178,6 @@ class Clabel{
         font=f;
         visible=v;
         textColor=tc;
-        //setText("test");
 
 
 
@@ -232,7 +224,6 @@ void setText(const std::string& text){
                 textW = textSurface->w;
                 textH = textSurface->h;
                 SDL_FreeSurface(textSurface);
-                //std::cout<<"Set text"<<textW<<std::endl;
                 if (!textTexture)
                     return;
             }
@@ -248,9 +239,7 @@ void Render()
     if (!font || !renderer) return;
 
 
-    //std::cout<<"Render"<<textW<<std::endl;
 
-// Calculate total width
     int totalWidth = textW;
 
     if (texture)
@@ -261,15 +250,12 @@ void Render()
             totalWidth += iconWidth + spacing;
     }
 
-    // Calculate content height FIRST
     int contentHeight = std::max(textH, texture ? iconHeight : 0);
 
-    // Base Y position AFTER height is known
     int baseY = absoluteCordinates ? cords.y : cords.y - contentHeight;
 
     int currentX = cords.x;
 
-    // -------- Background --------
     if (drawBackground)
     {
         SDL_Rect bgRect;
@@ -286,7 +272,6 @@ void Render()
         SDL_RenderFillRect(renderer, &bgRect);
     }
 
-    // -------- Render LEFT icon --------
     if (texture && iconPosition == IconPosition::LEFT)
     {
         SDL_Rect iconRect;
@@ -300,7 +285,6 @@ void Render()
         currentX += iconWidth + (Text.empty()? 0 : spacing);
     }
 
-    // -------- Render Text --------
     if (textTexture)
     {
         
@@ -315,7 +299,6 @@ void Render()
         currentX += textW + spacing;
     }
 
-    // -------- Render RIGHT icon --------
     if (texture && iconPosition == IconPosition::RIGHT)
     {
         SDL_Rect iconRect;
@@ -342,7 +325,6 @@ void RenderBackground(int width, int height)
     if (!renderer) return;
     if (!drawBackground) return;
 
-    // Base Y position
     int baseY = absoluteCordinates ? cords.y : cords.y - height;
 
     SDL_Rect bgRect;
@@ -367,7 +349,6 @@ void Render(Cordinates c,const std::string& text){
     cords.y=c.y;
     setText(text);
     Render();
-    //std::cout<<"Render label "<<cords.x<<" "<<text<<std::endl;
 
 
 
@@ -379,7 +360,6 @@ void Render(Cordinates c){
     cords.x=c.x;
     cords.y=c.y;
     Render();
-    //std::cout<<"Render label "<<cords.x<<" "<<text<<std::endl;
 
 
 
@@ -391,7 +371,6 @@ void Render(Cordinates c,Cordinates b){
     cords.x=c.x;
     cords.y=c.y;
     RenderBackground(b.x, b.y);
-    //std::cout<<"Render label "<<cords.x<<" "<<text<<std::endl;
 
 
 
@@ -402,7 +381,6 @@ void Render(const std::string& text){
     if(!visible) return;
     setText(text);
     Render();
-    //std::cout<<"Render label "<<cords.x<<" "<<text<<std::endl;
 
 
 
@@ -486,7 +464,7 @@ void setBackgroundColor(SDL_Color c){
 
 
 
-
+//Debug Ui
 class CDebugLabels{
 
     private:
@@ -576,7 +554,7 @@ class CDebugLabels{
 
 };
 
-
+// Button
 class CButton{
 
     private:
@@ -616,7 +594,6 @@ class CButton{
 
     void Render(){
         if(!enabled) return;
-        //std::cout<<"----renderButton"<<std::endl;
         label->Render(cords);
 
 
@@ -638,8 +615,6 @@ class CButton{
         cords.y=y;
         label->setCords(x, y);
 
-       //if(!enabled) return;
-        //std::cout<<"----renderButton"<<std::endl;
         label->Render(cords,Cordinates{w,h});
     }
 
@@ -671,7 +646,6 @@ class CButton{
        if((((cords.x+label->getLabelW())>mouseLoaction.x) && ((cords.x)<mouseLoaction.x)) &&  (((cords.y+label->getLabelH())>mouseLoaction.y) && ((cords.y)<mouseLoaction.y))){
         label->setBackgroundColor({128,128,128,128+64});
 
-        //std::cout<<"----renderButton Click"<<std::endl;
         return true;
        }
     
@@ -687,17 +661,14 @@ class CButton{
         bool b=false;
         
        if((((cords.x+label->getLabelW())>x) && ((cords.x)<x)) &&  (((cords.y+label->getLabelH())>y) && ((cords.y)<y))){
-        //label->setBackgroundColor(hColor);
         Update(dt);
         StartLerp(hColor,0.15f);
          b=true;
         
-       // std::cout<<"----renderButton Click"<<std::endl;
        
        }else {
         Update(dt);
          StartLerp(nColor,0.15f);
-        //label->setBackgroundColor(nColor);
        }
     
 
@@ -791,7 +762,7 @@ class CButton{
 
 
 
-
+//Button Hbox
 class CButtonHbox{
     private:
 
@@ -823,12 +794,10 @@ class CButtonHbox{
             width+=buttons[i]->getW();
         }
 
-        //std::cout<<"x "<<x<<" width x "<<x-width/2<<std::endl;
         float startX = x - width/2;
         float offset = 5;
 
         for (auto &b : buttons) {
-               //std::cout<<"offset "<<offset<<std::endl;
             b->Render(startX + offset, y-b->getH());
             offset += b->getW();
         }
@@ -846,7 +815,7 @@ class CButtonHbox{
 
 
 
-
+//fading label
 class CAnimatedlabel{
     private:
     std::unique_ptr<Clabel> label;
@@ -904,7 +873,7 @@ class CAnimatedlabel{
 };
 
 
-
+// Under Mouse label
 class CMouseLabel{
 
 private:
@@ -944,7 +913,7 @@ void Render(int mouseX,int mouseY,int winW,int winH,const std::string txt){
 
 };
 
-
+// Text Box
 class CTextBox{
     private:
     std::unique_ptr<Clabel> label_back;
@@ -989,10 +958,8 @@ class CTextBox{
 }
 
     void Render(int wW,int wH,int mx,int my ,float dt,CCursor::cursorType & cursor){
-        //cords =Cordinates{}
         if (!visible) return;
 
-        //label_back->Render(cords,Cordinates{100,20});
         label_back->Render(cords,Cordinates{label_text->getLabelW()<100?100:label_text->getLabelW(),20});
         if(CheckIfHover(mx,my,0.f)) cursor =CCursor::IBeam;
         
@@ -1008,10 +975,8 @@ class CTextBox{
     }
 
     void Render(int wW,int wH,int mx,int my ,float dt){
-        //cords =Cordinates{}
         if (!visible) return;
 
-        //label_back->Render(cords,Cordinates{100,20});
         label_back->Render(cords,Cordinates{label_text->getLabelW()<100?100:label_text->getLabelW(),20});
         CheckIfHover(mx,my,0.f);
         
@@ -1085,17 +1050,10 @@ class CTextBox{
         bool b=false;
         
        if((((cords.x+label_back->getLabelW())>x) && ((cords.x)<x)) &&  (((cords.y+label_back->getLabelH())>y) && ((cords.y)<y))){
-        //label->setBackgroundColor(hColor);
-        // Update(dt);
-        // StartLerp(hColor,0.15f);
          b=true;
         
-       // std::cout<<"----renderButton Click"<<std::endl;
        
        }else {
-        // Update(dt);
-        //  StartLerp(nColor,0.15f);
-        //label->setBackgroundColor(nColor);
        }
     
 
@@ -1113,13 +1071,9 @@ class CTextBox{
        
         focused=false;
        if((((cords.x+label_back->getLabelW())>x) && ((cords.x)<x)) &&  (((cords.y+label_back->getLabelH())>y) && ((cords.y)<y))){
-        //label->setBackgroundColor(hColor);
-        // Update(dt);
-        // StartLerp(hColor,0.15f);
          lock=true;
          focused=true;
         
-       // std::cout<<"----renderButton Click"<<std::endl;
        
        }
     }
@@ -1143,27 +1097,12 @@ class CTextBox{
     }
 
 
-    //  bool CheckIfClicked(){
 
-    //     if(!clickable || !enabled) return false;
-
-    //    if((((cords.x+label->getLabelW())>mouseLoaction.x) && ((cords.x)<mouseLoaction.x)) &&  (((cords.y+label->getLabelH())>mouseLoaction.y) && ((cords.y)<mouseLoaction.y))){
-    //     label->setBackgroundColor({128,128,128,128+64});
-
-    //     //std::cout<<"----renderButton Click"<<std::endl;
-    //     return true;
-    //    }
-    
-
-
-
-    //    return false;
-    // }
 
 
 
 };
-
+// Drop down
 class CDropDown{
 
 
@@ -1179,11 +1118,9 @@ class CDropDown{
     bool colapsed=true;
     int Xspace=50;
 
-   // int lastSelx=100,
     std::vector<std::string> SelectionName;
 
     public:
-    //CButton(const std::string& text,SDL_Renderer* r,Cordinates c,bool db, bool abs,bool v,TTF_Font * f,SDL_Color tc){
     CDropDown(Cordinates c,SDL_Renderer* r,bool db, bool abs,bool v,TTF_Font * f,std::vector<std::string> &s,uint64_t ci){
         cords=c;
         renderer=r;
@@ -1267,7 +1204,6 @@ class CDropDown{
 
     int CheckIfClickedOption(int mx,int my){
 
-        //int out=-1;
         for(uint64_t i=0;i<SelectionOptionsButtons.size();i++ ){
 
             SelectionOptionsButtons[i]->setMouseLocation(mx,my);

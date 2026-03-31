@@ -26,7 +26,7 @@ private:
     fs::path firstImagePath;
     fs::path dir;
 
-    std::vector<std::string> exts = {".png", ".jpg", ".jpeg", ".bmp"};
+    std::vector<std::string> exts = {".png", ".jpg", ".jpeg", ".bmp",".gif",".webp"};
 
     float updateTime = 1;
     float cupdateTime = 1;
@@ -52,7 +52,6 @@ public:
         firstImagePath = fi;
         dir = firstImagePath.parent_path();
 
-       // loadImages();
      
         loadImages();
         sortImages();
@@ -71,7 +70,6 @@ public:
         firstImagePath = fi;
         dir = firstImagePath.parent_path();
 
-       // loadImages();
         loadImages();
        
  
@@ -185,7 +183,6 @@ public:
         while (running)
         {
 
-            //std::cout<<"scan loop"<<std::endl;
             for (const auto& entry : fs::directory_iterator(dir))
             {
                 if (!entry.is_regular_file()) continue;

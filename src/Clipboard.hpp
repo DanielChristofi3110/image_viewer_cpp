@@ -69,7 +69,7 @@ void copyToWindowsClipboard(SDL_Surface* surf)
     int height = converted->h;
     int imageSize = converted->pitch * height;
 
-    // ---------- Encode PNG ----------
+    // PNG
     std::vector<unsigned char> pngData;
 
     auto writeFunc = [](void* context, void* data, int size)
@@ -96,7 +96,7 @@ void copyToWindowsClipboard(SDL_Surface* surf)
     memcpy(ptrPNG, pngData.data(), pngData.size());
     GlobalUnlock(hMemPNG);
 
-    // ---------- Create DIBV5 ----------
+    // DIBV5 
     BITMAPV5HEADER bi = {};
     bi.bV5Size = sizeof(BITMAPV5HEADER);
     bi.bV5Width = width;
@@ -124,7 +124,7 @@ void copyToWindowsClipboard(SDL_Surface* surf)
 
     GlobalUnlock(hMemV5);
 
-    // ---------- Classic DIB ----------
+    //DIB
     BITMAPINFOHEADER bih = {};
     bih.biSize = sizeof(BITMAPINFOHEADER);
     bih.biWidth = width;
@@ -147,7 +147,7 @@ void copyToWindowsClipboard(SDL_Surface* surf)
 
     GlobalUnlock(hMemDIB);
 
-    // ---------- Bitmap ----------
+    //Bitmap 
     HDC hdc = GetDC(NULL);
 
     BITMAPINFO bmi = {};
@@ -168,15 +168,15 @@ void copyToWindowsClipboard(SDL_Surface* surf)
 
     ReleaseDC(NULL, hdc);
 
-    // ---------- Clipboard ----------
+    // Clipboard 
     if (OpenClipboard(NULL))
     {
         EmptyClipboard();
 
-        SetClipboardData(pngFormat, hMemPNG); // Discord / Chromium
-        SetClipboardData(CF_DIBV5, hMemV5);   // Modern apps
-        SetClipboardData(CF_DIB, hMemDIB);    // Office fallback
-        SetClipboardData(CF_BITMAP, hBitmap); // GDI apps
+        SetClipboardData(pngFormat, hMemPNG); 
+        SetClipboardData(CF_DIBV5, hMemV5);  
+        SetClipboardData(CF_DIB, hMemDIB);    
+        SetClipboardData(CF_BITMAP, hBitmap); 
 
         CloseClipboard();
 
@@ -226,7 +226,7 @@ void copyToWindowsClipboard(SDL_Surface* surf)
             return;
         }
 
-        // Pipe PNG to wl-copy
+        //PNG to wl-copy
         FILE* pipe = popen("wl-copy --type image/png", "w");
         if (!pipe) {
             std::cerr << "Failed to open wl-copy pipe\n";
