@@ -186,10 +186,10 @@ void Render(int offX, int offY, float zoom, int rotation) {
 
             if (stroke.thickness <= 1) {
                 
-                aalineColor(renderer, x1, y1, x2, y2, gfxColor);
+                GFX_lineColor(renderer, x1, y1, x2, y2, gfxColor);
             } else {
                 
-                thickLineColor(renderer, x1, y1, x2, y2, stroke.thickness, gfxColor);
+                GFX_thickLineColor(renderer, x1, y1, x2, y2, stroke.thickness, gfxColor);
             }
         }
     }
@@ -219,9 +219,9 @@ void Render(int offX, int offY, float zoom, int rotation) {
             int y2 = static_cast<int>(p2.y * zoom + offY);
 
             if (currentStroke.thickness <= 1) {
-                aalineColor(renderer, x1, y1, x2, y2, gfxColor);
+                GFX_lineColor(renderer, x1, y1, x2, y2, gfxColor);
             } else {
-                thickLineColor(renderer, x1, y1, x2, y2, currentStroke.thickness, gfxColor);
+                GFX_thickLineColor(renderer, x1, y1, x2, y2, currentStroke.thickness, gfxColor);
             }
         }
 
@@ -236,7 +236,7 @@ void Render(int offX, int offY, float zoom, int rotation) {
                   (Current_color.b << 16) |
                   (Current_color.g << 8) |
                   (Current_color.r);
-        aacircleRGBA(renderer, mx, my, th/2, Current_color.r,Current_color.g,Current_color.b,Current_color.a);
+        GFX_circleRGBA(renderer, mx, my, th/2, Current_color.r,Current_color.g,Current_color.b,Current_color.a);
     }
 
    

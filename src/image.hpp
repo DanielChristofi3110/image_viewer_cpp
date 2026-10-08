@@ -114,7 +114,7 @@ class CImage{
 
             if (!surf) return nullptr;
             SDL_DestroyTexture(texture);
-            SDL_Surface* rotatedSurf = rotozoomSurface(surf, rot, 1.0, 1);
+            SDL_Surface* rotatedSurf = GFX_zoomSurface(surf, rot, 1.0, 1);
             int rw = rotatedSurf->w;
             int rh = rotatedSurf->h;
 
